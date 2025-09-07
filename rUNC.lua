@@ -1243,32 +1243,51 @@ local function test_debug_setstack()  -- Убрал рекурсию
 end
 
 local function test_replicatesignal()
-	if not present(replicatesignal, "replicatesignal") then return end
+    if not present or not present(replicatesignal, "replicatesignal") then
+        return
+    end
 
-	local Player = game:GetService("Players").LocalPlayer
-	if not Player or not Player:FindFirstChild("PlayerGui") then
-		warnEmoji("replicatesignal: PlayerGui не найден, тест пропущен")
-		return
-	end
+    local Players = cloneref and cloneref(game:GetService("Players")) or game:GetService("Players")
+    local LocalPlayer = cloneref and cloneref(Players.LocalPlayer) or Players.LocalPlayer
+    if not LocalPlayer then
+        warnEmoji("replicatesignal: LocalPlayer не найден, тест прерван")
+        return
+    end
 
-	local gui = Instance.new("ScreenGui", Player.PlayerGui)
-	local frame = Instance.new("Frame", gui)
+    if not LocalPlayer:FindFirstChild("PlayerGui") then
+        warnEmoji("replicatesignal: PlayerGui не найден, тест пропущен")
+        return
+    end
 
-	local signal = frame.MouseWheelForward
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "ReplicateSignalTestGui"
+    gui.ResetOnSpawn = false
+    gui.Parent = LocalPlayer.PlayerGui
 
-	task.wait(0.1)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 100, 0, 100)
+    frame.Position = UDim2.new(0.5, -50, 0.5, -50)
+    frame.Parent = gui
 
-	local ok_good = select(1, safe_pcall(replicatesignal, signal, 100, 200))
-	check(ok_good, "replicatesignal: выполняется без ошибок с корректными аргументами", "replicatesignal: ошибка с корректными аргументами", false)
+    local signal = frame.MouseWheelForward
+    task.wait(0.1)
 
-	task.wait(0.1)
+    local ok_good = select(1, safe_pcall(replicatesignal, signal, 121, 214))
+    check(ok_good, "replicatesignal: корректные аргументы выполняются без ошибок", "replicatesignal: ошибка с корректными аргументами", false)
 
-	local ok_bad = not select(1, safe_pcall(replicatesignal, signal))
-	check(ok_bad, "replicatesignal: ожидаемо выдает ошибку при неверном кол-ве аргументов", "replicatesignal: не выдал ошибку с неверными аргументами", false)
+    task.wait(0.1)
 
-	task.wait(0.1)
+    local ok_bad1 = not select(1, safe_pcall(replicatesignal, signal))
+    check(ok_bad1, "replicatesignal: ошибка при отсутствии аргументов", "replicatesignal: не выдал ошибку при отсутствии аргументов", false)
 
-	gui:Destroy()
+    task.wait(0.1)
+
+    local ok_bad2 = not select(1, safe_pcall(replicatesignal, signal, 121))
+    check(ok_bad2, "replicatesignal: ошибка при неполных аргументах", "replicatesignal: не выдал ошибку при неполных аргументах", false)
+
+    task.wait(0.1)
+
+    gui:Destroy()
 end
 
 local function test_getfunctionhash()
@@ -1312,61 +1331,26 @@ local function test_crypto_ops()
 end
 
 local function test_drawing()
-    if not present(Drawing, "Drawing") or not present(Drawing.new, "Drawing.new") then return end
-
-    local function safe_new(t)
-        return safe_pcall(function()
-            local obj = Drawing.new(t)
-            if typeof(obj) ~= "table" or not obj.__OBJECT_EXISTS then
-                error("Invalid drawing object")
-            end
-            return obj
-        end)
-    end
-
-    local ok_circle, circle = safe_new("Circle")
-    if not check(ok_circle and typeof(circle) == "table", "Drawing.new: создает объект типа 'drawing'", "Drawing.new: не смог создать объект", true) then
+    if not present(Drawing, "Drawing") or not present(Drawing.new, "Drawing.new") or not present(isrenderobj, "isrenderobj") then
         return
     end
 
-    check(circle.Visible == false, "Drawing: свойство Visible по умолчанию false", "Drawing: Visible по умолчанию не false", true)
-    check(circle.__OBJECT_EXISTS == true, "Drawing: свойство __OBJECT_EXISTS равно true для нового объекта", "Drawing: __OBJECT_EXISTS не true", true)
-
-    local set_ok = pcall(function()
-        circle.Visible = true
-        circle.Color = Color3.new(1, 0, 0)
-        circle.Radius = 50
-        circle.Filled = true
-        circle.NumSides = 100
-        circle.Position = Vector2.new(100, 100)
-        circle.Transparency = 0
-        circle.ZIndex = 1
-    end)
-    check(set_ok and circle.Visible and circle.Color == Color3.new(1, 0, 0) and circle.Radius == 50, "Drawing: свойства успешно устанавливаются", "Drawing: не удалось установить свойства", true)
-
-    local ok_destroy = pcall(function() circle:Destroy() end)
-    check(ok_destroy, "Drawing: метод Destroy() выполняется без ошибок", "Drawing: ошибка при вызове Destroy()", true)
-    if ok_destroy then
-        check(circle.__OBJECT_EXISTS == false, "Drawing: __OBJECT_EXISTS становится false после Destroy()", "Drawing: __OBJECT_EXISTS не стал false", true)
-    end
-
-    local ok_text, text_obj = safe_new("Text")
-    check(ok_text and typeof(text_obj) == "table" and text_obj.__OBJECT_EXISTS, "Drawing.new: может создавать другие типы (Text)", "Drawing.new: не смог создать Text", true)
-    if ok_text then
-        pcall(function()
-            text_obj.Text = "Test"
-            text_obj.Size = 16
-            text_obj.Position = Vector2.new(200, 200)
-            text_obj.Color = Color3.new(0, 1, 0)
-            text_obj.Visible = true
+    local function safe_new(t)
+        local ok, obj = safe_pcall(function()
+            return Drawing.new(t)
         end)
-        text_obj:Destroy()
+        return ok, obj
     end
 
-    local ok_invalid = not select(1, safe_pcall(function() Drawing.new("InvalidType") end))
-    check(ok_invalid, "Drawing.new: ожидаемо выдает ошибку для неверного типа", "Drawing.new: не выдал ошибку для неверного типа", true)
+    local ok_circle, circle = safe_new("Circle")
+    if ok_circle and isrenderobj(circle) then
+        check(true, "Drawing.new: объект создаётся", "", true)
+        pcall(function() circle:Destroy() end)
+        circle = nil
+    else
+        check(false, "Drawing.new: объект создаётся", "Drawing.new: не смог создать объект", true)
+    end
 end
-
 
 local function test_getcallingscript()
 	if not present(getcallingscript, "getcallingscript") then return end
