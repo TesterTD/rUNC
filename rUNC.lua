@@ -222,56 +222,57 @@ local function test_restorefunction()
 end
 
 local function test_debug_upvalues()
-	local d_gu, d_gus, d_su = debug.getupvalue, debug.getupvalues, debug.setupvalue
-	if not present(d_gu, "debug.getupvalue") or not present(d_gus, "debug.getupvalues") or not present(d_su, "debug.setupvalue") then return end
+    local d_gu, d_gus, d_su = debug.getupvalue, debug.getupvalues, debug.setupvalue
+    if not present(d_gu, "debug.getupvalue") or not present(d_gus, "debug.getupvalues") or not present(d_su, "debug.setupvalue") then
+        return
+    end
 
-	do
-		local var1, var2, var3 = "hello", 123, { key = "val" }
-		local func = function() return var1, var2, var3.key end
+    do
+        local var1, var2, var3 = "hello", 123, { key = "val" }
+        local func = function() return var1, var2, var3.key end
 
-		local ok_gus, upvals = safe_pcall(d_gus, func)
-		if check(ok_gus and type(upvals) == "table", "getupvalues: возвращает таблицу", "getupvalues: не вернул таблицу", true) then
-			check(#upvals == 3 and upvals[1] == var1 and upvals[2] == var2 and upvals[3] == var3, "getupvalues: возвращает корректные значения", "getupvalues: вернул неверные значения", true)
-		end
+        local ok_gus, upvals = safe_pcall(d_gus, func)
+        if check(ok_gus and type(upvals) == "table", "getupvalues: возвращает таблицу", "getupvalues: не вернул таблицу", true) then
+            check(#upvals == 3 and upvals[1] == var1 and upvals[2] == var2 and upvals[3] == var3, "getupvalues: корректные значения", "getupvalues: неверные значения", true)
+        end
 
-		local ok_gu, upval1 = safe_pcall(d_gu, func, 1)
-		check(ok_gu and upval1 == "hello", "getupvalue: извлекает корректное значение по индексу", "getupvalue: не извлек значение", true)
+        local ok_gu, upval1 = safe_pcall(d_gu, func, 1)
+        check(ok_gu and upval1 == "hello", "getupvalue: корректное значение по индексу", "getupvalue: неверное значение", true)
 
-		local ok_su, _ = safe_pcall(d_su, func, 2, 456)
-		if check(ok_su, "setupvalue: выполнился без ошибок", "setupvalue: вызвал ошибку", true) then
-			local _, r2, _ = func()
-			check(r2 == 456 and var2 == 123, "setupvalue: изменяет upvalue внутри функции", "setupvalue: не изменил upvalue", true)
-		end
+        local ok_su = select(1, safe_pcall(d_su, func, 2, 456))
+        if check(ok_su, "setupvalue: без ошибок", "setupvalue: ошибка", true) then
+            local _, r2 = func()
+            check(r2 == 456 and var2 == 123, "setupvalue: изменяет upvalue внутри функции", "setupvalue: не изменил upvalue", true)
+        end
 
-		local ok_su2 = select(1, safe_pcall(d_su, func, 1, "world"))
-		check(ok_su2, "setupvalue: может изменять тип upvalue (string)", "setupvalue: ошибка при смене типа", true)
-		local r1_new, _, _ = func()
-		check(r1_new == "world", "setupvalue: смена типа upvalue отразилась на вызове", "setupvalue: смена типа не сработала", true)
-	end
+        local ok_su2 = select(1, safe_pcall(d_su, func, 1, "world"))
+        check(ok_su2, "setupvalue: смена типа upvalue (string)", "setupvalue: ошибка при смене типа", true)
+        local r1_new = select(1, func())
+        check(r1_new == "world", "setupvalue: смена типа отразилась на вызове", "setupvalue: смена типа не сработала", true)
+    end
 
-	do
-		local no_upval_func = function() return 1 end
-		local ok_gus, upvals = safe_pcall(d_gus, no_upval_func)
-		check(ok_gus and type(upvals) == "table" and #upvals == 0, "getupvalues: возвращает пустую таблицу для функции без upvalues", "getupvalues: не вернул пустую таблицу", true)
-	end
+    do
+        local no_upval_func = function() return 1 end
+        local ok_gus, upvals = safe_pcall(d_gus, no_upval_func)
+        check(ok_gus and type(upvals) == "table" and #upvals == 0, "getupvalues: пустая таблица для функции без upvalues", "getupvalues: не пустая таблица", true)
+    end
 
-	do
-		local upval_func = function() local a = 1 end
-		local ok_err_gu = not select(1, safe_pcall(d_gu, upval_func, 0))
-		check(ok_err_gu, "getupvalue: ошибка при неверном индексе (0)", "getupvalue: не вызвал ошибку на индексе 0", true)
-		local ok_err_gu2 = not select(1, safe_pcall(d_gu, upval_func, 2))
-		check(ok_err_gu2, "getupvalue: ошибка при выходе за пределы", "getupvalue: не вызвал ошибку за пределами", true)
-	end
+    do
+        local upval_func = function() local a = 1 end
+        local ok_err_gu = not select(1, safe_pcall(d_gu, upval_func, 0))
+        check(ok_err_gu, "getupvalue: ошибка при индексе 0", "getupvalue: нет ошибки при индексе 0", true)
+        local ok_err_gu2 = not select(1, safe_pcall(d_gu, upval_func, 2))
+        check(ok_err_gu2, "getupvalue: ошибка при выходе за пределы", "getupvalue: нет ошибки при выходе за пределы", true)
+    end
 
-	do
-		local ok_err_gu_c = not select(1, safe_pcall(d_gu, print, 1))
-		local ok_err_gus_c = not select(1, safe_pcall(d_gus, print))
-		local ok_err_su_c = not select(1, safe_pcall(d_su, print, 1, nil))
-		check(ok_err_gu_c, "getupvalue: ошибка на C closure", "getupvalue: не вызвал ошибку на C closure", true)
-		check(ok_err_gus_c, "getupvalues: ошибка на C closure", "getupvalues: не вызвал ошибку на C closure", true)
-		check(ok_err_su_c, "setupvalue: ошибка на C closure", "setupvalue: не вызвал ошибку на C closure", true)
-	end
-
+    do
+        local ok_err_gu_c = not select(1, safe_pcall(d_gu, print, 1))
+        local ok_err_gus_c = not select(1, safe_pcall(d_gus, print))
+        local ok_err_su_c = not select(1, safe_pcall(d_su, print, 1, nil))
+        check(ok_err_gu_c, "getupvalue: ошибка на C closure", "getupvalue: нет ошибки на C closure", true)
+        check(ok_err_gus_c, "getupvalues: ошибка на C closure", "getupvalues: нет ошибки на C closure", true)
+        check(ok_err_su_c, "setupvalue: ошибка на C closure", "setupvalue: нет ошибки на C closure", true)
+    end
 end
 
 local function test_getrawmetatable()
