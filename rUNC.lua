@@ -526,44 +526,75 @@ local function test_cloneref()
 end
 
 local function test_firetouchinterest()
-	if not present(firetouchinterest, "firetouchinterest") then return end
+    if not present(firetouchinterest, "firetouchinterest") then
+        return
+    end
 
-	local part1 = Instance.new("Part", workspace); part1.CFrame = CFrame.new(0, 20, 0); part1.Anchored = true
-	local part2 = Instance.new("Part", workspace); part2.CFrame = CFrame.new(0, 20.1, 0); part2.Anchored = true
+    local function make_part(pos)
+        local p = Instance.new("Part")
+        p.Size = Vector3.new(2, 2, 2)
+        p.CFrame = pos
+        p.Anchored = true
+        p.Parent = workspace
+        return p
+    end
 
-	local touch_started, touch_ended = 0, 0
-	local c1 = part1.Touched:Connect(function() touch_started = touch_started + 1 end)
-	local c2 = part1.TouchEnded:Connect(function() touch_ended = touch_ended + 1 end)
+    local part1 = make_part(CFrame.new(0, 20, 0))
+    local part2 = make_part(CFrame.new(0, 20.1, 0))
 
-	part1.CanTouch = false
-	task.wait(0.1)
-	safe_pcall(firetouchinterest, part1, part2, 0)
-	task.wait(0.1)
-	check(touch_started == 0, "firetouchinterest: принимает свойство CanTouch (false)", "firetouchinterest: игнорирует CanTouch", true)
+    local touch_started, touch_ended = 0, 0
+    local c1 = part1.Touched:Connect(function() touch_started += 1 end)
+    local c2 = part1.TouchEnded:Connect(function() touch_ended += 1 end)
 
-	part1.CanTouch = true
-	safe_pcall(firetouchinterest, part1, part2, 0)
-	task.wait(0.1)
-	check(touch_started == 1, "firetouchinterest: вызывает Touched (toggle 0)", "firetouchinterest: не вызывает Touched (toggle 0)", true)
+    part1.CanTouch = false
+    task.wait(0.1)
+    safe_pcall(firetouchinterest, part1, part2, 0)
+    task.wait(0.1)
+    check(touch_started == 0,
+        "firetouchinterest: учитывает свойство CanTouch=false",
+        "firetouchinterest: игнорирует CanTouch=false", true)
 
-	safe_pcall(firetouchinterest, part1, part2, 1)
-	task.wait(0.1)
-	check(touch_ended == 1, "firetouchinterest: вызывает TouchEnded (toggle 1)", "firetouchinterest: не вызывает TouchEnded (toggle 1)", true)
+    part1.CanTouch = true
+    safe_pcall(firetouchinterest, part1, part2, 0)
+    task.wait(0.1)
+    check(touch_started == 1,
+        "firetouchinterest: вызывает Touched при toggle=0",
+        "firetouchinterest: не вызывает Touched при toggle=0", true)
 
-	safe_pcall(firetouchinterest, part1, part2, true)
-	task.wait(0.1)
-	check(touch_started == 2, "firetouchinterest: вызывает Touched (toggle true)", "firetouchinterest: не вызывает Touched (toggle true)", true)
+    safe_pcall(firetouchinterest, part1, part2, 1)
+    task.wait(0.1)
+    check(touch_ended == 1,
+        "firetouchinterest: вызывает TouchEnded при toggle=1",
+        "firetouchinterest: не вызывает TouchEnded при toggle=1", true)
 
-	safe_pcall(firetouchinterest, part1, part2, false)
-	task.wait(0.1)
-	check(touch_ended == 2, "firetouchinterest: вызывает TouchEnded (toggle false)", "firetouchinterest: не вызывает TouchEnded (toggle false)", true)
+    safe_pcall(firetouchinterest, part1, part2, true)
+    task.wait(0.1)
+    check(touch_started == 2,
+        "firetouchinterest: вызывает Touched при toggle=true",
+        "firetouchinterest: не вызывает Touched при toggle=true", true)
 
-	local ok_err_nil = not select(1, safe_pcall(firetouchinterest, part1, nil, 0))
-	check(ok_err_nil, "firetouchinterest: ошибка при передаче nil в качестве объекта", "firetouchinterest: не вызвал ошибку для nil", true)
+    safe_pcall(firetouchinterest, part1, part2, false)
+    task.wait(0.1)
+    check(touch_ended == 2,
+        "firetouchinterest: вызывает TouchEnded при toggle=false",
+        "firetouchinterest: не вызывает TouchEnded при toggle=false", true)
 
-	c1:Disconnect(); c2:Disconnect(); part1:Destroy(); part2:Destroy()
+    local ok_err_nil = not select(1, safe_pcall(firetouchinterest, part1, nil, 0))
+    check(ok_err_nil,
+        "firetouchinterest: выбрасывает ошибку при part2=nil",
+        "firetouchinterest: не выбросил ошибку при part2=nil", true)
 
+    local ok_err_type = not select(1, safe_pcall(firetouchinterest, {}, part2, 0))
+    check(ok_err_type,
+        "firetouchinterest: выбрасывает ошибку при неверном типе part1",
+        "firetouchinterest: не выбросил ошибку при неверном типе part1", true)
+
+    c1:Disconnect()
+    c2:Disconnect()
+    part1:Destroy()
+    part2:Destroy()
 end
+
 
 local function test_checkcaller()
     if not present(checkcaller, "checkcaller") then return end
@@ -1425,29 +1456,70 @@ local function test_getscriptclosure()
 end
 
 local function test_getscripthash()
-	if not present(getscripthash, "getscripthash") then return end
-	local is_sha384_hex = function(h) return type(h) == "string" and #h == 96 and h:match("^[0-9a-fA-F]+$") ~= nil end
-	
-	local s1 = Instance.new("LocalScript")
-	s1.Source = "print(1)"
-	local s2 = Instance.new("LocalScript")
-	s2.Source = "print(2)"
-	local s3 = Instance.new("LocalScript")
-	s3.Source = "print(1)"
-	local s_empty = Instance.new("LocalScript")
+    if not present(getscripthash, "getscripthash") then
+        return
+    end
 
-	local ok_h1, h1 = safe_pcall(getscripthash, s1)
-	check(ok_h1 and is_sha384_hex(h1), "getscripthash: возвращает валидный SHA384 хэш", "getscripthash: не вернул хэш", false)
-	
-	local h2 = getscripthash(s2)
-	local h3 = getscripthash(s3)
-	check(h1 and h2 and h1 ~= h2, "getscripthash: хэши разных скриптов различаются", "getscripthash: хэши разных скриптов одинаковы", false)
-	check(h1 and h3 and h1 == h3, "getscripthash: хэши одинаковых скриптов совпадают", "getscripthash: хэши одинаковых скриптов различаются", false)
-	
-	local ok_nil, res_nil = safe_pcall(getscripthash, s_empty)
-	check(ok_nil and res_nil == nil, "getscripthash: возвращает nil для скрипта без байткода", "getscripthash: не вернул nil", false)
+    local function is_sha384_hex(h)
+        return type(h) == "string"
+            and #h == 96
+            and h:match("^[0-9a-fA-F]+$") ~= nil
+    end
 
-	s1:Destroy(); s2:Destroy(); s3:Destroy(); s_empty:Destroy()
+    local function make_script(src)
+        local s = Instance.new("LocalScript")
+        if src ~= nil then
+            s.Source = src
+        end
+        return s
+    end
+
+    local function safe_hash(obj)
+        local ok, res = safe_pcall(getscripthash, obj)
+        return ok, res
+    end
+
+    local s1 = make_script("print(1)")
+    local s2 = make_script("print(2)")
+    local s3 = make_script("print(1)")
+    local s_empty = make_script()
+
+    local ok_h1, h1 = safe_hash(s1)
+    check(ok_h1 and is_sha384_hex(h1),
+        "getscripthash: возвращает валидный SHA384 хэш",
+        "getscripthash: не вернул корректный хэш", false)
+
+    local ok_h2, h2 = safe_hash(s2)
+    check(ok_h2 and is_sha384_hex(h2) and h1 ~= h2,
+        "getscripthash: хэши разных скриптов различаются",
+        "getscripthash: хэши разных скриптов совпадают", false)
+
+    local ok_h3, h3 = safe_hash(s3)
+    check(ok_h3 and is_sha384_hex(h3) and h1 == h3,
+        "getscripthash: хэши одинаковых скриптов совпадают",
+        "getscripthash: хэши одинаковых скриптов различаются", false)
+
+    local ok_nil, res_nil = safe_hash(s_empty)
+    check(ok_nil and res_nil == nil,
+        "getscripthash: возвращает nil для скрипта без байткода",
+        "getscripthash: не вернул nil для пустого скрипта", false)
+
+    local bad_ok = pcall(function() getscripthash({}) end)
+    check(not bad_ok,
+        "getscripthash: выбрасывает ошибку при неверном типе аргумента",
+        "getscripthash: не выбросил ошибку при неверном типе аргумента", false)
+
+    local destroyed_script = make_script("print('x')")
+    destroyed_script:Destroy()
+    local ok_destroyed, res_destroyed = safe_hash(destroyed_script)
+    check(not ok_destroyed or res_destroyed == nil,
+        "getscripthash: корректно обрабатывает уничтоженный скрипт",
+        "getscripthash: некорректно обрабатывает уничтоженный скрипт", false)
+
+    s1:Destroy()
+    s2:Destroy()
+    s3:Destroy()
+    s_empty:Destroy()
 end
 
 local function test_identifyexecutor()
@@ -1572,7 +1644,6 @@ local function test_fireclickdetector() -- Xeno фикс #2
 
     container:Destroy()
 end
-
 
 info("--- Основные функции ---")
 test_newcclosure()
