@@ -1795,6 +1795,206 @@ local function test_debug_setmetatable()
 	end
 end
 
+local function test_debug_more()
+    if not present(debug, "debug") then return end
+    
+    if present(debug.setconstant, "debug.setconstant") then
+        local function dummy_func()
+            return "original_string", 123
+        end
+
+        local original_string_const_index, number_const_index
+        if present(debug.getconstants, "debug.getconstants") then
+            local consts = debug.getconstants(dummy_func)
+            for i, v in ipairs(consts) do
+                if v == "original_string" then original_string_const_index = i end
+                if v == 123 then number_const_index = i end
+            end
+        end
+
+        if original_string_const_index then
+            local ok_set, _ = safe_pcall(debug.setconstant, dummy_func, original_string_const_index, "new_string")
+            if check(ok_set, "debug.setconstant: выполнился без ошибок", "debug.setconstant: вызвал ошибку", true) then
+                local s, n = dummy_func()
+                check(s == "new_string" and n == 123, "debug.setconstant: успешно изменил константу", "debug.setconstant: не изменил константу", true)
+            end
+        else
+            warnEmoji("debug.setconstant: не удалось найти индекс константы, тест неполный")
+        end
+        local ok_err_c = not select(1, safe_pcall(debug.setconstant, print, 1, "test"))
+        check(ok_err_c, "debug.setconstant: ошибка на C-функции", "debug.setconstant: не вызвал ошибку на C-функции", true)
+    end
+    
+    if present(debug.getstack, "debug.getstack") then
+        local var_outer = "outer_val"
+        local function outer_func()
+            local var_inner = {key = "inner_val"}
+            local function most_inner_func()
+                local stack_l2_ok, stack_l2_val = safe_pcall(debug.getstack, 2, 2)
+                check(stack_l2_ok and stack_l2_val == var_inner, "debug.getstack(level, index): получает верную переменную из родительского стека", "debug.getstack(level, index): неверное значение из родителя", true)
+                local stack_l1_ok, stack_l1_table = safe_pcall(debug.getstack, 1)
+                check(stack_l1_ok and type(stack_l1_table) == "table" and #stack_l1_table > 0, "debug.getstack(level): получает таблицу переменных", "debug.getstack(level): не вернул таблицу", true)
+            end
+            most_inner_func()
+        end
+        outer_func()
+        local ok_err_c = not select(1, safe_pcall(debug.getstack, 0))
+        check(ok_err_c, "debug.getstack: ошибка при level=0 (C-функция)", "debug.getstack: не вызвал ошибку на C-фрейме", true)
+    end
+    
+    if present(debug.getprotos, "debug.getprotos") then
+        local function container()
+            local function proto1() end
+            local function proto2() end
+        end
+        local ok_get, protos = safe_pcall(debug.getprotos, container)
+        if check(ok_get and type(protos) == "table" and #protos == 2, "debug.getprotos: возвращает таблицу прототипов", "debug.getprotos: не вернул таблицу", true) then
+            local info1, info2 = debug.getinfo(protos[1], "n"), debug.getinfo(protos[2], "n")
+            local names_ok = (info1.name == "proto1" and info2.name == "proto2") or (info1.name == "proto2" and info2.name == "proto1")
+            check(names_ok, "debug.getprotos: прототипы в таблице корректны", "debug.getprotos: некорректные прототипы", true)
+        end
+        local ok_err_c = not select(1, safe_pcall(debug.getprotos, print))
+        check(ok_err_c, "debug.getprotos: ошибка на C-функции", "debug.getprotos: не вызвал ошибку на C-функции", true)
+    end
+end
+
+local function test_hui()
+    if not present(gethui, "gethui") then return end
+    
+    local ok_get, hui = safe_pcall(gethui)
+    if not check(ok_get and (typeof(hui) == "Instance" or typeof(hui) == "BasePlayerGui" or typeof(hui) == "Folder"), "gethui: возвращает Instance", "gethui: не вернул Instance", false) then
+        return
+    end
+
+    local gui = Instance.new("ScreenGui")
+    local gui_name = "HUITEST_" .. tostring(math.random(1e9))
+    gui.Name = gui_name
+    gui.Parent = hui
+
+    task.wait(0.05)
+    
+    check(gui.Parent == hui and hui:FindFirstChild(gui_name) == gui, "gethui: можно использовать как родительский объект для UI", "gethui: не работает как родительский объект", false)
+    gui:Destroy()
+end
+
+local function test_mouse_emulation()
+    local mouse_funcs = {mouse1click, mouse1press, mouse1release, mouse2click, mouse2press, mouse2release, mousemoveabs, mousemoverel, mousescroll}
+    local mouse_func_names = {"mouse1click", "mouse1press", "mouse1release", "mouse2click", "mouse2press", "mouse2release", "mousemoveabs", "mousemoverel", "mousescroll"}
+
+    local all_present = true
+    for i, f in ipairs(mouse_funcs) do
+        if not present(f, mouse_func_names[i]) then
+            all_present = false
+        end
+    end
+    if not all_present then return end
+    
+    local ok_click = select(1, safe_pcall(mouse1click))
+    check(ok_click, "mouse1click: выполняется без ошибок", "mouse1click: ошибка при вызове", false)
+    
+    local ok_press = select(1, safe_pcall(mouse1press))
+    check(ok_press, "mouse1press: выполняется без ошибок", "mouse1press: ошибка при вызове", false)
+
+    local ok_release = select(1, safe_pcall(mouse1release))
+    check(ok_release, "mouse1release: выполняется без ошибок", "mouse1release: ошибка при вызове", false)
+    
+    local ok_moveabs = select(1, safe_pcall(mousemoveabs, 100, 100))
+    check(ok_moveabs, "mousemoveabs: выполняется без ошибок с аргументами", "mousemoveabs: ошибка при вызове", false)
+    
+    local ok_moverel = select(1, safe_pcall(mousemoverel, 10, 10))
+    check(ok_moverel, "mousemoverel: выполняется без ошибок с аргументами", "mousemoverel: ошибка при вызове", false)
+    
+    local ok_scroll = select(1, safe_pcall(mousescroll, 0, 10))
+    check(ok_scroll, "mousescroll: выполняется без ошибок с аргументами", "mousescroll: ошибка при вызове", false)
+end
+
+local function test_cache()
+    if not present(cache, "cache") then return end
+    
+    local funcs = {cache.invalidate, cache.iscached, cache.replace}
+    local names = {"cache.invalidate", "cache.iscached", "cache.replace"}
+    
+    for i=1, #funcs do if not present(funcs[i], names[i]) then return end end
+
+    local test_url = "https://thisisafakeurlfortestingpurposes.xyz/resource.dat"
+    
+    local ok_is, is_cached_before = safe_pcall(cache.iscached, test_url)
+    check(ok_is and not is_cached_before, "cache.iscached: false для несуществующего ресурса", "cache.iscached: true для несуществующего ресурса", false)
+    
+    local ok_invalidate = select(1, safe_pcall(cache.invalidate, test_url))
+    check(ok_invalidate, "cache.invalidate: выполняется без ошибок", "cache.invalidate: ошибка при выполнении", false)
+
+    local new_content = "replaced_content"
+    local ok_replace = select(1, safe_pcall(cache.replace, test_url, new_content))
+    check(ok_replace, "cache.replace: выполняется без ошибок", "cache.replace: ошибка при выполнении", false)
+
+end
+
+local function test_compression()
+    if not present(lz4compress, "lz4compress") or not present(lz4decompress, "lz4decompress") then return end
+
+    local original_string = "this string is a test for lz4 compression, it needs to be long enough to be compressible"
+    
+    local ok_compress, compressed = safe_pcall(lz4compress, original_string)
+    if check(ok_compress and type(compressed) == "string", "lz4compress: выполняется и возвращает строку", "lz4compress: ошибка или неверный тип", true) then
+        local ok_decompress, decompressed = safe_pcall(lz4decompress, compressed)
+        if check(ok_decompress and type(decompressed) == "string", "lz4decompress: выполняется и возвращает строку", "lz4decompress: ошибка или неверный тип", true) then
+            check(decompressed == original_string, "lz4: round-trip (сжатие-распаковка) успешен", "lz4: round-trip не удался", true)
+        end
+    end
+end
+
+local function test_crypto_extended()
+	if not present(crypt, "crypt") then return end
+    local funcs = {crypt.encrypt, crypt.decrypt, crypt.generatebytes, crypt.generatekey, crypt.hash}
+    local names = {"crypt.encrypt", "crypt.decrypt", "crypt.generatebytes", "crypt.generatekey", "crypt.hash"}
+    for i=1, #funcs do if not present(funcs[i], names[i]) then return end end
+    
+    local plaintext = "some plaintext data to be encrypted"
+    local ok_key, key = safe_pcall(crypt.generatekey)
+    
+    if check(ok_key and type(key) == "string" and #key > 0, "crypt.generatekey: генерирует непустую строку-ключ", "crypt.generatekey: не сгенерировал ключ", true) then
+        local ok_enc, ciphertext = safe_pcall(crypt.encrypt, plaintext, key, "some_additional_data")
+        if check(ok_enc and type(ciphertext) == "string", "crypt.encrypt: выполняется без ошибок", "crypt.encrypt: ошибка при шифровании", true) then
+            local ok_dec, decrypted = safe_pcall(crypt.decrypt, ciphertext, key, "some_additional_data")
+            check(ok_dec and decrypted == plaintext, "crypt.decrypt: round-trip (шифрование-дешифрование) успешен", "crypt.decrypt: round-trip не удался", true)
+
+            local wrong_key = crypt.generatekey()
+            local ok_dec_wrong, decrypted_wrong = safe_pcall(crypt.decrypt, ciphertext, wrong_key, "some_additional_data")
+            check(ok_dec_wrong and decrypted_wrong ~= plaintext, "crypt.decrypt: не расшифровывает с неверным ключом", "crypt.decrypt: расшифровал с неверным ключом", true)
+        end
+    end
+
+    local ok_bytes, bytes = safe_pcall(crypt.generatebytes, 16)
+    check(ok_bytes and type(bytes) == "string" and #bytes == 16, "crypt.generatebytes: генерирует строку указанной длины", "crypt.generatebytes: не сгенерировал строку", true)
+
+    local data_to_hash = "some_data"
+    local ok_hash, hash1 = safe_pcall(crypt.hash, data_to_hash, "sha384")
+    check(ok_hash and type(hash1) == "string", "crypt.hash: возвращает строку хэша", "crypt.hash: ошибка хэширования", true)
+    local hash2 = crypt.hash(data_to_hash, "sha384")
+    check(hash1 == hash2, "crypt.hash: хэши для одних и тех же данных совпадают", "crypt.hash: хэши не совпадают", true)
+end
+
+local function test_misc_env()
+    if present(messagebox, "messagebox") then
+        local ok_msg = select(1, safe_pcall(messagebox, "test", "test", 0))
+        check(ok_msg, "messagebox: выполняется без ошибок", "messagebox: ошибка при вызове", false)
+    end
+    
+    if present(queue_on_teleport, "queue_on_teleport") then
+        local code = "print('teleported!')"
+        local ok_queue = select(1, safe_pcall(queue_on_teleport, code))
+        check(ok_queue, "queue_on_teleport: выполняется без ошибок", "queue_on_teleport: ошибка при вызове", false)
+    end
+
+    if present(setclipboard, "setclipboard") then
+        local text = "clipboard_test"
+        local ok_set = select(1, safe_pcall(setclipboard, text))
+        check(ok_set, "setclipboard: выполняется без ошибок", "setclipboard: ошибка при вызове", false)
+    end
+end
+
+
 info("--- Основные функции ---")
 test_newcclosure()
 test_hookfunction()
@@ -1811,6 +2011,7 @@ test_compareinstances()
 test_identifyexecutor()
 test_isrbxactive()
 test_fpscap()
+test_hui()
 
 info("--- Проверки типов Closure ---")
 test_closure_checks()
@@ -1844,9 +2045,14 @@ test_file_operations()
 test_folder_and_load_ops()
 test_getcustomasset()
 test_replicatesignal()
+test_cache()
+test_misc_env()
+test_mouse_emulation()
 
 info("--- Криптография ---")
 test_crypto_ops()
+test_crypto_extended()
+test_compression()
 
 info("--- 2D Рендеринг ---")
 test_drawing()
@@ -1863,6 +2069,7 @@ test_debug_setmetatable()
 test_clonefunction()
 test_debug_protos()
 test_getreg()
+test_debug_more()
 
 local percent = totalTests > 0 and math.floor((passedTests / totalTests) * 100) or 0
 local skidRate = totalTests > 0 and math.floor((skidCount / totalTests) * 100) or 0
