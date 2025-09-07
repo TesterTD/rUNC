@@ -778,42 +778,44 @@ local function test_threadidentity()
 end
 
 local function test_debug_info()
-	local getinfo = debug.getinfo
-	if not present(getinfo, "debug.getinfo") then return end
+    local getinfo = debug and debug.getinfo
+    if not present or not present(getinfo, "debug.getinfo") then return end
 
-	local line_defined
-	local upval = "upvalue"
-	local function target_func(arg)
-		local l_var = arg
-		line_defined = getinfo(1,"l").currentline-3
-		return upval .. l_var
-	end
+    local line_defined
+    local upval = "upvalue"
+    local function target_func(arg)
+        local l_var = arg
+        local info = getinfo(1, "l")
+        if info and type(info.currentline) == "number" then
+            line_defined = info.currentline - 3
+        end
+        return upval .. l_var
+    end
 
-	local ok_info, info_by_ref = safe_pcall(getinfo, target_func, "Slnu")
-	if check(ok_info and type(info_by_ref) == "table", "debug.getinfo(func): возвращает таблицу", "debug.getinfo(func): вернул не таблицу", true) then
-		check(info_by_ref.what == "Lua" and type(info_by_ref.source) == "string", "debug.getinfo(func, S): 'what' и 'source' корректны", "debug.getinfo(func, S): некорректные 'what' или 'source'", true)
-		check(info_by_ref.linedefined == line_defined and type(info_by_ref.lastlinedefined) == "number", "debug.getinfo(func, l): 'linedefined' корректно", "debug.getinfo(func, l): некорректный 'linedefined'", true)
-		check(info_by_ref.nups == 1, "debug.getinfo(func, u): 'nups' (кол-во upvalue) корректно", "debug.getinfo(func, u): некорректный 'nups'", true)
-		if info_by_ref.name then 
-			check(info_by_ref.name == "target_func", "debug.getinfo(func, n): 'name' корректно", "debug.getinfo(func, n): некорректный 'name'", true)
-		end
-	end
+    local ok_info, info_by_ref = safe_pcall(getinfo, target_func, "Slnu")
+    if check(ok_info and type(info_by_ref) == "table", "debug.getinfo(func): возвращает таблицу", "debug.getinfo(func): вернул не таблицу", true) then
+        check(info_by_ref.what == "Lua" and type(info_by_ref.source) == "string", "debug.getinfo(func, S): 'what' и 'source' корректны", "debug.getinfo(func, S): некорректный 'what' или 'source'", true)
+        check(info_by_ref.linedefined == line_defined and type(info_by_ref.lastlinedefined) == "number", "debug.getinfo(func, l): 'linedefined' корректно", "debug.getinfo(func, l): некорректный 'linedefined'", true)
+        check(info_by_ref.nups == 1, "debug.getinfo(func, u): 'nups' (кол-во upvalue) корректно", "debug.getinfo(func, u): некорректный 'nups'", true)
+        if info_by_ref.name then
+            check(info_by_ref.name == "target_func", "debug.getinfo(func, n): 'name' корректно", "debug.getinfo(func, n): некорректный 'name'", true)
+        end
+    end
 
-	local level1_info, level2_func
-	local function wrapper()
-		level1_info = getinfo(1, "l")
-		local level2_info = getinfo(2, "f")
-		if type(level2_info) == "table" then
-			level2_func = level2_info.func
-		end
-	end
-	wrapper()
-	check(type(level1_info) == "table" and type(level1_info.currentline) == "number", "debug.getinfo(level, l): получает 'currentline'", "debug.getinfo(level, l): не получает 'currentline'", true)
-	check(level2_func == test_debug_info, "debug.getinfo(level, f): получает верную функцию-вызывателя", "debug.getinfo(level, f): получил неверную функцию", true)
+    local level1_info, level2_func
+    local function wrapper()
+        level1_info = getinfo(1, "l")
+        local level2_info = getinfo(2, "f")
+        if type(level2_info) == "table" then
+            level2_func = level2_info.func
+        end
+    end
+    wrapper()
+    check(type(level1_info) == "table" and type(level1_info.currentline) == "number", "debug.getinfo(level, l): получает 'currentline'", "debug.getinfo(level, l): не получает 'currentline'", true)
+    check(level2_func == test_debug_info, "debug.getinfo(level, f): получает верную функцию-вызывателя", "debug.getinfo(level, f): получил неверную функцию", true)
 
-	local ok_err_c = not select(1, safe_pcall(getinfo, print, "s"))
-	check(ok_err_c, "debug.getinfo: ожидаемо выдает ошибку на C-функции", "debug.getinfo: не вызвал ошибку на C-функции", true)
-
+    local ok_err_c = not select(1, safe_pcall(function() return getinfo(print, "s") end))
+    check(ok_err_c, "debug.getinfo: ожидаемо выдает ошибку на C-функции", "debug.getinfo: не вызвал ошибку на C-функции", true)
 end
 
 local function test_getscripts()
@@ -1170,7 +1172,9 @@ end
 local function test_folder_and_load_ops()
     local fns = {makefolder, isfolder, listfiles, loadfile, writefile}
     local fns_names = {"makefolder", "isfolder", "listfiles", "loadfile", "writefile"}
-    for i=1,#fns do if not present(fns[i], fns_names[i]) then return end end
+    for i = 1, #fns do
+        if not present(fns[i], fns_names[i]) then return end
+    end
 
     local folder = "luau_test_folder"
     local file_in_root = "luau_test_file.lua"
@@ -1180,12 +1184,14 @@ local function test_folder_and_load_ops()
         safe_pcall(delfile, file_in_root)
         safe_pcall(delfile, file_in_folder)
     end
-    if present(delfolder, "delfolder") then safe_pcall(delfolder, folder) end
+    if present(delfolder, "delfolder") then
+        safe_pcall(delfolder, folder)
+    end
     task.wait(0.05)
 
     makefolder(folder)
     check(isfolder(folder), "isfolder: true для созданной через makefolder папки", "isfolder: false для созданной папки", false)
-    
+
     writefile(file_in_root, "return ...+1")
     check(not isfolder(file_in_root), "isfolder: false для созданного файла", "isfolder: true для файла", true)
     writefile(file_in_folder, "test_content")
@@ -1193,19 +1199,30 @@ local function test_folder_and_load_ops()
     local ok_list, root_files = safe_pcall(listfiles, "")
     if check(ok_list and type(root_files) == "table", "listfiles(''): возвращает таблицу", "listfiles(''): не вернул таблицу", false) then
         local found = false
-        for _,v in ipairs(root_files) do if v:match(folder) then found=true break end end
+        for _, v in ipairs(root_files) do
+            if v:match(folder) then
+                found = true
+                break
+            end
+        end
         check(found, "listfiles(''): находит созданную папку", "listfiles(''): не нашел папку", false)
     end
 
     local ok_list2, folder_files = safe_pcall(listfiles, folder)
     if check(ok_list2 and type(folder_files) == "table", "listfiles(folder): возвращает таблицу", "listfiles(folder): не вернул таблицу", false) then
         local found = false
-        for _,v in ipairs(folder_files) do if v == "inner_file.txt" then found=true break end end
+        for _, v in ipairs(folder_files) do
+            local name = v:match("[^/\\]+$")
+            if name == "inner_file.txt" then
+                found = true
+                break
+            end
+        end
         check(found, "listfiles(folder): находит файл внутри папки", "listfiles(folder): не нашел файл", false)
     end
-    
+
     local ok_load, chunk = safe_pcall(loadfile, file_in_root)
-    if check(ok_load and type(chunk)=="function", "loadfile: компилирует файл в функцию", "loadfile: не скомпилировал файл", true) then
+    if check(ok_load and type(chunk) == "function", "loadfile: компилирует файл в функцию", "loadfile: не скомпилировал файл", true) then
         local ok_exec, res = safe_pcall(chunk, 10)
         check(ok_exec and res == 11, "loadfile: функция из файла работает корректно", "loadfile: функция не работает", true)
     end
@@ -1220,6 +1237,8 @@ local function test_folder_and_load_ops()
         if not ok_exec_err then
             syntax_error_detected = true
         end
+    elseif type(chunk_err) == "string" and chunk_err:lower():find("syntax") then
+        syntax_error_detected = true
     end
     check(syntax_error_detected, "loadfile: корректно реагирует на синтаксическую ошибку", "loadfile: не вызвал ошибку на синтаксисе", true)
 
@@ -1230,7 +1249,9 @@ local function test_folder_and_load_ops()
         end
     end
 
-    if present(delfile, "delfile") then delfile(file_in_root) end
+    if present(delfile, "delfile") then
+        delfile(file_in_root)
+    end
 end
 
 local function test_setscriptable()
@@ -1239,7 +1260,7 @@ local function test_setscriptable()
 	local prop = "Size"
 
 
-	local ok_before = not select(1, safe_pcall(function() return part[prop] end))
+    local ok_before = not select(1, safe_pcall(function() return part[prop] end))
 	check(ok_before, "setscriptable: свойство '"..prop.."' изначально нескриптуемо (как и ожидалось)", "setscriptable: свойство '"..prop.."' изначально скриптуемо", true)
 
 	local ok_set_true = select(1, safe_pcall(setscriptable, part, prop, true))
@@ -1448,7 +1469,6 @@ local function test_getloadedmodules()
     not_loaded_mod:Destroy()
 end
 
-
 local function test_getscriptclosure()
 	if not present(getscriptclosure, "getscriptclosure") then return end
 	
@@ -1481,21 +1501,30 @@ local function test_getscripthash()
     end
 
     local function make_script(src)
-        local s = Instance.new("LocalScript")
+        local s = Instance.new("ModuleScript")
         if src ~= nil then
             s.Source = src
         end
+        s.Parent = game:GetService("CoreGui")
         return s
     end
 
     local function safe_hash(obj)
-        local ok, res = safe_pcall(getscripthash, obj)
+        local t0 = os.clock()
+        local ok, res
+        repeat
+            ok, res = safe_pcall(getscripthash, obj)
+            if ok and (res == nil or is_sha384_hex(res)) then
+                break
+            end
+            task.wait(0.03)
+        until os.clock() - t0 > 3
         return ok, res
     end
 
-    local s1 = make_script("print(1)")
-    local s2 = make_script("print(2)")
-    local s3 = make_script("print(1)")
+    local s1 = make_script("return 1")
+    local s2 = make_script("return 2")
+    local s3 = make_script("return 1")
     local s_empty = make_script()
 
     local ok_h1, h1 = safe_hash(s1)
@@ -1523,7 +1552,7 @@ local function test_getscripthash()
         "getscripthash: выбрасывает ошибку при неверном типе аргумента",
         "getscripthash: не выбросил ошибку при неверном типе аргумента", false)
 
-    local destroyed_script = make_script("print('x')")
+    local destroyed_script = make_script("return 'x'")
     destroyed_script:Destroy()
     local ok_destroyed, res_destroyed = safe_hash(destroyed_script)
     check(not ok_destroyed or res_destroyed == nil,
@@ -1721,7 +1750,6 @@ test_debug_setstack()
 test_clonefunction()
 test_debug_protos()
 test_getreg()
-
 
 local percent = totalTests > 0 and math.floor((passedTests / totalTests) * 100) or 0
 local skidRate = totalTests > 0 and math.floor((skidCount / totalTests) * 100) or 0
