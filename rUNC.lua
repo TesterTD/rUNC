@@ -358,10 +358,13 @@ local function test_hookmetamethod()
         local inst = Instance.new("Folder")
         inst.Name = "OrigName"
         local old_newindex
-        local ni_triggered
-        local newindex_body = function(self, k, v)
-            if self == inst and k == "Name" and v == "HookedName" then ni_triggered = true return end
-            if old_newindex then return old_newindex(self, k, v) end
+        local ni_triggered = false
+        local function newindex_body(self, k, v)
+            if self == inst and k == "Name" and v == "HookedName" then
+                ni_triggered = true
+                return
+            end
+            return old_newindex(self, k, v)
         end
         local okh_ni, orig_ni = safe_pcall(hookmetamethod, game, "__newindex", newindex_body)
         if check(okh_ni and type(orig_ni) == "function", "hookmetamethod: __newindex хук установлен для game", "hookmetamethod: ошибка хука __newindex для game", true) then
@@ -375,70 +378,83 @@ local function test_hookmetamethod()
     end
 
     do
-        local t = {}
+        local target = Instance.new("Folder")
+        target.Name = "TostringTarget"
         local old_tostring
-        local tostring_body = function(s)
-            if s == t then return "hooked_tostring" end
-            if old_tostring then return old_tostring(s) end
+        local ts_triggered = false
+        local function tostring_body(s)
+            if s == target then
+                ts_triggered = true
+                return "hooked_tostring_object"
+            end
+            return old_tostring(s)
         end
         local okh_ts, orig_ts = safe_pcall(hookmetamethod, game, "__tostring", tostring_body)
         if check(okh_ts and type(orig_ts) == "function", "hookmetamethod: __tostring хук установлен", "hookmetamethod: ошибка __tostring", true) then
             old_tostring = orig_ts
-            check(tostring(t) == "hooked_tostring", "hookmetamethod: __tostring перехват работает", "hookmetamethod: __tostring не работает", true)
+            check(tostring(target) == "hooked_tostring_object" and ts_triggered, "hookmetamethod: __tostring перехват работает", "hookmetamethod: __tostring не работает", true)
             local ok_restore = safe_pcall(hookmetamethod, game, "__tostring", old_tostring)
             check(ok_restore, "hookmetamethod: __tostring восстановлен", "hookmetamethod: __tostring ошибка восстановления", true)
         end
+        target:Destroy()
     end
 
     do
         local index_triggered = false
+        local old_index
         local function index_hook(self, key)
-            if key == "TestKey" then
+            if self == game and key == "TestService" then
                 index_triggered = true
-                return "hooked_value"
+                return "hooked_service"
             end
-            return self[key]
+            return old_index(self, key)
         end
-        local obj = {}
-        local ok_hook, old_index = safe_pcall(hookmetamethod, obj, "__index", index_hook)
-        if check(ok_hook and old_index, "hookmetamethod: __index хук на обычной таблице", "hookmetamethod: __index ошибка хука на таблице", true) then
-            local val = obj.TestKey
-            check(index_triggered and val == "hooked_value", "hookmetamethod: __index хук на таблице сработал", "hookmetamethod: __index хук на таблице не сработал", true)
-            local ok_restore = safe_pcall(hookmetamethod, obj, "__index", old_index)
+        local ok_hook, orig_index = safe_pcall(hookmetamethod, game, "__index", index_hook)
+        if check(ok_hook and type(orig_index) == "function", "hookmetamethod: __index хук на game", "hookmetamethod: __index ошибка хука на game", true) then
+            old_index = orig_index
+            local val = game.TestService
+            check(index_triggered and val == "hooked_service", "hookmetamethod: __index хук на game сработал", "hookmetamethod: __index хук на game не сработал", true)
+            local ok_restore = safe_pcall(hookmetamethod, game, "__index", old_index)
             check(ok_restore, "hookmetamethod: __index восстановлен", "hookmetamethod: __index ошибка восстановления", true)
         end
     end
 
     do
-        local mt = {}
         local call_triggered = false
+        local old_call
         local function call_hook(self, ...)
-            call_triggered = true
-            return "hooked_call"
+            if self == game then
+                call_triggered = true
+                return "hooked_call_result"
+            end
+            return old_call(self, ...)
         end
-        setmetatable(mt, { __call = function() return "orig_call" end })
-        local ok_hook, old_call = safe_pcall(hookmetamethod, getmetatable(mt), "__call", call_hook)
-        if check(ok_hook and old_call, "hookmetamethod: __call хук установлен", "hookmetamethod: __call ошибка установки", true) then
-            local res = mt()
-            check(call_triggered and res == "hooked_call", "hookmetamethod: __call перехват работает", "hookmetamethod: __call перехват не работает", true)
-            local ok_restore = safe_pcall(hookmetamethod, getmetatable(mt), "__call", old_call)
+        local ok_hook, orig_call = safe_pcall(hookmetamethod, game, "__call", call_hook)
+        if check(ok_hook and type(orig_call) == "function", "hookmetamethod: __call хук установлен на game", "hookmetamethod: __call ошибка установки на game", true) then
+            old_call = orig_call
+            local ok_res, res = pcall(function() return game() end)
+            check(call_triggered and ok_res and res == "hooked_call_result", "hookmetamethod: __call перехват работает", "hookmetamethod: __call перехват не работает", true)
+            local ok_restore = safe_pcall(hookmetamethod, game, "__call", old_call)
             check(ok_restore, "hookmetamethod: __call восстановлен", "hookmetamethod: __call ошибка восстановления", true)
         end
     end
 
     do
-        local mt = {}
         local len_triggered = false
+        local old_len
         local function len_hook(self)
-            len_triggered = true
-            return 999
+            if self == game then
+                len_triggered = true
+                return 12345
+            end
+            return old_len(self)
         end
-        setmetatable(mt, { __len = function() return 1 end })
-        local ok_hook, old_len = safe_pcall(hookmetamethod, getmetatable(mt), "__len", len_hook)
-        if check(ok_hook and old_len, "hookmetamethod: __len хук установлен", "hookmetamethod: __len ошибка установки", true) then
-            local res = #mt
-            check(len_triggered and res == 999, "hookmetamethod: __len перехват работает", "hookmetamethod: __len перехват не работает", true)
-            local ok_restore = safe_pcall(hookmetamethod, getmetatable(mt), "__len", old_len)
+        local ok_hook, orig_len = safe_pcall(hookmetamethod, game, "__len", len_hook)
+        if check(ok_hook and type(orig_len) == "function", "hookmetamethod: __len хук установлен на game", "hookmetamethod: __len ошибка установки на game", true) then
+            old_len = orig_len
+            local res = #game
+            check(len_triggered and res == 12345, "hookmetamethod: __len перехват работает", "hookmetamethod: __len перехват не работает", true)
+            local ok_restore = safe_pcall(hookmetamethod, game, "__len", old_len)
             check(ok_restore, "hookmetamethod: __len восстановлен", "hookmetamethod: __len ошибка восстановления", true)
         end
     end
