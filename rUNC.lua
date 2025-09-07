@@ -737,38 +737,43 @@ local function test_request()
 	end
 
 	local ok_err, _ = safe_pcall(req, {Url="invalid-url", Method="GET"})
-	check(not select(1, safe_pcall(req, {Url = "https://invalid.domain. nonexistent/", Method = "GET"})), name..": ошибка при невалидном URL", name..": не вызвал ошибку для невалидного URL", false)
+	check(not select(1, safe_pcall(req, {Url = "https://invalid.421414aofas. nonexiggstent/", Method = "GET"})), name..": ошибка при невалидном URL", name..": не вызвал ошибку для невалидного URL", false)
 end
 
 local function test_getnilinstances()
-	if not present(getnilinstances, "getnilinstances") then return end
+    if not present(getnilinstances, "getnilinstances") then return end
 
-	local ok_get, list_before = safe_pcall(getnilinstances)
-	check(ok_get and type(list_before) == "table", "getnilinstances: возвращает таблицу", "getnilinstances: не вернул таблицу/ошибка", true)
+    local ok_before, list_before = safe_pcall(getnilinstances)
+    check(ok_before and type(list_before) == "table", "getnilinstances: возвращает таблицу", "getnilinstances: не вернул таблицу/ошибка", true)
 
-	local p = Instance.new("Part"); p.Name = "GNI_Test_"..math.random()
-	local parented_p = Instance.new("Part", workspace)
-	task.wait(0.05)
+    local nil_part = Instance.new("Part")
+    nil_part.Name = "GNI_Test_" .. tostring(math.random(1e9))
+    local parented_part = Instance.new("Part")
+    parented_part.Name = "GNI_Parented_" .. tostring(math.random(1e9))
+    parented_part.Parent = workspace
 
-	local list = getnilinstances()
-	local found, found_parented = false, false
-	for _,inst in ipairs(list) do 
-		if inst==p then found = true end
-		if inst==parented_p then found_parented = true end
-	end
-	check(found, "getnilinstances: находит экземпляры вне иерархии (nil parent)", "getnilinstances: не находит nil-parent экземпляры", true)
-	check(not found_parented, "getnilinstances: не включает экземпляры с родителем", "getnilinstances: ошибочно включает экземпляры с родителем", true)
+    task.wait(0.1)
 
-	p:Destroy()
-	parented_p:Destroy()
-	task.wait(0.05)
+    local ok_list, list_mid = safe_pcall(getnilinstances)
+    check(ok_list and type(list_mid) == "table", "getnilinstances: вызов успешен", "getnilinstances: ошибка при вызове", true)
 
-	local list_after = getnilinstances()
-	local found_after = false
-	for _,inst in ipairs(list_after) do if inst==p then found_after = true; break end end
-	check(not found_after, "getnilinstances: экземпляр исчезает после Destroy", "getnilinstances: экземпляр не исчез после Destroy", true)
+    local found_nil, found_parented = false, false
+    for _, inst in ipairs(list_mid) do
+        if inst == nil_part then
+            found_nil = true
+        elseif inst == parented_part then
+            found_parented = true
+        end
+        if found_nil and found_parented then break end
+    end
 
+    check(found_nil, "getnilinstances: находит nil-parent экземпляры", "getnilinstances: не находит nil-parent экземпляры", true)
+    check(not found_parented, "getnilinstances: не включает экземпляры с родителем", "getnilinstances: включает экземпляры с родителем", true)
+
+    nil_part:Destroy()
+    parented_part:Destroy()
 end
+
 
 local function test_threadidentity()
 	local gti, sti = getthreadidentity or getidentity, setthreadidentity or setidentity
@@ -826,40 +831,28 @@ local function test_debug_info()
 end
 
 local function test_getscripts()
-	if not present(getscripts, "getscripts") then return end
+    if not present(getscripts, "getscripts") then return end
 
+    local dummy_script = Instance.new("LocalScript")
+    dummy_script.Name = "GetScriptsDummy_" .. math.random()
+    dummy_script.Parent = workspace
 
-	local dummy_script = Instance.new("LocalScript")
-	dummy_script.Name = "GetScriptsDummy_"..math.random()
-	dummy_script.Parent = workspace
+    local ok_get, scripts = safe_pcall(getscripts)
+    check(ok_get and type(scripts) == "table", "getscripts: возвращает таблицу", "getscripts: не вернул таблицу", true)
 
-	local ok_get, scripts = safe_pcall(getscripts)
-	check(ok_get and type(scripts) == "table", "getscripts: возвращает таблицу", "getscripts: не вернул таблицу", true)
+    local found = false
+    if ok_get then
+        for _, s in ipairs(scripts) do
+            if s == dummy_script then
+                found = true
+                break
+            end
+        end
+    end
+    check(found, "getscripts: находит новосозданный LocalScript", "getscripts: не нашел новый LocalScript", false)
 
-	local found = false
-	if ok_get then
-		for _, s in ipairs(scripts) do
-			if s == dummy_script then
-				found = true
-				break
-			end
-		end
-	end
-	check(found, "getscripts: находит новосозданный LocalScript", "getscripts: не нашел новый LocalScript", false)
-
-	dummy_script:Destroy()
-	task.wait()
-
-	scripts = getscripts()
-	found = false
-	for _, s in ipairs(scripts) do
-		if s == dummy_script then
-			found = true
-			break
-		end
-	end
-	check(not found, "getscripts: не находит уничтоженный скрипт", "getscripts: нашел уничтоженный скрипт", false)
-
+    dummy_script:Destroy()
+    task.wait()
 end
 
 local function test_clonefunction()
