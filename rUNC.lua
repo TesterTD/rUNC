@@ -95,7 +95,7 @@ local function test_newcclosure()
 	end
 
 	do
-		local outer_cclosure = newcclosure(function() return "outer" end)
+		local outer_cclosure = newcclosure(function() return "outer" end) -- То чувство когда wrapper нельзя спуфнуть или сделать его зацикленно рабочим через хуки :(
 		local ok_nest, nested = safe_pcall(newcclosure, outer_cclosure)
 		if check(ok_nest and type(nested)=="function", "newcclosure: вложенное создание работает", "newcclosure: вложенное создание выдало ошибку", true) then
 			check(iscclosure(nested), "newcclosure: вложенный результат является cclosure", "newcclosure: вложенный результат не cclosure", true)
@@ -140,7 +140,7 @@ end
 local function test_hookfunction()
 	if not present(hookfunction, "hookfunction") then return end
 
-	local function runCase(useCC)
+	local function runCase(useCC) -- Velocity злится на эту проверку😡😡😡😡
 		local tag = "HF_"..tostring(os.clock())
 		local f = function(x)
 			if x==nil then error("orig_err") end
@@ -196,7 +196,7 @@ local function test_hookfunction()
 end
 
 local function test_restorefunction()
-	if not present(restorefunction, "restorefunction") or not present(hookfunction, "hookfunction") then return end
+	if not present(restorefunction, "restorefunction") or not present(hookfunction, "hookfunction") then return end -- restorefunction брат
 
 	local func_to_restore = function() return "original" end
 	local another_func = function() return "untouched" end
@@ -473,7 +473,7 @@ local function test_getgc()
 			if v == p then part_found = true end
 		end
 		p:Destroy()
-		check(func_found and table_found, "getgc(true): находит функции и таблицы", "getgc(true): не нашел тестовые объекты", false)
+		check(func_found and table_found, "getgc(true): находит функции и таблицы", "getgc(true): не нашел тестовые объекты", false) -- Xeno getgc() пытается обмануть, молодец🤬🤬🤬
 		check(part_found, "getgc(true): находит userdata (Instance)", "getgc(true): не нашел Instance", false)
 	end
 
@@ -512,7 +512,7 @@ local function test_cloneref()
 end
 
 local function test_firetouchinterest()
-    if not present(firetouchinterest, "firetouchinterest") then
+    if not present(firetouchinterest, "firetouchinterest") then -- залупа
         return
     end
 
@@ -598,7 +598,7 @@ local function test_checkcaller()
     local old_nc
     local in_call = false
 
-    local function wrapper(self, ...)
+    local function wrapper(self, ...) -- Почти любые спуфы для checkcaller() благодаря этому методу будут обнаружены и скорее всего крашнут RobloxPlayer :D
         if in_call then
             return old_nc and old_nc(self, ...)
         end
@@ -660,7 +660,7 @@ end
 
 local function test_getconnections()
 	if not present(getconnections, "getconnections") then return end
-	local be = Instance.new("BindableEvent")
+	local be = Instance.new("BindableEvent") -- Ого, Bindable
 	local triggered = false
 	local function handler() triggered = true; return "fired" end
 	local c = be.Event:Connect(handler)
@@ -974,7 +974,7 @@ local function test_getgenv()
 		getfenv().test_var_fenv = "F"
 		env.test_var_genv = "G"
 		check(env.test_var_fenv == nil, "getgenv: изолирован от getfenv (1)", "getgenv: не изолирован от getfenv (1)", false)
-		check(getfenv().test_var_genv == nil, "getgenv: изолирован от getfenv (2)", "getgenv: не изолирован от getfenv (2)", false)
+		check(getfenv().test_var_genv == nil, "getgenv: изолирован от getfenv (2)", "getgenv: не изолирован от getfenv (2)", false) -- Ой да кому оно нахер надо на getfenv(2) быть изолированным
 	end
 end
 
@@ -1019,7 +1019,7 @@ local function test_getcustomasset()
     if writefile then
         writefile(path, "test")
         local ok_get, assetId = safe_pcall(getcustomasset, path)
-        if check(ok_get and type(assetId) == "string", "getcustomasset: выполняется без ошибок для существующего файла", "getcustomasset: ошибка при выполнении", false) then
+        if check(ok_get and type(assetId) == "string", "getcustomasset: выполняется без ошибок для существующего файла", "getcustomasset: ошибка при выполнении", false) then -- валидация оказывается не только по rbxasset:// была...
             local valid_prefixes = {
                 "^rbxasset://",
                 "^rbxassetid://",
@@ -1045,10 +1045,10 @@ end
 
 
 local function test_loadstring()
-	if not present(loadstring, "loadstring") then return end
+	if not present(loadstring, "loadstring") then return end -- батут
 
 	local sentinel_name = "loadstring_test_global_"..math.random(1e5, 1e6)
-	local code_valid = "getgenv()['"..sentinel_name.."'] = 123; return 456"
+	local code_valid = "getgenv()['"..sentinel_name.."'] = 123; return 456" 
 	local code_invalid = "local a ="
 
 	local ok_load, func = safe_pcall(loadstring, code_valid)
@@ -1279,7 +1279,7 @@ local function test_setscriptable()
 
 end
 
-local function test_debug_setstack()  -- Убрал рекурсию
+local function test_debug_setstack()
 	if not present(debug.setstack, "debug.setstack") then return end
 
 	local outer_success = false
@@ -1621,7 +1621,7 @@ local function test_fireproximityprompt()
 	part:Destroy()
 end
 
-local function test_fireclickdetector() -- Xeno фикс #2
+local function test_fireclickdetector() 
     if not present(fireclickdetector, "fireclickdetector") then return end
 
     local G = cloneref and cloneref(game) or game
@@ -1688,6 +1688,113 @@ local function test_fireclickdetector() -- Xeno фикс #2
     container:Destroy()
 end
 
+local function test_fpscap()
+	if not present(getfpscap, "getfpscap") or not present(setfpscap, "setfpscap") then return end
+
+	local ok_get, original_cap = safe_pcall(getfpscap)
+	if not check(ok_get and type(original_cap) == "number", "getfpscap: возвращает число", "getfpscap: не вернул число или ошибка", false) then return end
+	
+	local new_cap = 144
+	if original_cap == new_cap then new_cap = 120 end
+	
+	local ok_set = select(1, safe_pcall(setfpscap, new_cap))
+	if check(ok_set, "setfpscap: выполнился без ошибок", "setfpscap: ошибка при выполнении", false) then
+		local ok_get_new, current_cap = safe_pcall(getfpscap)
+		check(ok_get_new and current_cap == new_cap, "setfpscap: успешно установил новый FPS cap", "setfpscap: не удалось установить FPS cap", false)
+	end
+	
+	setfpscap(original_cap)
+	check(getfpscap() == original_cap, "setfpscap: успешно восстановил исходный FPS cap", "setfpscap: не удалось восстановить FPS cap", false)
+end
+
+local function test_replaceclosure()  -- Блять это пизедц какой - то зачем такие функции создают
+    local harmless_func = function()
+        return "safe"
+    end
+
+    if not present(replaceclosure, "replaceclosure") then return end
+
+    local upvalue = 1
+    local original_func = function()
+        upvalue = upvalue + 1
+        return "original"
+    end
+
+    local new_func = function()
+        return "replaced", upvalue
+    end
+
+    local ok_replace = select(1, safe_pcall(replaceclosure, harmless_func, new_func))
+    if not check(ok_replace, "replaceclosure: выполнился без ошибок", "replaceclosure: ошибка при выполнении", true) then return end
+
+    local res_after_replace, upvalue_seen = new_func()
+    check(res_after_replace == "replaced", "replaceclosure: вызов оригинала теперь выполняет новую функцию", "replaceclosure: замена не удалась", true)
+    check(upvalue_seen == 1, "replaceclosure: замененная функция видит upvalue оригинала", "replaceclosure: не имеет доступа к upvalue", true)
+
+    local ok_err_c = not select(1, safe_pcall(replaceclosure, math.sin, function() end)) -- Я тут страдал от различных багов и приколюх с этой функцией
+    check(ok_err_c, "replaceclosure: ошибка при попытке заменить C-функцию", "replaceclosure: не вызвал ошибку для C-функции", true)
+end
+
+local function test_isrbxactive()
+	if not present(isrbxactive, "isrbxactive") then return end
+
+	local ok_get, status = safe_pcall(isrbxactive)
+	check(ok_get and type(status) == "boolean" and status, "isrbxactive: возвращает true в активной среде", "isrbxactive: не вернул true или ошибка", false)
+end
+
+local function test_isscriptable()
+	if not present(isscriptable, "isscriptable") or not present(setscriptable, "setscriptable") then return end
+
+	local part = Instance.new("Part")
+	local prop = "Size"
+	
+	check(not isscriptable(part, prop), "isscriptable: false для нескриптуемого по умолчанию свойства", "isscriptable: true для нескриптуемого свойства", true)
+	
+	setscriptable(part, prop, true)
+	check(isscriptable(part, prop), "isscriptable: true после setscriptable(true)", "isscriptable: false после setscriptable(true)", true)
+	
+	setscriptable(part, prop, false)
+	check(not isscriptable(part, prop), "isscriptable: false после setscriptable(false)", "isscriptable: true после setscriptable(false)", true)
+
+	part:Destroy()
+end
+
+local function test_newlclosure() -- Сука я думал нигде не найду информацию на эту функцию
+	if not present(newlclosure, "newlclosure") then return end
+	
+	local up = { count = 0 }
+	local original = function() up.count = up.count + 1 end
+	
+	local ok_new, lclosure = safe_pcall(newlclosure, original)
+	if check(ok_new and islclosure(lclosure), "newlclosure: успешно создает lclosure", "newlclosure: не удалось создать lclosure", true) then
+		original()
+		lclosure()
+		check(up.count == 2, "newlclosure: разделяет upvalues с оригиналом", "newlclosure: не разделяет upvalues", true)
+	end
+	
+	local ok_err = not select(1, safe_pcall(newlclosure, print)) -- Почему на Lua ебашу [C] проверку? Не знаю
+	check(ok_err, "newlclosure: ошибка при попытке использовать на C-функции", "newlclosure: не вызвал ошибку для C-функции", true)
+end
+
+local function test_debug_setmetatable()
+	local d_smt = debug.setmetatable -- Дебаг метатаблица!!!
+	if not present(d_smt, "debug.setmetatable") then return end
+
+	local target_table = {}
+	local protected_mt = { __metatable = "LOCKED" }
+	setmetatable(target_table, protected_mt)
+	
+	local ok_vanilla = not select(1, safe_pcall(setmetatable, target_table, {}))
+	check(ok_vanilla, "debug.setmetatable: __metatable защита работает как ожидалось", "debug.setmetatable: __metatable защита не сработала", true)
+	
+	local new_mt = { __index = function() return "bypassed_by_debug" end }
+	local ok_set, _ = safe_pcall(d_smt, target_table, new_mt)
+	
+	if check(ok_set, "debug.setmetatable: выполнился на таблице с защищенной МТ", "debug.setmetatable: выдал ошибку", true) then
+		check(getmetatable(target_table) == new_mt and target_table.xyz == "bypassed_by_debug", "debug.setmetatable: успешно обошел __metatable", "debug.setmetatable: не смог обойти __metatable", true)
+	end
+end
+
 info("--- Основные функции ---")
 test_newcclosure()
 test_hookfunction()
@@ -1702,9 +1809,13 @@ test_firetouchinterest()
 test_firesignal()
 test_compareinstances()
 test_identifyexecutor()
+test_isrbxactive()
+test_fpscap()
 
 info("--- Проверки типов Closure ---")
 test_closure_checks()
+test_replaceclosure()
+test_newlclosure()
 
 info("--- Низкоуровневые операции 💀💀💀 ---")
 test_checkcaller()
@@ -1715,6 +1826,7 @@ test_getscripts()
 test_getrunningscripts()
 test_getscriptbytecode()
 test_setscriptable()
+test_isscriptable()
 test_getgenv()
 test_getcallbackvalue()
 test_getcallingscript()
@@ -1747,6 +1859,7 @@ test_debug_info()
 test_debug_upvalues()
 test_debug_constants()
 test_debug_setstack()
+test_debug_setmetatable()
 test_clonefunction()
 test_debug_protos()
 test_getreg()
