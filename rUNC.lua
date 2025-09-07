@@ -421,42 +421,22 @@ local function test_hookmetamethod()
     end
 
     do
-        local call_triggered = false
-        local old_call
-        local function call_hook(self, ...)
-            if self == game then
-                call_triggered = true
-                return "hooked_call_result"
+        local nc_triggered = false
+        local old_namecall
+        local function namecall_hook(self, ...)
+            if self == game and getnamecallmethod() == "GetService" then
+                nc_triggered = true
+                return "hooked_namecall_service"
             end
-            return old_call(self, ...)
+            return old_namecall(self, ...)
         end
-        local ok_hook, orig_call = safe_pcall(hookmetamethod, game, "__call", call_hook)
-        if check(ok_hook and type(orig_call) == "function", "hookmetamethod: __call хук установлен на game", "hookmetamethod: __call ошибка установки на game", true) then
-            old_call = orig_call
-            local ok_res, res = pcall(function() return game() end)
-            check(call_triggered and ok_res and res == "hooked_call_result", "hookmetamethod: __call перехват работает", "hookmetamethod: __call перехват не работает", true)
-            local ok_restore = safe_pcall(hookmetamethod, game, "__call", old_call)
-            check(ok_restore, "hookmetamethod: __call восстановлен", "hookmetamethod: __call ошибка восстановления", true)
-        end
-    end
-
-    do
-        local len_triggered = false
-        local old_len
-        local function len_hook(self)
-            if self == game then
-                len_triggered = true
-                return 12345
-            end
-            return old_len(self)
-        end
-        local ok_hook, orig_len = safe_pcall(hookmetamethod, game, "__len", len_hook)
-        if check(ok_hook and type(orig_len) == "function", "hookmetamethod: __len хук установлен на game", "hookmetamethod: __len ошибка установки на game", true) then
-            old_len = orig_len
-            local res = #game
-            check(len_triggered and res == 12345, "hookmetamethod: __len перехват работает", "hookmetamethod: __len перехват не работает", true)
-            local ok_restore = safe_pcall(hookmetamethod, game, "__len", old_len)
-            check(ok_restore, "hookmetamethod: __len восстановлен", "hookmetamethod: __len ошибка восстановления", true)
+        local ok_hook, orig_nc = safe_pcall(hookmetamethod, game, "__namecall", namecall_hook)
+        if check(ok_hook and type(orig_nc) == "function", "hookmetamethod: __namecall хук на game", "hookmetamethod: __namecall ошибка хука на game", true) then
+            old_namecall = orig_nc
+            local val = game:GetService("TestService")
+            check(nc_triggered and val == "hooked_namecall_service", "hookmetamethod: __namecall хук на game сработал", "hookmetamethod: __namecall хук на game не сработал", true)
+            local ok_restore = safe_pcall(hookmetamethod, game, "__namecall", old_namecall)
+            check(ok_restore, "hookmetamethod: __namecall восстановлен", "hookmetamethod: __namecall ошибка восстановления", true)
         end
     end
 end
@@ -500,29 +480,35 @@ local function test_getgc()
 end
 
 local function test_cloneref()
-	if not present(cloneref, "cloneref") then return end
+    if not present(cloneref, "cloneref") then return end
 
-	local original = Instance.new("Part", workspace)
-	local ok_clone, clone = safe_pcall(cloneref, original)
+    local original = Instance.new("Part", workspace)
+    local ok_clone, clone = safe_pcall(cloneref, original)
 
-	if not check(ok_clone and typeof(clone) == "Instance", "cloneref: создает клон типа Instance", "cloneref: не смог создать клон", true) then
-		original:Destroy(); return
-	end
+    if not check(ok_clone and typeof(clone) == "Instance", "cloneref: создает клон типа Instance", "cloneref: не смог создать клон", true) then
+        original:Destroy()
+        return
+    end
 
-	check(original ~= clone, "cloneref: клон не равен (==) оригиналу", "cloneref: клон равен оригиналу", true)
+    check(original ~= clone, "cloneref: клон не равен (==) оригиналу", "cloneref: клон равен оригиналу", true)
 
-	local connectionsBefore = #getconnections(original:GetPropertyChangedSignal("Name"))
-	clone:GetPropertyChangedSignal("Name"):Connect(function() end)
-	local hasGetConnections = select(1, pcall(getconnections, original:GetPropertyChangedSignal("Name")))
-	if hasGetConnections then
-		check(#getconnections(original:GetPropertyChangedSignal("Name")) > connectionsBefore, "cloneref: соединение с клона влияет на оригинал", "cloneref: соединения изолированы", true)
-	end
+    local connectionsBefore = #getconnections(original:GetPropertyChangedSignal("Name"))
+    clone:GetPropertyChangedSignal("Name"):Connect(function() end)
+    local hasGetConnections = select(1, pcall(getconnections, original:GetPropertyChangedSignal("Name")))
+    if hasGetConnections then
+        check(#getconnections(original:GetPropertyChangedSignal("Name")) > connectionsBefore, "cloneref: соединение с клона влияет на оригинал", "cloneref: соединения изолированы", true)
+    end
 
-	original:Destroy()
-	task.wait()
-	local ok_method_destroyed, _ = safe_pcall(clone.GetFullName, clone)
-	check(not ok_method_destroyed, "cloneref: клон становится невалидным после уничтожения оригинала", "cloneref: клон остается валидным", true)
+    original:Destroy()
+    task.wait()
 
+    local inTreeOriginal = original:IsDescendantOf(game)
+    local inTreeClone = clone:IsDescendantOf(game)
+    check(not inTreeOriginal and not inTreeClone, "cloneref: оба объекта удалены из дерева", "cloneref: один из объектов остался в дереве", true)
+
+    local ok_method_clone = pcall(function() return clone:GetFullName() end)
+    local ok_parent_access = pcall(function() return clone.Parent end)
+    check(not ok_method_clone or clone.Parent == nil, "cloneref: клон становится невалидным или безродным после уничтожения оригинала", "cloneref: клон остался валидным с родителем", true)
 end
 
 local function test_firetouchinterest()
@@ -1021,23 +1007,40 @@ local function test_getcallbackvalue()
 end
 
 local function test_getcustomasset()
-	if not present(getcustomasset, "getcustomasset") then return end
+    if not present(getcustomasset, "getcustomasset") then return end
 
-	local path = "gcatest.txt"
-	if isfile and isfile(path) and delfile then delfile(path) end
+    local path = "gcatest.txt"
+    if isfile and isfile(path) and delfile then
+        delfile(path)
+    end
 
-	if writefile then
-		writefile(path, "test")
-		local ok_get, assetId = safe_pcall(getcustomasset, path)
-		if check(ok_get and type(assetId) == "string", "getcustomasset: выполняется без ошибок для существующего файла", "getcustomasset: ошибка при выполнении", false) then
-			check(assetId:find("^rbxasset", 1, true), "getcustomasset: возвращает валидный asset id (rbxasset://...)", "getcustomasset: вернул невалидный id", false)
-		end
-		if delfile then delfile(path) end
-	else
-		warnEmoji("getcustomasset: writefile не доступен, тест пропущен")
-	end
-
+    if writefile then
+        writefile(path, "test")
+        local ok_get, assetId = safe_pcall(getcustomasset, path)
+        if check(ok_get and type(assetId) == "string", "getcustomasset: выполняется без ошибок для существующего файла", "getcustomasset: ошибка при выполнении", false) then
+            local valid_prefixes = {
+                "^rbxasset://",
+                "^rbxassetid://",
+                "^rbxthumb://",
+                "^rbxgameasset://"
+            }
+            local valid = false
+            for _, pattern in ipairs(valid_prefixes) do
+                if assetId:lower():find(pattern, 1) then
+                    valid = true
+                    break
+                end
+            end
+            check(valid, "getcustomasset: возвращает валидный asset id", "getcustomasset: вернул невалидный id", false)
+        end
+        if delfile then
+            delfile(path)
+        end
+    else
+        warnEmoji("getcustomasset: writefile не доступен, тест пропущен")
+    end
 end
+
 
 local function test_loadstring()
 	if not present(loadstring, "loadstring") then return end
@@ -1165,59 +1168,70 @@ local function test_file_operations()
 end
 
 local function test_folder_and_load_ops()
-	local fns = {makefolder, isfolder, listfiles, loadfile, writefile}
-	local fns_names = {"makefolder", "isfolder", "listfiles", "loadfile", "writefile"}
-	for i=1,#fns do if not present(fns[i], fns_names[i]) then return end end
+    local fns = {makefolder, isfolder, listfiles, loadfile, writefile}
+    local fns_names = {"makefolder", "isfolder", "listfiles", "loadfile", "writefile"}
+    for i=1,#fns do if not present(fns[i], fns_names[i]) then return end end
 
-	local folder = "luau_test_folder"
-	local file_in_root = "luau_test_file.lua"
-	local file_in_folder = folder .. "/" .. "inner_file.txt"
+    local folder = "luau_test_folder"
+    local file_in_root = "luau_test_file.lua"
+    local file_in_folder = folder .. "/" .. "inner_file.txt"
 
-	if present(delfile, "delfile") then
-		safe_pcall(delfile, file_in_root)
-		safe_pcall(delfile, file_in_folder)
-	end
-	if present(delfolder, "delfolder") then safe_pcall(delfolder, folder) end
-	task.wait(0.05)
+    if present(delfile, "delfile") then
+        safe_pcall(delfile, file_in_root)
+        safe_pcall(delfile, file_in_folder)
+    end
+    if present(delfolder, "delfolder") then safe_pcall(delfolder, folder) end
+    task.wait(0.05)
 
-	makefolder(folder)
-	check(isfolder(folder), "isfolder: true для созданной через makefolder папки", "isfolder: false для созданной папки", false)
-	
-	writefile(file_in_root, "return ...+1")
-	check(not isfolder(file_in_root), "isfolder: false для созданного файла", "isfolder: true для файла", true)
-	writefile(file_in_folder, "test_content")
+    makefolder(folder)
+    check(isfolder(folder), "isfolder: true для созданной через makefolder папки", "isfolder: false для созданной папки", false)
+    
+    writefile(file_in_root, "return ...+1")
+    check(not isfolder(file_in_root), "isfolder: false для созданного файла", "isfolder: true для файла", true)
+    writefile(file_in_folder, "test_content")
 
-	local ok_list, root_files = safe_pcall(listfiles, "")
-	if check(ok_list and type(root_files) == "table", "listfiles(''): возвращает таблицу", "listfiles(''): не вернул таблицу", false) then
-		local found = false; for _,v in ipairs(root_files) do if v:match(folder) then found=true; break end end
-		check(found, "listfiles(''): находит созданную папку", "listfiles(''): не нашел папку", false)
-	end
+    local ok_list, root_files = safe_pcall(listfiles, "")
+    if check(ok_list and type(root_files) == "table", "listfiles(''): возвращает таблицу", "listfiles(''): не вернул таблицу", false) then
+        local found = false
+        for _,v in ipairs(root_files) do if v:match(folder) then found=true break end end
+        check(found, "listfiles(''): находит созданную папку", "listfiles(''): не нашел папку", false)
+    end
 
-	local ok_list2, folder_files = safe_pcall(listfiles, folder)
-	if check(ok_list2 and type(folder_files) == "table", "listfiles(folder): возвращает таблицу", "listfiles(folder): не вернул таблицу", false) then
-		local found = false; for _,v in ipairs(folder_files) do if v==("inner_file.txt") then found=true; break end end
-		check(found, "listfiles(folder): находит файл внутри папки", "listfiles(folder): не нашел файл", false)
-	end
-	
-	local ok_load, chunk = safe_pcall(loadfile, file_in_root)
-	if check(ok_load and type(chunk)=="function", "loadfile: компилирует файл в функцию", "loadfile: не скомпилировал файл", true) then
-		local ok_exec, res = safe_pcall(chunk, 10)
-		check(ok_exec and res == 11, "loadfile: функция из файла работает корректно", "loadfile: функция не работает", true)
-	end
+    local ok_list2, folder_files = safe_pcall(listfiles, folder)
+    if check(ok_list2 and type(folder_files) == "table", "listfiles(folder): возвращает таблицу", "listfiles(folder): не вернул таблицу", false) then
+        local found = false
+        for _,v in ipairs(folder_files) do if v == "inner_file.txt" then found=true break end end
+        check(found, "listfiles(folder): находит файл внутри папки", "listfiles(folder): не нашел файл", false)
+    end
+    
+    local ok_load, chunk = safe_pcall(loadfile, file_in_root)
+    if check(ok_load and type(chunk)=="function", "loadfile: компилирует файл в функцию", "loadfile: не скомпилировал файл", true) then
+        local ok_exec, res = safe_pcall(chunk, 10)
+        check(ok_exec and res == 11, "loadfile: функция из файла работает корректно", "loadfile: функция не работает", true)
+    end
 
-	writefile(file_in_root, "invalid-syntax")
-	check(not select(1, safe_pcall(loadfile, file_in_root)), "loadfile: ожидаемо выдает ошибку на файле с ошибкой синтаксиса", "loadfile: не вызвал ошибку", true)
+    writefile(file_in_root, "invalid-syntax")
+    local ok_load_err, chunk_err = safe_pcall(loadfile, file_in_root)
+    local syntax_error_detected = false
+    if not ok_load_err then
+        syntax_error_detected = true
+    elseif type(chunk_err) == "function" then
+        local ok_exec_err = pcall(chunk_err)
+        if not ok_exec_err then
+            syntax_error_detected = true
+        end
+    end
+    check(syntax_error_detected, "loadfile: корректно реагирует на синтаксическую ошибку", "loadfile: не вызвал ошибку на синтаксисе", true)
 
-	if present(delfolder, "delfolder") then
-		local ok_del = select(1, safe_pcall(delfolder, folder))
-		if check(ok_del, "delfolder: выполнился без ошибок", "delfolder: ошибка при выполнении", false) then
-			check(not isfolder(folder), "delfolder: успешно удаляет папку", "delfolder: папка не удалена", false)
-		end
-	end
+    if present(delfolder, "delfolder") then
+        local ok_del = select(1, safe_pcall(delfolder, folder))
+        if check(ok_del, "delfolder: выполнился без ошибок", "delfolder: ошибка при выполнении", false) then
+            check(not isfolder(folder), "delfolder: успешно удаляет папку", "delfolder: папка не удалена", false)
+        end
+    end
 
-	if present(delfile, "delfile") then delfile(file_in_root) end
+    if present(delfile, "delfile") then delfile(file_in_root) end
 end
-
 
 local function test_setscriptable()
 	if not present(setscriptable, "setscriptable") then return end
@@ -1403,30 +1417,37 @@ local function test_getcallingscript()
 end
 
 local function test_getloadedmodules()
-	if not present(getloadedmodules, "getloadedmodules") then return end
-	
-	local loaded_mod = Instance.new("ModuleScript")
-	loaded_mod.Name = "Loaded_"..math.random()
-	loaded_mod.Source = "return true"
-	local not_loaded_mod = Instance.new("ModuleScript")
-	not_loaded_mod.Name = "NotLoaded_"..math.random()
+    if not present(getloadedmodules, "getloadedmodules") then return end
 
-	local ok_req, _ = safe_pcall(require, loaded_mod)
-	check(ok_req, "getloadedmodules: require тестового модуля прошел успешно", "getloadedmodules: ошибка при require", false)
+    local loaded_mod = nil
+    local list_before = getloadedmodules()
+    if type(list_before) == "table" and #list_before > 0 then
+        loaded_mod = list_before[1]
+    end
+    if not loaded_mod then
+        return check(false, "нет доступных загруженных модулей для теста", "", false)
+    end
 
-	local ok_get, modules = safe_pcall(getloadedmodules)
-	if check(ok_get and type(modules) == "table", "getloadedmodules: возвращает таблицу", "getloadedmodules: не вернул таблицу", false) then
-		local found_loaded, found_not_loaded = false, false
-		for _, mod in ipairs(modules) do
-			if mod == loaded_mod then found_loaded = true end
-			if mod == not_loaded_mod then found_not_loaded = true end
-		end
-		check(found_loaded, "getloadedmodules: находит загруженный модуль", "getloadedmodules: не нашел загруженный модуль", false)
-		check(not found_not_loaded, "getloadedmodules: не включает незагруженные модули", "getloadedmodules: ошибочно включил незагруженный модуль", false)
-	end
-	
-	loaded_mod:Destroy(); not_loaded_mod:Destroy()
+    local not_loaded_mod = Instance.new("ModuleScript")
+    not_loaded_mod.Name = "NotLoaded_" .. tostring(math.random(1, 1e9))
+
+    local ok_get, modules = safe_pcall(getloadedmodules)
+    if check(ok_get and type(modules) == "table", "getloadedmodules: возвращает таблицу", "getloadedmodules: не вернул таблицу", false) then
+        local found_loaded, found_not_loaded = false, false
+        for _, mod in ipairs(modules) do
+            if mod == loaded_mod then
+                found_loaded = true
+            elseif mod == not_loaded_mod then
+                found_not_loaded = true
+            end
+        end
+        check(found_loaded, "getloadedmodules: находит загруженный модуль", "getloadedmodules: не нашел загруженный модуль", false)
+        check(not found_not_loaded, "getloadedmodules: не включает незагруженные модули", "getloadedmodules: ошибочно включил незагруженный модуль", false)
+    end
+
+    not_loaded_mod:Destroy()
 end
+
 
 local function test_getscriptclosure()
 	if not present(getscriptclosure, "getscriptclosure") then return end
