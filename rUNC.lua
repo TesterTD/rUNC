@@ -103,6 +103,39 @@ local function test_newcclosure()
 
 end
 
+local function test_closure_checks()
+	if not present(iscclosure, "iscclosure") or not present(islclosure, "islclosure") or not present(isexecutorclosure, "isexecutorclosure") then
+		warnEmoji("Функции проверки closure отсутствуют, тест пропущен")
+		return
+	end
+
+	local lua_fn = function() return "lua" end
+	local c_fn_new = newcclosure and newcclosure(lua_fn)
+	local c_fn_standard = print
+	local c_fn_executor = getgenv or getgc
+
+	check(islclosure(lua_fn), "islclosure: true для обычной Luau функции", "islclosure: false для Luau функции", true)
+	check(not islclosure(c_fn_standard), "islclosure: false для стандартной C-функции (print)", "islclosure: true для print", true)
+	if c_fn_new then
+		check(not islclosure(c_fn_new), "islclosure: false для newcclosure", "islclosure: true для newcclosure", true)
+	end
+
+	check(not iscclosure(lua_fn), "iscclosure: false для обычной Luau функции", "iscclosure: true для Luau функции", true)
+	check(iscclosure(c_fn_standard), "iscclosure: true для стандартной C-функции (print)", "iscclosure: false для print", true)
+	if c_fn_new then
+		check(iscclosure(c_fn_new), "iscclosure: true для newcclosure", "iscclosure: false для newcclosure", true)
+	end
+	
+	check(isexecutorclosure(lua_fn), "isexecutorclosure: true для локальной Luau функции", "isexecutorclosure: false для локальной Luau функции", true)
+	check(not isexecutorclosure(c_fn_standard), "isexecutorclosure: false для стандартной C-функции (print)", "isexecutorclosure: true для print", true)
+	if c_fn_executor then
+		check(isexecutorclosure(c_fn_executor), "isexecutorclosure: true для C-функции эксплойта ("..tostring(c_fn_executor)..")", "isexecutorclosure: false для C-функции эксплойта", true)
+	end
+	if c_fn_new then
+		check(isexecutorclosure(c_fn_new), "isexecutorclosure: true для newcclosure", "isexecutorclosure: false для newcclosure", true)
+	end
+end
+
 local function test_hookfunction()
 	if not present(hookfunction, "hookfunction") then return end
 
@@ -491,7 +524,7 @@ local function test_checkcaller()
 	end)
 
 	if not ok_hook then
-		check(false, "hookmetamethod: оригинал получен", "hookmetамethod: не вернул оригинал __namecall", true)
+		check(false, "hookmetamethod: оригинал получен", "hookmetamethod: не вернул оригинал __namecall", true)
 		return
 	end
 
@@ -1012,6 +1045,52 @@ local function test_file_operations()
 
 end
 
+local function test_folder_and_load_ops()
+	local fns = {makefolder, isfolder, delfile, listfiles, loadfile, writefile}
+	local fns_names = {"makefolder", "isfolder", "delfile", "listfiles", "loadfile", "writefile"}
+	for i=1,#fns do if not present(fns[i], fns_names[i]) then return end end
+
+	local folder = "luau_test_folder"
+	local file_in_root = "luau_test_file.lua"
+	local file_in_folder = folder .. "/" .. "inner_file.txt"
+
+	safe_pcall(delfile, file_in_root)
+	safe_pcall(delfile, file_in_folder)
+	task.wait(0.05)
+
+	makefolder(folder)
+	check(isfolder(folder), "isfolder: true для созданной через makefolder папки", "isfolder: false для созданной папки", false)
+	
+	writefile(file_in_root, "return ...+1")
+	check(not isfolder(file_in_root), "isfolder: false для созданного файла", "isfolder: true для файла", true)
+	writefile(file_in_folder, "test_content")
+
+	local ok_list, root_files = safe_pcall(listfiles, "")
+	if check(ok_list and type(root_files) == "table", "listfiles(''): возвращает таблицу", "listfiles(''): не вернул таблицу", false) then
+		local found = false; for _,v in ipairs(root_files) do if v==folder then found=true; break end end
+		check(found, "listfiles(''): находит созданную папку", "listfiles(''): не нашел папку", false)
+	end
+
+	local ok_list2, folder_files = safe_pcall(listfiles, folder)
+	if check(ok_list2 and type(folder_files) == "table", "listfiles(folder): возвращает таблицу", "listfiles(folder): не вернул таблицу", false) then
+		local found = false; for _,v in ipairs(folder_files) do if v==("inner_file.txt") then found=true; break end end
+		check(found, "listfiles(folder): находит файл внутри папки", "listfiles(folder): не нашел файл", false)
+	end
+	
+	local ok_load, chunk = safe_pcall(loadfile, file_in_root)
+	if check(ok_load and type(chunk)=="function", "loadfile: компилирует файл в функцию", "loadfile: не скомпилировал файл", true) then
+		local ok_exec, res = safe_pcall(chunk, 10)
+		check(ok_exec and res == 11, "loadfile: функция из файла работает корректно", "loadfile: функция не работает", true)
+	end
+
+	writefile(file_in_root, "invalid-syntax")
+	check(not select(1, safe_pcall(loadfile, file_in_root)), "loadfile: ожидаемо выдает ошибку на файле с ошибкой синтаксиса", "loadfile: не вызвал ошибку", true)
+
+	delfile(file_in_root)
+	delfile(file_in_folder)
+	check(not isfile(file_in_root) and not isfile(file_in_folder), "delfile: успешно удаляет файлы", "delfile: не смог удалить файлы", false)
+end
+
 local function test_setscriptable()
 	if not present(setscriptable, "setscriptable") then return end
 	local part = Instance.new("Part")
@@ -1121,6 +1200,8 @@ test_cloneref()
 test_firetouchinterest()
 test_firesignal()
 test_compareinstances()
+info("--- Проверки типов Closure ---")
+test_closure_checks()
 info("--- Низкоуровневые операции 💀💀💀 ---")
 test_checkcaller()
 test_getconnections()
@@ -1135,6 +1216,7 @@ test_getcallbackvalue()
 info("--- Файловые операции и сетевые (aka request и тд.) ---")
 test_request()
 test_file_operations()
+test_folder_and_load_ops()
 test_getcustomasset()
 test_replicatesignal()
 info("--- Ебучий лоадстринг ---")
