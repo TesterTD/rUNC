@@ -32,11 +32,12 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
 
 ## Результаты
 
-| Клиент      | Тип       | Итого           | %   | Skid Rate       | %   |
-|-------------|-----------|-----------------|-----|-----------------|-----|
-| **bunni.lol** | ПК        | 244 / 287       | 85% | 32 / 287        | 11% |
-| **Delta**     | Мобильный | 239 / 286       | 83% | 39 / 286        | 13% |
-| **Xeno**      | ПК        | 134 / 206       | 65% | 47 / 206        | 22% |
-| **Velocity**  | ПК        | ❌ Crashed      | —   | Отвратительные и нестабильные функции | — |
+| Клиент       | Тип       | Итого                                                                 | Skid Rate                                                                 |
+|--------------|-----------|-----------------------------------------------------------------------|----------------------------------------------------------------------------|
+| **bunni.lol** | ПК        | ![Итого](https://img.shields.io/badge/244%2F287-85%25-brightgreen)    | ![Skid](https://img.shields.io/badge/32%2F287-11%25-brightgreen)           |
+| **Delta**     | Мобильный | ![Итого](https://img.shields.io/badge/239%2F286-83%25-green)          | ![Skid](https://img.shields.io/badge/39%2F286-13%25-green)                 |
+| **Xeno**      | ПК        | ![Итого](https://img.shields.io/badge/134%2F206-65%25-yellow)         | ![Skid](https://img.shields.io/badge/47%2F206-22%25-orange)                |
+| **Velocity**  | ПК        | ![Crashed](https://img.shields.io/badge/Crashed-red)                  | ![Skid](https://img.shields.io/badge/Отвратительные%20и%20нестабильные%20функции-red) |
+
 
 
