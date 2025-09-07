@@ -1426,31 +1426,54 @@ local function test_fireproximityprompt()
 	part:Destroy()
 end
 
-local function test_fireclickdetector()
-	if not present(fireclickdetector, "fireclickdetector") then return end
+local function test_fireclickdetector() -- Фикс для Xeno удался😎😎
+    if not present(fireclickdetector, "fireclickdetector") then return end
 
-	local cd = Instance.new("ClickDetector")
-	local m1_fired, m2_fired, hover_enter_fired, hover_leave_fired = false, false, false, false
-	
-	cd.MouseClick:Connect(function() m1_fired = true end)
-	cd.RightMouseClick:Connect(function() m2_fired = true end)
-	cd.MouseHoverEnter:Connect(function() hover_enter_fired = true end)
-	cd.MouseHoverLeave:Connect(function() hover_leave_fired = true end)
-	
-	fireclickdetector(cd)
-	check(m1_fired, "fireclickdetector: вызывает MouseClick по умолчанию", "fireclickdetector: не вызвал MouseClick", false)
-	
-	fireclickdetector(cd, 0, "RightMouseClick")
-	check(m2_fired, "fireclickdetector: вызывает RightMouseClick при указании", "fireclickdetector: не вызвал RightMouseClick", false)
-	
-	fireclickdetector(cd, 0, "MouseHoverEnter")
-	check(hover_enter_fired, "fireclickdetector: вызывает MouseHoverEnter", "fireclickdetector: не вызвал MouseHoverEnter", false)
-	
-	fireclickdetector(cd, 0, "MouseHoverLeave")
-	check(hover_leave_fired, "fireclickdetector: вызывает MouseHoverLeave", "fireclickdetector: не вызвал MouseHoverLeave", false)
+    local G = cloneref and cloneref(game) or game
+    local WS = G:GetService("Workspace")
 
-	cd:Destroy()
+    local container = Instance.new("Folder")
+    container.Name = "__cd_sandbox__"
+    container.Archivable = false
+    container.Parent = WS
+
+    local part = Instance.new("Part")
+    part.Name = "Part"
+    part.Anchored = true
+    part.CanCollide = false
+    part.CanTouch = false
+    part.Transparency = 1
+    part.Parent = container
+
+    pcall(function()
+        part.CFrame = CFrame.new(0, 10000, 0)
+    end)
+
+    local cd = Instance.new("ClickDetector")
+    cd.MaxActivationDistance = 512
+    cd.Parent = part
+
+    local m1_fired, m2_fired, hover_enter_fired, hover_leave_fired = false, false, false, false
+    cd.MouseClick:Connect(function() m1_fired = true end)
+    cd.RightMouseClick:Connect(function() m2_fired = true end)
+    cd.MouseHoverEnter:Connect(function() hover_enter_fired = true end)
+    cd.MouseHoverLeave:Connect(function() hover_leave_fired = true end)
+
+    local ok_default = pcall(function() fireclickdetector(cd) end)
+    check(ok_default and m1_fired, "fireclickdetector: вызывает MouseClick по умолчанию", "fireclickdetector: не вызвал MouseClick", false)
+
+    local ok_right = pcall(function() fireclickdetector(cd, 0, "RightMouseClick") end)
+    check(ok_right and m2_fired, "fireclickdetector: вызывает RightMouseClick при указании", "fireclickdetector: не вызвал RightMouseClick", false)
+
+    local ok_hover_enter = pcall(function() fireclickdetector(cd, 0, "MouseHoverEnter") end)
+    check(ok_hover_enter and hover_enter_fired, "fireclickdetector: вызывает MouseHoverEnter", "fireclickdetector: не вызвал MouseHoverEnter", false)
+
+    local ok_hover_leave = pcall(function() fireclickdetector(cd, 0, "MouseHoverLeave") end)
+    check(ok_hover_leave and hover_leave_fired, "fireclickdetector: вызывает MouseHoverLeave", "fireclickdetector: не вызвал MouseHoverLeave", false)
+
+    container:Destroy()
 end
+
 
 info("--- Основные функции ---")
 test_newcclosure()
