@@ -566,67 +566,80 @@ local function test_firetouchinterest()
 end
 
 local function test_checkcaller()
-	if not present(checkcaller, "checkcaller") then return end
+    if not present(checkcaller, "checkcaller") then return end
 
-	local ok_p, v_p = safe_pcall(checkcaller)
-	check(ok_p and v_p, "checkcaller: возвращает true в pcall", "checkcaller: возвращает не true в pcall/ошибка", true)
+    local ok_p, v_p = safe_pcall(checkcaller)
+    check(ok_p and v_p, "checkcaller: true в pcall", "checkcaller: не true в pcall/ошибка", true)
 
-	local gm = game
-	pcall(function() if cloneref then gm = cloneref(game) end end)
+    local ok_args = safe_pcall(function() return checkcaller("arg") end)
+    check(ok_args, "checkcaller: игнорирует аргументы", "checkcaller: крашит при аргументах", true)
 
-	local hook_result
-	local old_nc
-	local in_call = false
+    local gm = game
+    pcall(function() if cloneref then gm = cloneref(game) end end)
 
-	local function wrapper(self, ...)
-		if in_call then
-			return old_nc and old_nc(self, ...)
-		end
-		in_call = true
-		local m = getnamecallmethod()
-		if m == "IsA" then
-			hook_result = checkcaller()
-		end
-		local ok, res = pcall(old_nc, self, ...)
-		in_call = false
-		if ok then
-			return res
-		end
-	end
+    local hook_result
+    local old_nc
+    local in_call = false
 
-	local ok_hook = false
-	pcall(function()
-		if newcclosure then
-			old_nc = hookmetamethod(gm, "__namecall", newcclosure(wrapper))
-		else
-			old_nc = hookmetamethod(gm, "__namecall", wrapper)
-		end
-		ok_hook = type(old_nc) == "function"
-	end)
+    local function wrapper(self, ...)
+        if in_call then
+            return old_nc and old_nc(self, ...)
+        end
+        in_call = true
+        local m = getnamecallmethod()
+        if m == "IsA" then
+            hook_result = checkcaller()
+        end
+        local ok, res = pcall(old_nc, self, ...)
+        in_call = false
+        if ok then
+            return res
+        end
+    end
 
-	if not ok_hook then
-		check(false, "hookmetamethod: оригинал получен", "hookmetamethod: не вернул оригинал __namecall", true)
-		return
-	end
+    local ok_hook = false
+    pcall(function()
+        if newcclosure then
+            old_nc = hookmetamethod(gm, "__namecall", newcclosure(wrapper))
+        else
+            old_nc = hookmetamethod(gm, "__namecall", wrapper)
+        end
+        ok_hook = type(old_nc) == "function"
+    end)
 
-	pcall(function() gm:IsA("Workspace") end)
+    check(ok_hook, "hookmetamethod: оригинал получен", "hookmetamethod: не вернул оригинал __namecall", true)
+    if not ok_hook then return end
 
-	check(hook_result == false, "checkcaller: возвращает false при вызове из C-кода (game internal)", "checkcaller: вернул true для C-кода", true)
+    pcall(function() gm:IsA("Workspace") end)
+    task.wait()
+    check(hook_result == false, "checkcaller: false при вызове из C-кода", "checkcaller: true для C-кода", true)
 
-	if newcclosure then
-		local cc_false_fn = newcclosure(function()
-			return checkcaller()
-		end)
-		local ok_cc, v_cc = safe_pcall(cc_false_fn)
-		check(ok_cc and not v_cc, "checkcaller: возвращает false из newcclosure", "checkcaller: возвращает true из newcclosure", true)
+    if newcclosure then
+        local cc_false_fn = newcclosure(function()
+            return checkcaller()
+        end)
+        local ok_cc, v_cc = safe_pcall(cc_false_fn)
+        check(ok_cc and not v_cc, "checkcaller: false из newcclosure", "checkcaller: true из newcclosure", true)
 
-		local function normal_fn()
-			return cc_false_fn()
-		end
-		local ok_n, v_n = safe_pcall(normal_fn)
-		check(ok_n and v_n, "checkcaller: true, если C-closure вызывается из Luau-функции", "checkcaller: false, если C-closure вызывается из Luau", true)
-	end
+        local function normal_fn()
+            return cc_false_fn()
+        end
+        local ok_n, v_n = safe_pcall(normal_fn)
+        check(ok_n and v_n, "checkcaller: true при вызове C-closure из Luau", "checkcaller: false при вызове C-closure из Luau", true)
+    end
+
+    local stable = true
+    for i = 1, 5 do
+        local ok_s, v_s = safe_pcall(checkcaller)
+        if not (ok_s and v_s) then
+            stable = false
+            break
+        end
+        task.wait()
+    end
+    check(stable, "checkcaller: стабилен при повторных вызовах", "checkcaller: нестабилен при повторных вызовах", true)
 end
+
 
 local function test_getconnections()
 	if not present(getconnections, "getconnections") then return end
@@ -1493,11 +1506,13 @@ local function test_fireproximityprompt()
 	part:Destroy()
 end
 
-local function test_fireclickdetector() -- Фикс для Xeno удался😎😎
+local function test_fireclickdetector() -- Xeno фикс #2
     if not present(fireclickdetector, "fireclickdetector") then return end
 
     local G = cloneref and cloneref(game) or game
     local WS = G:GetService("Workspace")
+    local Players = G:GetService("Players")
+    local lp = Players.LocalPlayer
 
     local container = Instance.new("Folder")
     container.Name = "__cd_sandbox__"
@@ -1521,22 +1536,39 @@ local function test_fireclickdetector() -- Фикс для Xeno удался😎
     cd.Parent = part
 
     local m1_fired, m2_fired, hover_enter_fired, hover_leave_fired = false, false, false, false
-    cd.MouseClick:Connect(function() m1_fired = true end)
-    cd.RightMouseClick:Connect(function() m2_fired = true end)
-    cd.MouseHoverEnter:Connect(function() hover_enter_fired = true end)
-    cd.MouseHoverLeave:Connect(function() hover_leave_fired = true end)
+    cd.MouseClick:Connect(function(player) if player == lp then m1_fired = true end end)
+    cd.RightMouseClick:Connect(function(player) if player == lp then m2_fired = true end end)
+    cd.MouseHoverEnter:Connect(function(player) if player == lp then hover_enter_fired = true end end)
+    cd.MouseHoverLeave:Connect(function(player) if player == lp then hover_leave_fired = true end end)
+
+    local function wait_flag(getter, timeout)
+        local t0 = os.clock()
+        timeout = timeout or 0.3
+        while not getter() and os.clock() - t0 < timeout do
+            task.wait()
+        end
+        return getter()
+    end
 
     local ok_default = pcall(function() fireclickdetector(cd) end)
-    check(ok_default and m1_fired, "fireclickdetector: вызывает MouseClick по умолчанию", "fireclickdetector: не вызвал MouseClick", false)
+    check(ok_default and wait_flag(function() return m1_fired end),
+        "fireclickdetector: вызывает MouseClick по умолчанию",
+        "fireclickdetector: не вызвал MouseClick", false)
 
     local ok_right = pcall(function() fireclickdetector(cd, 0, "RightMouseClick") end)
-    check(ok_right and m2_fired, "fireclickdetector: вызывает RightMouseClick при указании", "fireclickdetector: не вызвал RightMouseClick", false)
+    check(ok_right and wait_flag(function() return m2_fired end),
+        "fireclickdetector: вызывает RightMouseClick при указании",
+        "fireclickdetector: не вызвал RightMouseClick", false)
 
     local ok_hover_enter = pcall(function() fireclickdetector(cd, 0, "MouseHoverEnter") end)
-    check(ok_hover_enter and hover_enter_fired, "fireclickdetector: вызывает MouseHoverEnter", "fireclickdetector: не вызвал MouseHoverEnter", false)
+    check(ok_hover_enter and wait_flag(function() return hover_enter_fired end),
+        "fireclickdetector: вызывает MouseHoverEnter",
+        "fireclickdetector: не вызвал MouseHoverEnter", false)
 
     local ok_hover_leave = pcall(function() fireclickdetector(cd, 0, "MouseHoverLeave") end)
-    check(ok_hover_leave and hover_leave_fired, "fireclickdetector: вызывает MouseHoverLeave", "fireclickdetector: не вызвал MouseHoverLeave", false)
+    check(ok_hover_leave and wait_flag(function() return hover_leave_fired end),
+        "fireclickdetector: вызывает MouseHoverLeave",
+        "fireclickdetector: не вызвал MouseHoverLeave", false)
 
     container:Destroy()
 end
