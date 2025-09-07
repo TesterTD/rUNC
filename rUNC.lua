@@ -1910,39 +1910,59 @@ end
 
 local function test_cache()
     if not present(cache, "cache") then return end
-    
+
     local funcs = {cache.invalidate, cache.iscached, cache.replace}
     local names = {"cache.invalidate", "cache.iscached", "cache.replace"}
-    
-    for i=1, #funcs do if not present(funcs[i], names[i]) then return end end
+    for i = 1, #funcs do
+        if not present(funcs[i], names[i]) then return end
+    end
 
-    local test_url = "https://thisisafakeurlfortestingpurposes.xyz/resource.dat"
-    
-    local ok_is, is_cached_before = safe_pcall(cache.iscached, test_url)
-    check(ok_is and not is_cached_before, "cache.iscached: false для несуществующего ресурса", "cache.iscached: true для несуществующего ресурса", false)
-    
-    local ok_invalidate = select(1, safe_pcall(cache.invalidate, test_url))
-    check(ok_invalidate, "cache.invalidate: выполняется без ошибок", "cache.invalidate: ошибка при выполнении", false)
+    -- cache.invalidate опора с UNC (Я не владею информацией что это за функции особо, поэтому как - то так👌)
+    do
+        local container = Instance.new("Folder")
+        local part = Instance.new("Part", container)
+        cache.invalidate(container:FindFirstChild("Part"))
+        check(part ~= container:FindFirstChild("Part"),
+            "cache.invalidate: ссылка на объект была сброшена",
+            "cache.invalidate: ссылка на объект не изменилась", false)
+    end
 
-    local new_content = "replaced_content"
-    local ok_replace = select(1, safe_pcall(cache.replace, test_url, new_content))
-    check(ok_replace, "cache.replace: выполняется без ошибок", "cache.replace: ошибка при выполнении", false)
+    -- cache.iscached
+    do
+        local part = Instance.new("Part")
+        check(cache.iscached(part),
+            "cache.iscached: объект в кэше",
+            "cache.iscached: объект не в кэше", false)
+        cache.invalidate(part)
+        check(not cache.iscached(part),
+            "cache.iscached: объект удалён из кэша",
+            "cache.iscached: объект всё ещё в кэше", false)
+    end
 
+    -- cache.replace
+    do
+        local part = Instance.new("Part")
+        local fire = Instance.new("Fire")
+        cache.replace(part, fire)
+        check(part ~= fire,
+            "cache.replace: объект успешно заменён",
+            "cache.replace: объект не был заменён", false)
+    end
 end
 
 local function test_compression()
     if not present(lz4compress, "lz4compress") or not present(lz4decompress, "lz4decompress") then return end
 
-    local original_string = "this string is a test for lz4 compression, it needs to be long enough to be compressible"
-    
-    local ok_compress, compressed = safe_pcall(lz4compress, original_string)
+    local raw = "Hello, world!"
+    local ok_compress, compressed = safe_pcall(lz4compress, raw)
     if check(ok_compress and type(compressed) == "string", "lz4compress: выполняется и возвращает строку", "lz4compress: ошибка или неверный тип", true) then
-        local ok_decompress, decompressed = safe_pcall(lz4decompress, compressed)
+        local ok_decompress, decompressed = safe_pcall(lz4decompress, compressed, #raw)
         if check(ok_decompress and type(decompressed) == "string", "lz4decompress: выполняется и возвращает строку", "lz4decompress: ошибка или неверный тип", true) then
-            check(decompressed == original_string, "lz4: round-trip (сжатие-распаковка) успешен", "lz4: round-trip не удался", true)
+            check(decompressed == raw, "lz4: round-trip (сжатие-распаковка) успешен", "lz4: round-trip не удался", true)
         end
     end
 end
+
 
 local function test_crypto_extended()
 	if not present(crypt, "crypt") then return end
@@ -1975,11 +1995,10 @@ local function test_crypto_extended()
     check(hash1 == hash2, "crypt.hash: хэши для одних и тех же данных совпадают", "crypt.hash: хэши не совпадают", true)
 end
 
-local function test_misc_env()
-    if present(messagebox, "messagebox") then
-        local ok_msg = select(1, safe_pcall(messagebox, "test", "test", 0))
-        check(ok_msg, "messagebox: выполняется без ошибок", "messagebox: ошибка при вызове", false)
-    end
+local function test_misc_env() if present(messagebox, "messagebox") then 
+local ok_msg = select(1, safe_pcall(messagebox, "Test", "test", 0)) 
+check(ok_msg, "messagebox: выполняется без ошибок", "messagebox: ошибка при вызове", false) 
+end
     
     if present(queue_on_teleport, "queue_on_teleport") then
         local code = "print('teleported!')"
