@@ -352,60 +352,97 @@ local function test_readonly()
 end
 
 local function test_hookmetamethod()
-	if not present(hookmetamethod, "hookmetamethod") then return end
+    if not present(hookmetamethod, "hookmetamethod") then return end
 
-	do
-		local inst = Instance.new("Folder")
-		inst.Name = "OrigName"
-		local old_newindex
-		local ni_triggered
-		local newindex_body = function(self, k, v)
-			if self == inst and k == "Name" and v == "HookedName" then ni_triggered = true; return end
-			if old_newindex then return old_newindex(self, k, v) end
-		end
+    do
+        local inst = Instance.new("Folder")
+        inst.Name = "OrigName"
+        local old_newindex
+        local ni_triggered
+        local newindex_body = function(self, k, v)
+            if self == inst and k == "Name" and v == "HookedName" then ni_triggered = true return end
+            if old_newindex then return old_newindex(self, k, v) end
+        end
+        local okh_ni, orig_ni = safe_pcall(hookmetamethod, game, "__newindex", newindex_body)
+        if check(okh_ni and type(orig_ni) == "function", "hookmetamethod: __newindex хук установлен для game", "hookmetamethod: ошибка хука __newindex для game", true) then
+            old_newindex = orig_ni
+            inst.Name = "HookedName"
+            check(ni_triggered and inst.Name == "OrigName", "hookmetamethod: __newindex перехват работает", "hookmetamethod: __newindex перехват не работает", true)
+            local ok_restore = safe_pcall(hookmetamethod, game, "__newindex", old_newindex)
+            check(ok_restore, "hookmetamethod: __newindex восстановлен", "hookmetamethod: __newindex ошибка восстановления", true)
+        end
+        inst:Destroy()
+    end
 
-		local okh_ni, orig_ni = safe_pcall(hookmetamethod, game, "__newindex", newindex_body)
-		if check(okh_ni and type(orig_ni) == "function", "hookmetamethod: __newindex хук установлен для game", "hookmetamethod: ошибка хука __newindex для game", true) then
-			old_newindex = orig_ni
-			inst.Name = "HookedName"
-			check(ni_triggered and inst.Name == "OrigName", "hookmetamethod: __newindex перехват работает", "hookmetamethod: __newindex перехват не работает", true)
-			safe_pcall(hookmetamethod, game, "__newindex", old_newindex) 
-		end
-		inst:Destroy()
-	end
+    do
+        local t = {}
+        local old_tostring
+        local tostring_body = function(s)
+            if s == t then return "hooked_tostring" end
+            if old_tostring then return old_tostring(s) end
+        end
+        local okh_ts, orig_ts = safe_pcall(hookmetamethod, game, "__tostring", tostring_body)
+        if check(okh_ts and type(orig_ts) == "function", "hookmetamethod: __tostring хук установлен", "hookmetamethod: ошибка __tostring", true) then
+            old_tostring = orig_ts
+            check(tostring(t) == "hooked_tostring", "hookmetamethod: __tostring перехват работает", "hookmetamethod: __tostring не работает", true)
+            local ok_restore = safe_pcall(hookmetamethod, game, "__tostring", old_tostring)
+            check(ok_restore, "hookmetamethod: __tostring восстановлен", "hookmetamethod: __tostring ошибка восстановления", true)
+        end
+    end
 
-	do
-		local t = {}
-		local old_tostring
-		local tostring_body = function(s) if s == t then return "hooked_tostring" end; if old_tostring then return old_tostring(s) end end
-		local okh_ts, orig_ts = safe_pcall(hookmetamethod, game, "__tostring", tostring_body)
-		if check(okh_ts and type(orig_ts) == "function", "hookmetamethod: __tostring хук установлен", "hookmetamethod: ошибка __tostring", true) then
-			old_tostring = orig_ts
-			check(tostring(t) == "hooked_tostring", "hookmetamethod: __tostring перехват работает", "hookmetamethod: __tostring не работает", true)
-			safe_pcall(hookmetamethod, game, "__tostring", old_tostring)
-		end
-	end
+    do
+        local index_triggered = false
+        local function index_hook(self, key)
+            if key == "TestKey" then
+                index_triggered = true
+                return "hooked_value"
+            end
+            return self[key]
+        end
+        local obj = {}
+        local ok_hook, old_index = safe_pcall(hookmetamethod, obj, "__index", index_hook)
+        if check(ok_hook and old_index, "hookmetamethod: __index хук на обычной таблице", "hookmetamethod: __index ошибка хука на таблице", true) then
+            local val = obj.TestKey
+            check(index_triggered and val == "hooked_value", "hookmetamethod: __index хук на таблице сработал", "hookmetamethod: __index хук на таблице не сработал", true)
+            local ok_restore = safe_pcall(hookmetamethod, obj, "__index", old_index)
+            check(ok_restore, "hookmetamethod: __index восстановлен", "hookmetamethod: __index ошибка восстановления", true)
+        end
+    end
 
-	do
-		local index_triggered = false
-		local function index_hook(self, key)
-			if key == "TestKey" then
-				index_triggered = true
-				return "hooked_value"
-			end
-			return self[key] 
-		end
+    do
+        local mt = {}
+        local call_triggered = false
+        local function call_hook(self, ...)
+            call_triggered = true
+            return "hooked_call"
+        end
+        setmetatable(mt, { __call = function() return "orig_call" end })
+        local ok_hook, old_call = safe_pcall(hookmetamethod, getmetatable(mt), "__call", call_hook)
+        if check(ok_hook and old_call, "hookmetamethod: __call хук установлен", "hookmetamethod: __call ошибка установки", true) then
+            local res = mt()
+            check(call_triggered and res == "hooked_call", "hookmetamethod: __call перехват работает", "hookmetamethod: __call перехват не работает", true)
+            local ok_restore = safe_pcall(hookmetamethod, getmetatable(mt), "__call", old_call)
+            check(ok_restore, "hookmetamethod: __call восстановлен", "hookmetamethod: __call ошибка восстановления", true)
+        end
+    end
 
-		local obj = {}
-		local ok_hook, old_index = safe_pcall(hookmetamethod, obj, "__index", index_hook)
-		if check(ok_hook and old_index, "hookmetamethod: __index хук на обычной таблице", "hookmetamethod: __index ошибка хука на таблице", true) then
-			local val = obj.TestKey
-			check(index_triggered and val == "hooked_value", "hookmetamethod: __index хук на таблице сработал", "hookmetamethod: __index хук на таблице не сработал", true)
-			safe_pcall(hookmetamethod, obj, "__index", old_index)
-		end
-	end
+    do
+        local mt = {}
+        local len_triggered = false
+        local function len_hook(self)
+            len_triggered = true
+            return 999
+        end
+        setmetatable(mt, { __len = function() return 1 end })
+        local ok_hook, old_len = safe_pcall(hookmetamethod, getmetatable(mt), "__len", len_hook)
+        if check(ok_hook and old_len, "hookmetamethod: __len хук установлен", "hookmetamethod: __len ошибка установки", true) then
+            local res = #mt
+            check(len_triggered and res == 999, "hookmetamethod: __len перехват работает", "hookmetamethod: __len перехват не работает", true)
+            local ok_restore = safe_pcall(hookmetamethod, getmetatable(mt), "__len", old_len)
+            check(ok_restore, "hookmetamethod: __len восстановлен", "hookmetamethod: __len ошибка восстановления", true)
+        end
+    end
 end
-
 
 local function test_getgc()
 	if not present(getgc, "getgc") then return end
@@ -1258,32 +1295,61 @@ local function test_crypto_ops()
 end
 
 local function test_drawing()
-	if not present(Drawing, "Drawing") or not present(Drawing.new, "Drawing.new") then return end
+    if not present(Drawing, "Drawing") or not present(Drawing.new, "Drawing.new") then return end
 
-	local ok_new, circle = safe_pcall(Drawing.new, "Circle")
-	if not check(ok_new and type(circle) == "drawing", "Drawing.new: создает объект типа 'drawing'", "Drawing.new: не смог создать объект", true) then return end
-	
-	check(circle.Visible == false, "Drawing: свойство Visible по умолчанию false", "Drawing: Visible по умолчанию не false", true)
-	check(circle.__OBJECT_EXISTS == true, "Drawing: свойство __OBJECT_EXISTS равно true для нового объекта", "Drawing: __OBJECT_EXISTS не true", true)
-	
-	circle.Visible = true
-	circle.Color = Color3.new(1,0,0)
-	circle.Radius = 50
-	check(circle.Visible and circle.Color == Color3.new(1,0,0) and circle.Radius == 50, "Drawing: свойства успешно устанавливаются", "Drawing: не удалось установить свойства", true)
+    local function safe_new(t)
+        return safe_pcall(function()
+            local obj = Drawing.new(t)
+            if typeof(obj) ~= "table" or not obj.__OBJECT_EXISTS then
+                error("Invalid drawing object")
+            end
+            return obj
+        end)
+    end
 
-	local ok_destroy, _ = safe_pcall(circle.Destroy, circle)
-	check(ok_destroy, "Drawing: метод Destroy() выполняется без ошибок", "Drawing: ошибка при вызове Destroy()", true)
-	if ok_destroy then
-		check(circle.__OBJECT_EXISTS == false, "Drawing: __OBJECT_EXISTS становится false после Destroy()", "Drawing: __OBJECT_EXISTS не стал false", true)
-	end
+    local ok_circle, circle = safe_new("Circle")
+    if not check(ok_circle and typeof(circle) == "table", "Drawing.new: создает объект типа 'drawing'", "Drawing.new: не смог создать объект", true) then
+        return
+    end
 
-	local ok_new_text, text_obj = safe_pcall(Drawing.new, "Text")
-	check(ok_new_text and type(text_obj) == "drawing" and text_obj.__OBJECT_EXISTS, "Drawing.new: может создавать другие типы (Text)", "Drawing.new: не смог создать Text", true)
-	if text_obj then text_obj:Destroy() end
+    check(circle.Visible == false, "Drawing: свойство Visible по умолчанию false", "Drawing: Visible по умолчанию не false", true)
+    check(circle.__OBJECT_EXISTS == true, "Drawing: свойство __OBJECT_EXISTS равно true для нового объекта", "Drawing: __OBJECT_EXISTS не true", true)
 
-	local ok_invalid = not select(1, safe_pcall(Drawing.new, "InvalidType"))
-	check(ok_invalid, "Drawing.new: ожидаемо выдает ошибку для неверного типа", "Drawing.new: не выдал ошибку для неверного типа", true)
+    local set_ok = pcall(function()
+        circle.Visible = true
+        circle.Color = Color3.new(1, 0, 0)
+        circle.Radius = 50
+        circle.Filled = true
+        circle.NumSides = 100
+        circle.Position = Vector2.new(100, 100)
+        circle.Transparency = 0
+        circle.ZIndex = 1
+    end)
+    check(set_ok and circle.Visible and circle.Color == Color3.new(1, 0, 0) and circle.Radius == 50, "Drawing: свойства успешно устанавливаются", "Drawing: не удалось установить свойства", true)
+
+    local ok_destroy = pcall(function() circle:Destroy() end)
+    check(ok_destroy, "Drawing: метод Destroy() выполняется без ошибок", "Drawing: ошибка при вызове Destroy()", true)
+    if ok_destroy then
+        check(circle.__OBJECT_EXISTS == false, "Drawing: __OBJECT_EXISTS становится false после Destroy()", "Drawing: __OBJECT_EXISTS не стал false", true)
+    end
+
+    local ok_text, text_obj = safe_new("Text")
+    check(ok_text and typeof(text_obj) == "table" and text_obj.__OBJECT_EXISTS, "Drawing.new: может создавать другие типы (Text)", "Drawing.new: не смог создать Text", true)
+    if ok_text then
+        pcall(function()
+            text_obj.Text = "Test"
+            text_obj.Size = 16
+            text_obj.Position = Vector2.new(200, 200)
+            text_obj.Color = Color3.new(0, 1, 0)
+            text_obj.Visible = true
+        end)
+        text_obj:Destroy()
+    end
+
+    local ok_invalid = not select(1, safe_pcall(function() Drawing.new("InvalidType") end))
+    check(ok_invalid, "Drawing.new: ожидаемо выдает ошибку для неверного типа", "Drawing.new: не выдал ошибку для неверного типа", true)
 end
+
 
 local function test_getcallingscript()
 	if not present(getcallingscript, "getcallingscript") then return end
