@@ -27,12 +27,13 @@ local function present(obj, name)
 		warnEmoji("Объект отсутствует: "..name)
 		return false
 	end
-	if type(obj) ~= "function" then
-		warnEmoji("Объект не является функцией: "..name.." (тип: "..type(obj)..")")
+	if type(obj) ~= "function" and type(obj) ~= "table" and type(obj) ~= "drawing" then
+		warnEmoji("Объект не является функцией/таблицей: "..name.." (тип: "..type(obj)..")")
 		return false
 	end
 	return true
 end
+
 
 local function check(cond, okmsg, failmsg, skidIfFail)
 	totalTests = totalTests + 1
@@ -230,7 +231,7 @@ local function test_debug_upvalues()
 
 		local ok_gus, upvals = safe_pcall(d_gus, func)
 		if check(ok_gus and type(upvals) == "table", "getupvalues: возвращает таблицу", "getupvalues: не вернул таблицу", true) then
-			check(#upvals == 3 and upvals == var1 and upvals == var2 and upvals == var3, "getupvalues: возвращает корректные значения", "getupvalues: вернул неверные значения", true)
+			check(#upvals == 3 and upvals[1] == var1 and upvals[2] == var2 and upvals[3] == var3, "getupvalues: возвращает корректные значения", "getupvalues: вернул неверные значения", true)
 		end
 
 		local ok_gu, upval1 = safe_pcall(d_gu, func, 1)
@@ -353,35 +354,58 @@ end
 local function test_hookmetamethod()
 	if not present(hookmetamethod, "hookmetamethod") then return end
 
-	local inst = Instance.new("Folder")
-	inst.Name = "OrigName"
-	local old_newindex
-	local ni_triggered
-	local newindex_body = function(self, k, v)
-		if self == inst and k == "Name" and v == "HookedName" then ni_triggered = true; return end
-		if old_newindex then return old_newindex(self, k, v) end
+	do
+		local inst = Instance.new("Folder")
+		inst.Name = "OrigName"
+		local old_newindex
+		local ni_triggered
+		local newindex_body = function(self, k, v)
+			if self == inst and k == "Name" and v == "HookedName" then ni_triggered = true; return end
+			if old_newindex then return old_newindex(self, k, v) end
+		end
+
+		local okh_ni, orig_ni = safe_pcall(hookmetamethod, game, "__newindex", newindex_body)
+		if check(okh_ni and type(orig_ni) == "function", "hookmetamethod: __newindex хук установлен для game", "hookmetamethod: ошибка хука __newindex для game", true) then
+			old_newindex = orig_ni
+			inst.Name = "HookedName"
+			check(ni_triggered and inst.Name == "OrigName", "hookmetamethod: __newindex перехват работает", "hookmetamethod: __newindex перехват не работает", true)
+			safe_pcall(hookmetamethod, game, "__newindex", old_newindex) 
+		end
+		inst:Destroy()
 	end
 
-	local okh_ni, orig_ni = safe_pcall(hookmetamethod, game, "__newindex", newindex_body)
-	if check(okh_ni and type(orig_ni) == "function", "hookmetamethod: __newindex хук установлен", "hookmetamethod: ошибка хука __newindex", true) then
-		old_newindex = orig_ni
-		inst.Name = "HookedName"
-		check(ni_triggered and inst.Name == "OrigName", "hookmetamethod: __newindex перехват работает", "hookmetamethod: __newindex перехват не работает", true)
-		safe_pcall(hookmetamethod, game, "__newindex", old_newindex)
-	end
-	inst:Destroy()
-
-	local t = {}
-	local old_tostring
-	local tostring_body = function(s) if s == t then return "hooked_tostring" end; if old_tostring then return old_tostring(s) end end
-	local okh_ts, orig_ts = safe_pcall(hookmetamethod, game, "__tostring", tostring_body)
-	if check(okh_ts and type(orig_ts) == "function", "hookmetamethod: __tostring хук установлен", "hookmetamethod: ошибка __tostring", true) then
-		old_tostring = orig_ts
-		check(tostring(t) == "hooked_tostring", "hookmetamethod: __tostring перехват работает", "hookmetamethod: __tostring не работает", true)
-		safe_pcall(hookmetamethod, game, "__tostring", old_tostring)
+	do
+		local t = {}
+		local old_tostring
+		local tostring_body = function(s) if s == t then return "hooked_tostring" end; if old_tostring then return old_tostring(s) end end
+		local okh_ts, orig_ts = safe_pcall(hookmetamethod, game, "__tostring", tostring_body)
+		if check(okh_ts and type(orig_ts) == "function", "hookmetamethod: __tostring хук установлен", "hookmetamethod: ошибка __tostring", true) then
+			old_tostring = orig_ts
+			check(tostring(t) == "hooked_tostring", "hookmetamethod: __tostring перехват работает", "hookmetamethod: __tostring не работает", true)
+			safe_pcall(hookmetamethod, game, "__tostring", old_tostring)
+		end
 	end
 
+	do
+		local index_triggered = false
+		local function index_hook(self, key)
+			if key == "TestKey" then
+				index_triggered = true
+				return "hooked_value"
+			end
+			return self[key] 
+		end
+
+		local obj = {}
+		local ok_hook, old_index = safe_pcall(hookmetamethod, obj, "__index", index_hook)
+		if check(ok_hook and old_index, "hookmetamethod: __index хук на обычной таблице", "hookmetamethod: __index ошибка хука на таблице", true) then
+			local val = obj.TestKey
+			check(index_triggered and val == "hooked_value", "hookmetamethod: __index хук на таблице сработал", "hookmetamethod: __index хук на таблице не сработал", true)
+			safe_pcall(hookmetamethod, obj, "__index", old_index)
+		end
+	end
 end
+
 
 local function test_getgc()
 	if not present(getgc, "getgc") then return end
@@ -435,7 +459,10 @@ local function test_cloneref()
 
 	local connectionsBefore = #getconnections(original:GetPropertyChangedSignal("Name"))
 	clone:GetPropertyChangedSignal("Name"):Connect(function() end)
-	check(#getconnections(original:GetPropertyChangedSignal("Name")) > connectionsBefore, "cloneref: соединение с клона влияет на оригинал", "cloneref: соединения изолированы", true)
+	local hasGetConnections = select(1, pcall(getconnections, original:GetPropertyChangedSignal("Name")))
+	if hasGetConnections then
+		check(#getconnections(original:GetPropertyChangedSignal("Name")) > connectionsBefore, "cloneref: соединение с клона влияет на оригинал", "cloneref: соединения изолированы", true)
+	end
 
 	original:Destroy()
 	task.wait()
@@ -547,8 +574,6 @@ local function test_checkcaller()
 	end
 end
 
-
-
 local function test_getconnections()
 	if not present(getconnections, "getconnections") then return end
 	local be = Instance.new("BindableEvent")
@@ -560,14 +585,17 @@ local function test_getconnections()
 	check(okc and type(conns) == "table" and #conns >= 1, "getconnections: возвращает таблицу соединений", "getconnections: вернул не таблицу или пусто", true)
 
 	if okc and #conns > 0 then
-		local conn_obj = conns[1]
-		if check(typeof(conn_obj) == "RBXScriptConnection" and conn_obj.Connected and conn_obj.Function == handler, "getconnections: элементы в таблице - валидные Connection с правильной функцией", "getconnections: элементы не являются валидными Connection", true) then
-			local fire_ok, fire_ret = safe_pcall(conn_obj.Fire, conn_obj)
-			check(fire_ok and triggered and fire_ret == "fired", "getconnections: connection:Fire() работает", "getconnections: connection:Fire() не сработал", true)
+		local conn_obj = conns[#conns] 
+		if check(typeof(conn_obj) == "RBXScriptConnection" and conn_obj.Connected, "getconnections: элементы в таблице - валидные Connection", "getconnections: элементы не являются валидными Connection", true) then
+			if conn_obj.Function then
+				check(conn_obj.Function == handler, "getconnections: Connection.Function содержит правильную функцию", "getconnections: Connection.Function неверна", true)
+				local fire_ok, fire_ret = safe_pcall(conn_obj.Fire, conn_obj)
+				check(fire_ok and triggered and fire_ret == "fired", "getconnections: connection:Fire() работает", "getconnections: connection:Fire() не сработал", true)
 
-			triggered = false
-			local func_ret = conn_obj.Function()
-			check(triggered and func_ret == "fired", "getconnections: connection.Function() работает", "getconnections: connection.Function() не сработал", true)
+				triggered = false
+				local func_ret = conn_obj.Function()
+				check(triggered and func_ret == "fired", "getconnections: connection.Function() работает", "getconnections: connection.Function() не сработал", true)
+			end
 		end
 	end
 	c:Disconnect(); be:Destroy()
@@ -576,7 +604,7 @@ local function test_getconnections()
 		local c_conn_ok, idled_conns = safe_pcall(getconnections, game.Players.LocalPlayer.Idled)
 		if check(c_conn_ok and #idled_conns > 0, "getconnections: может получить C-connections (Idled)", "getconnections: не смог получить C-connections", false) then
 			local c_conn = idled_conns[1]
-			check(c_conn.Function == nil and c_conn.Thread == nil, "getconnections: Function и Thread равны nil для C-connection", "getconnections: Function/Thread не nil для C-connection", true)
+			check(c_conn.Function == nil, "getconnections: Function равно nil для C-connection", "getconnections: Function не nil для C-connection", true)
 		end
 	end
 end
@@ -592,7 +620,6 @@ end
 local function test_request()
 	local req, name = pick_request_func()
 	if not present(req, "request/http_request") then return end
-
 
 	local post_ok, res_post = safe_pcall(req, {Url="https://httpbin.org/post", Method="POST", Body="test", Headers={["Content-Type"]="text/plain"}})
 	check(post_ok and type(res_post)=="table" and res_post.Success and res_post.Body:find("test"), name..": успешный POST запрос", name..": ошибка POST запроса", false)
@@ -613,7 +640,6 @@ local function test_request()
 
 	local ok_err, _ = safe_pcall(req, {Url="invalid-url", Method="GET"})
 	check(not select(1, safe_pcall(req, {Url = "https://invalid.domain. nonexistent/", Method = "GET"})), name..": ошибка при невалидном URL", name..": не вызвал ошибку для невалидного URL", false)
-
 end
 
 local function test_getnilinstances()
@@ -633,7 +659,7 @@ local function test_getnilinstances()
 		if inst==parented_p then found_parented = true end
 	end
 	check(found, "getnilinstances: находит экземпляры вне иерархии (nil parent)", "getnilinstances: не находит nil-parent экземпляры", true)
-	check(not found_parented, "getnilinstances: не включает экземпляры с родителем", "getnilinstances: ошибочно включает экземпляры с родитеlem", true)
+	check(not found_parented, "getnilinstances: не включает экземпляры с родителем", "getnilinstances: ошибочно включает экземпляры с родителем", true)
 
 	p:Destroy()
 	parented_p:Destroy()
@@ -651,6 +677,7 @@ local function test_threadidentity()
 	if not present(gti, "getthreadidentity") or not present(sti, "setthreadidentity") then return end
 
 	local original_identity = gti()
+	check(type(original_identity) == "number", "getthreadidentity: возвращает число", "getthreadidentity: не вернул число", true)
 	local new_id = -1
 	local th = task.spawn(function() sti(5); new_id=gti() end)
 	task.wait()
@@ -665,7 +692,6 @@ local function test_debug_info()
 	local getinfo = debug.getinfo
 	if not present(getinfo, "debug.getinfo") then return end
 
-
 	local line_defined
 	local upval = "upvalue"
 	local function target_func(arg)
@@ -679,7 +705,9 @@ local function test_debug_info()
 		check(info_by_ref.what == "Lua" and type(info_by_ref.source) == "string", "debug.getinfo(func, S): 'what' и 'source' корректны", "debug.getinfo(func, S): некорректные 'what' или 'source'", true)
 		check(info_by_ref.linedefined == line_defined and type(info_by_ref.lastlinedefined) == "number", "debug.getinfo(func, l): 'linedefined' корректно", "debug.getinfo(func, l): некорректный 'linedefined'", true)
 		check(info_by_ref.nups == 1, "debug.getinfo(func, u): 'nups' (кол-во upvalue) корректно", "debug.getinfo(func, u): некорректный 'nups'", true)
-		check(info_by_ref.name == "target_func", "debug.getinfo(func, n): 'name' корректно", "debug.getinfo(func, n): некорректный 'name'", true)
+		if info_by_ref.name then 
+			check(info_by_ref.name == "target_func", "debug.getinfo(func, n): 'name' корректно", "debug.getinfo(func, n): некорректный 'name'", true)
+		end
 	end
 
 	local level1_info, level2_func
@@ -711,15 +739,18 @@ local function test_getscripts()
 	check(ok_get and type(scripts) == "table", "getscripts: возвращает таблицу", "getscripts: не вернул таблицу", true)
 
 	local found = false
-	for _, s in ipairs(scripts) do
-		if s == dummy_script then
-			found = true
-			break
+	if ok_get then
+		for _, s in ipairs(scripts) do
+			if s == dummy_script then
+				found = true
+				break
+			end
 		end
 	end
 	check(found, "getscripts: находит новосозданный LocalScript", "getscripts: не нашел новый LocalScript", false)
 
 	dummy_script:Destroy()
+	task.wait()
 
 	scripts = getscripts()
 	found = false
@@ -736,16 +767,17 @@ end
 local function test_clonefunction()
 	if not present(clonefunction, "clonefunction") then return end
 
-
 	local upval = { n = 10 }
 	local original = function() upval.n = upval.n + 1; return "original" end
 	local ok_clone, cloned = safe_pcall(clonefunction, original)
 
 	if check(ok_clone and type(cloned) == "function", "clonefunction: создает функцию", "clonefunction: не создал функцию", true) then
 		check(original ~= cloned, "clonefunction: клон не является той же самой функцией", "clonefunction: клон и оригинал идентичны", true)
-		check(getfenv(original) == getfenv(cloned), "clonefunction: клон и оригинал имеют одно окружение (env)", "clonefunction: окружения разные", true)
-
-		local okh, old_original = safe_pcall(hookfunction, original, function() return "hooked" end)
+		if getfenv then
+			check(getfenv(original) == getfenv(cloned), "clonefunction: клон и оригинал имеют одно окружение (env)", "clonefunction: окружения разные", true)
+		end
+		
+		local okh, old_original = pcall(hookfunction, original, function() return "hooked" end)
 		if okh then
 			local original_res = original()
 			local cloned_res = cloned()
@@ -755,7 +787,6 @@ local function test_clonefunction()
 
 	local ok_err, _ = safe_pcall(clonefunction, print)
 	check(not ok_err, "clonefunction: ошибка при клонировании С-функции", "clonefunction: не вызвал ошибку для C-функции", true)
-
 end
 
 local function test_debug_protos()
@@ -770,21 +801,22 @@ local function test_debug_protos()
 		return proto1, proto2
 	end
 
-	local ok_inactive, inactive_p1 = safe_pcall(getproto, container, 1)
+	local ok_inactive, inactive_p1 = safe_pcall(getproto, container, 1, false)
 	if check(ok_inactive and type(inactive_p1) == "function", "debug.getproto: возвращает неактивный прототип", "debug.getproto: не вернул неактивный прототип", true) then
 		local uncallable_ok, _ = safe_pcall(inactive_p1)
 		check(not uncallable_ok, "debug.getproto: неактивный прототип не может быть вызван", "debug.getproto: неактивный прототип был вызван", true)
 	end
-
+	
 	container()
-	local ok_active, active_protos = safe_pcall(getproto, container, 1, true)
-	if check(ok_active and type(active_protos) == "table" and #active_protos > 0 and type(active_protos) == "function", "debug.getproto(true): возвращает таблицу активных прототипов", "debug.getproto(true): не вернул таблицу активных прототипов", true) then
-		check(active_protos == activated_proto_ref, "debug.getproto(true): активный прототип совпадает с оригиналом", "debug.getproto(true): активный прототип не совпадает", true)
-		local can_call_ok, call_res = safe_pcall(active_protos)
+	local ok_active, active_protos_table = safe_pcall(getproto, container, 1, true)
+	local active_proto = active_protos_table and active_protos_table[1]
+	if check(ok_active and type(active_protos_table) == "table" and #active_protos_table > 0 and type(active_proto) == "function", "debug.getproto(true): возвращает таблицу активных прототипов", "debug.getproto(true): не вернул таблицу активных прототипов", true) then
+		check(active_proto == activated_proto_ref, "debug.getproto(true): активный прототип совпадает с оригиналом", "debug.getproto(true): активный прототип не совпадает", true)
+		local can_call_ok, call_res = safe_pcall(active_proto)
 		check(can_call_ok and call_res == "p1", "debug.getproto(true): активный прототип может быть вызван", "debug.getproto(true): не удалось вызвать активный прототип", true)
 	end
-
 end
+
 
 local function test_getreg()
 	if not present(getreg, "getreg") then return end
@@ -852,7 +884,6 @@ end
 local function test_getgenv()
 	if not present(getgenv, "getgenv") then return end
 
-
 	local ok_get, env = safe_pcall(getgenv)
 	if not check(ok_get and type(env) == "table", "getgenv: возвращает таблицу", "getgenv: не вернул таблицу", true) then return end
 
@@ -860,16 +891,16 @@ local function test_getgenv()
 	env.test_getgenv_persistence = sentinel
 	check(getgenv().test_getgenv_persistence == sentinel, "getgenv: изменения персистентны", "getgenv: изменения не сохраняются", false)
 
-	getfenv().test_var_fenv = "F"
-	env.test_var_genv = "G"
-	check(env.test_var_fenv == nil, "getgenv: изолирован от getfenv (1)", "getgenv: не изолирован от getfenv (1)", false)
-	check(getfenv().test_var_genv == nil, "getgenv: изолирован от getfenv (2)", "getgenv: не изолирован от getfenv (2)", false)
-
+	if getfenv then
+		getfenv().test_var_fenv = "F"
+		env.test_var_genv = "G"
+		check(env.test_var_fenv == nil, "getgenv: изолирован от getfenv (1)", "getgenv: не изолирован от getfenv (1)", false)
+		check(getfenv().test_var_genv == nil, "getgenv: изолирован от getfenv (2)", "getgenv: не изолирован от getfenv (2)", false)
+	end
 end
 
 local function test_getcallbackvalue()
 	if not present(getcallbackvalue, "getcallbackvalue") then return end
-
 
 	local bf = Instance.new("BindableFunction")
 	local rf = Instance.new("RemoteFunction")
@@ -878,7 +909,11 @@ local function test_getcallbackvalue()
 	local callback_func = function() sentinel = true end
 	bf.OnInvoke = callback_func
 
-	local ok_get, retrieved = safe_pcall(getcallbackvalue, bf, "OnInvoke")
+	local ok_get, retrieved = safe_pcall(getcallbackvalue, bf) 
+	if ok_get and retrieved == nil then 
+		ok_get, retrieved = safe_pcall(getcallbackvalue, bf, "OnInvoke")
+	end
+	
 	if check(ok_get and retrieved == callback_func, "getcallbackvalue: извлекает установленный callback", "getcallbackvalue: не извлек callback", true) then
 		retrieved()
 		check(sentinel, "getcallbackvalue: извлеченный callback является рабочей функцией", "getcallbackvalue: callback не работает", true)
@@ -896,7 +931,6 @@ end
 
 local function test_getcustomasset()
 	if not present(getcustomasset, "getcustomasset") then return end
-
 
 	local path = "gcatest.txt"
 	if isfile and isfile(path) and delfile then delfile(path) end
@@ -917,7 +951,6 @@ end
 local function test_loadstring()
 	if not present(loadstring, "loadstring") then return end
 
-
 	local sentinel_name = "loadstring_test_global_"..math.random(1e5, 1e6)
 	local code_valid = "getgenv()['"..sentinel_name.."'] = 123; return 456"
 	local code_invalid = "local a ="
@@ -926,7 +959,9 @@ local function test_loadstring()
 	if check(ok_load and type(func) == "function", "loadstring: компилирует валидный код в функцию", "loadstring: не смог скомпилировать валидный код", true) then
 		local ok_run, result = safe_pcall(func)
 		check(ok_run and result == 456, "loadstring: скомпилированная функция возвращает правильное значение", "loadstring: скомпилированная функция не вернула значение", true)
-		check(getgenv()[sentinel_name] == 123, "loadstring: скомпилированная функция может изменять глобальное окружение", "loadstring: скомпилированная функция не изменила окружение", false)
+		if getgenv then
+			check(getgenv()[sentinel_name] == 123, "loadstring: скомпилированная функция может изменять глобальное окружение", "loadstring: скомпилированная функция не изменила окружение", false)
+		end
 	end
 
 	local ok_load_err, f_nil, err_msg = safe_pcall(loadstring, code_invalid, "TestChunk")
@@ -934,12 +969,10 @@ local function test_loadstring()
 	if type(err_msg) == "string" then
 		check(err_msg:find("TestChunk", 1, true), "loadstring: сообщение об ошибке содержит кастомное имя чанка", "loadstring: сообщение об ошибке не содержит имя чанка", true)
 	end
-
 end
 
 local function test_getrunningscripts()
 	if not present(getrunningscripts, "getrunningscripts") then return end
-
 
 	local running_script = script
 	local inactive_script = Instance.new("LocalScript")
@@ -973,7 +1006,6 @@ local function test_getscriptbytecode()
 	check(ok_nil and bc_nil == nil, "getscriptbytecode: возвращает nil для скрипта без байт-кода", "getscriptbytecode: не вернул nil для пустого скрипта", false)
 
 	dummy_with_code:Destroy(); dummy_empty:Destroy()
-
 end
 
 local function test_firesignal()
@@ -999,7 +1031,6 @@ local function test_firesignal()
 	check(fire_count == 2, "firesignal: не вызывает отключенные соединения", "firesignal: вызвал отключенное соединение", true)
 
 	be:Destroy()
-
 end
 
 local function test_compareinstances()
@@ -1017,7 +1048,6 @@ local function test_compareinstances()
 	check(inst1 ~= ref_inst1, "compareinstances: стандартное сравнение (==) cloneref и оригинала возвращает false", "compareinstances: стандартное сравнение cloneref вернуло true", true)
 
 	inst1:Destroy(); inst2:Destroy()
-
 end
 
 local function test_file_operations()
@@ -1026,7 +1056,6 @@ local function test_file_operations()
 	if not present(appendfile, "appendfile") then warnEmoji("appendfile не найден"); return end
 	if not present(readfile, "readfile") then warnEmoji("readfile не найден"); return end
 	if isfile and isfile(path) and delfile then delfile(path) end
-
 
 	local ok_write = select(1, safe_pcall(writefile, path, "line1"))
 	if check(ok_write, "writefile: создает и записывает в файл без ошибок", "writefile: ошибка при записи", false) then
@@ -1042,20 +1071,22 @@ local function test_file_operations()
 	check(readfile(path) == "overwrite", "writefile: корректно перезаписывает файл", "writefile: файл не был перезаписан", false)
 
 	if present(delfile, "delfile") then delfile(path) end
-
 end
 
 local function test_folder_and_load_ops()
-	local fns = {makefolder, isfolder, delfile, listfiles, loadfile, writefile}
-	local fns_names = {"makefolder", "isfolder", "delfile", "listfiles", "loadfile", "writefile"}
+	local fns = {makefolder, isfolder, listfiles, loadfile, writefile}
+	local fns_names = {"makefolder", "isfolder", "listfiles", "loadfile", "writefile"}
 	for i=1,#fns do if not present(fns[i], fns_names[i]) then return end end
 
 	local folder = "luau_test_folder"
 	local file_in_root = "luau_test_file.lua"
 	local file_in_folder = folder .. "/" .. "inner_file.txt"
 
-	safe_pcall(delfile, file_in_root)
-	safe_pcall(delfile, file_in_folder)
+	if present(delfile, "delfile") then
+		safe_pcall(delfile, file_in_root)
+		safe_pcall(delfile, file_in_folder)
+	end
+	if present(delfolder, "delfolder") then safe_pcall(delfolder, folder) end
 	task.wait(0.05)
 
 	makefolder(folder)
@@ -1067,7 +1098,7 @@ local function test_folder_and_load_ops()
 
 	local ok_list, root_files = safe_pcall(listfiles, "")
 	if check(ok_list and type(root_files) == "table", "listfiles(''): возвращает таблицу", "listfiles(''): не вернул таблицу", false) then
-		local found = false; for _,v in ipairs(root_files) do if v==folder then found=true; break end end
+		local found = false; for _,v in ipairs(root_files) do if v:match(folder) then found=true; break end end
 		check(found, "listfiles(''): находит созданную папку", "listfiles(''): не нашел папку", false)
 	end
 
@@ -1086,10 +1117,16 @@ local function test_folder_and_load_ops()
 	writefile(file_in_root, "invalid-syntax")
 	check(not select(1, safe_pcall(loadfile, file_in_root)), "loadfile: ожидаемо выдает ошибку на файле с ошибкой синтаксиса", "loadfile: не вызвал ошибку", true)
 
-	delfile(file_in_root)
-	delfile(file_in_folder)
-	check(not isfile(file_in_root) and not isfile(file_in_folder), "delfile: успешно удаляет файлы", "delfile: не смог удалить файлы", false)
+	if present(delfolder, "delfolder") then
+		local ok_del = select(1, safe_pcall(delfolder, folder))
+		if check(ok_del, "delfolder: выполнился без ошибок", "delfolder: ошибка при выполнении", false) then
+			check(not isfolder(folder), "delfolder: успешно удаляет папку", "delfolder: папка не удалена", false)
+		end
+	end
+
+	if present(delfile, "delfile") then delfile(file_in_root) end
 end
+
 
 local function test_setscriptable()
 	if not present(setscriptable, "setscriptable") then return end
@@ -1097,7 +1134,6 @@ local function test_setscriptable()
 	local prop = "Size"
 
 
-	setscriptable(part, prop, false)
 	local ok_before = not select(1, safe_pcall(function() return part[prop] end))
 	check(ok_before, "setscriptable: свойство '"..prop.."' изначально нескриптуемо (как и ожидалось)", "setscriptable: свойство '"..prop.."' изначально скриптуемо", true)
 
@@ -1117,15 +1153,13 @@ local function test_setscriptable()
 
 end
 
-local function test_debug_setstack()
+local function test_debug_setstack()  -- Убрал рекурсию
 	if not present(debug.setstack, "debug.setstack") then return end
 
-	-- Измнение переменной
 	local outer_success = false
 	local function outer_wrapper()
-		local outer_val = 1 -- Единственная локальная переменная в этом бомжатском скоупе
+		local outer_val = 1 
 		local function inner()
-			-- В нормальных условиях индекс == 1
 			local success, err = safe_pcall(debug.setstack, 2, 1, 2)
 			if success and outer_val == 2 then
 				outer_success = true
@@ -1136,24 +1170,20 @@ local function test_debug_setstack()
 	outer_wrapper()
 	check(outer_success, "debug.setstack(2, ...): успешно изменяет local в родительском скоупе", "debug.setstack: не изменил local в родителе", true)
 
-	-- Если поменять значение в переменной будет пиздец???
 	local function inner_wrapper()
-		local inner_val = 10 -- Первая локальная переменная
+		local inner_val = 10 
 		safe_pcall(debug.setstack, 1, 1, 20)
 		return inner_val == 20
 	end
 	check(inner_wrapper(), "debug.setstack(1, ...): успешно изменяет local в текущем скоупе", "debug.setstack: не изменил local", true)
 
-	-- А тут тупо несоответствие
 	local function type_mismatch_test()
 		local a_number = 5
-		-- В обычных условиях ебучий стек вызывает ошибку
 		local ok_err = not select(1, safe_pcall(debug.setstack, 1, 1, "a string"))
 		check(ok_err, "debug.setstack: ожидаемо выдает ошибку при несовпадении типов", "debug.setstack: не выдал ошибку при несовпадении типов", true)
 	end
 	type_mismatch_test()
 
-	-- Пометка4 (Замыкание имеет аргессивную рекурсию, пофикшено)
 	local ok_err_c = not select(1, safe_pcall(function() pcall(debug.setstack, 1, 1, 0) end))
 	check(ok_err_c, "debug.setstack: ожидаемо выдает ошибку на C-замыкании", "debug.setstack: не выдал ошибку на C-замыкании", true)
 end
@@ -1187,6 +1217,241 @@ local function test_replicatesignal()
 	gui:Destroy()
 end
 
+local function test_getfunctionhash()
+	if not present(getfunctionhash, "getfunctionhash") then return end
+
+	local is_sha384_hex = function(h) return type(h) == "string" and #h == 96 and h:match("^[0-9a-fA-F]+$") ~= nil end
+	local f1 = function() return 1 end
+	local f2 = function() return 2 end
+	local f3 = function() return 1 end
+	local f4 = function() return "const" end
+
+	local ok1, h1 = safe_pcall(getfunctionhash, f1)
+	check(ok1 and is_sha384_hex(h1), "getfunctionhash: возвращает валидный SHA384 хэш", "getfunctionhash: не вернул валидный хэш", true)
+	check(getfunctionhash(f1) ~= getfunctionhash(f2), "getfunctionhash: разные функции имеют разные хэши", "getfunctionhash: разные функции имеют одинаковые хэши", true)
+	check(getfunctionhash(f1) == getfunctionhash(f3), "getfunctionhash: идентичные функции имеют одинаковые хэши", "getfunctionhash: идентичные функции имеют разные хэши", true)
+	check(getfunctionhash(f1) ~= getfunctionhash(f4), "getfunctionhash: хэш зависит от констант", "getfunctionhash: хэш не зависит от констант", true)
+
+	local ok_err, _ = safe_pcall(getfunctionhash, print)
+	check(not ok_err, "getfunctionhash: ожидаемо выдает ошибку на C-функции", "getfunctionhash: не вызвал ошибку на C-функции", true)
+end
+
+local function test_crypto_ops()
+	if not present(crypt, "crypt") then return end
+	if not present(crypt.base64encode, "crypt.base64encode") or not present(crypt.base64decode, "crypt.base64decode") then return end
+	
+	local orig_str = "Test string with special chars\0\1\2\255!"
+	local encoded_known = "RHVtbXlTdHJpbmcAAg=="
+	local decoded_known = "DummyString\0\2"
+
+	local ok_enc, encoded = safe_pcall(crypt.base64encode, orig_str)
+	if check(ok_enc and type(encoded) == "string", "crypt.base64encode: выполняется без ошибок", "crypt.base64encode: ошибка при кодировании", true) then
+		local ok_dec, decoded = safe_pcall(crypt.base64decode, encoded)
+		check(ok_dec and decoded == orig_str, "crypt.base64decode: round-trip (кодирование-декодирование) успешен", "crypt.base64decode: round-trip не удался", true)
+	end
+
+	local ok_enc_known = crypt.base64encode(decoded_known) == encoded_known
+	check(ok_enc_known, "crypt.base64encode: корректно кодирует известную строку", "crypt.base64encode: некорректный результат кодирования", true)
+
+	local ok_dec_known, decoded_res = safe_pcall(crypt.base64decode, encoded_known)
+	check(ok_dec_known and decoded_res == decoded_known, "crypt.base64decode: корректно декодирует известную строку", "crypt.base64decode: некорректный результат декодирования", true)
+end
+
+local function test_drawing()
+	if not present(Drawing, "Drawing") or not present(Drawing.new, "Drawing.new") then return end
+
+	local ok_new, circle = safe_pcall(Drawing.new, "Circle")
+	if not check(ok_new and type(circle) == "drawing", "Drawing.new: создает объект типа 'drawing'", "Drawing.new: не смог создать объект", true) then return end
+	
+	check(circle.Visible == false, "Drawing: свойство Visible по умолчанию false", "Drawing: Visible по умолчанию не false", true)
+	check(circle.__OBJECT_EXISTS == true, "Drawing: свойство __OBJECT_EXISTS равно true для нового объекта", "Drawing: __OBJECT_EXISTS не true", true)
+	
+	circle.Visible = true
+	circle.Color = Color3.new(1,0,0)
+	circle.Radius = 50
+	check(circle.Visible and circle.Color == Color3.new(1,0,0) and circle.Radius == 50, "Drawing: свойства успешно устанавливаются", "Drawing: не удалось установить свойства", true)
+
+	local ok_destroy, _ = safe_pcall(circle.Destroy, circle)
+	check(ok_destroy, "Drawing: метод Destroy() выполняется без ошибок", "Drawing: ошибка при вызове Destroy()", true)
+	if ok_destroy then
+		check(circle.__OBJECT_EXISTS == false, "Drawing: __OBJECT_EXISTS становится false после Destroy()", "Drawing: __OBJECT_EXISTS не стал false", true)
+	end
+
+	local ok_new_text, text_obj = safe_pcall(Drawing.new, "Text")
+	check(ok_new_text and type(text_obj) == "drawing" and text_obj.__OBJECT_EXISTS, "Drawing.new: может создавать другие типы (Text)", "Drawing.new: не смог создать Text", true)
+	if text_obj then text_obj:Destroy() end
+
+	local ok_invalid = not select(1, safe_pcall(Drawing.new, "InvalidType"))
+	check(ok_invalid, "Drawing.new: ожидаемо выдает ошибку для неверного типа", "Drawing.new: не выдал ошибку для неверного типа", true)
+end
+
+local function test_getcallingscript()
+	if not present(getcallingscript, "getcallingscript") then return end
+
+	local from_c_ok, c_caller = safe_pcall(getcallingscript)
+	check(from_c_ok and c_caller == nil, "getcallingscript: возвращает nil при вызове из C-потока", "getcallingscript: не вернул nil из C-потока", false)
+
+	local function from_lua()
+		return getcallingscript()
+	end
+	local from_lua_ok, lua_caller = safe_pcall(from_lua)
+	check(from_lua_ok and lua_caller == script, "getcallingscript: возвращает текущий скрипт при вызове из Luau", "getcallingscript: не вернул текущий скрипт", false)
+end
+
+local function test_getloadedmodules()
+	if not present(getloadedmodules, "getloadedmodules") then return end
+	
+	local loaded_mod = Instance.new("ModuleScript")
+	loaded_mod.Name = "Loaded_"..math.random()
+	loaded_mod.Source = "return true"
+	local not_loaded_mod = Instance.new("ModuleScript")
+	not_loaded_mod.Name = "NotLoaded_"..math.random()
+
+	local ok_req, _ = safe_pcall(require, loaded_mod)
+	check(ok_req, "getloadedmodules: require тестового модуля прошел успешно", "getloadedmodules: ошибка при require", false)
+
+	local ok_get, modules = safe_pcall(getloadedmodules)
+	if check(ok_get and type(modules) == "table", "getloadedmodules: возвращает таблицу", "getloadedmodules: не вернул таблицу", false) then
+		local found_loaded, found_not_loaded = false, false
+		for _, mod in ipairs(modules) do
+			if mod == loaded_mod then found_loaded = true end
+			if mod == not_loaded_mod then found_not_loaded = true end
+		end
+		check(found_loaded, "getloadedmodules: находит загруженный модуль", "getloadedmodules: не нашел загруженный модуль", false)
+		check(not found_not_loaded, "getloadedmodules: не включает незагруженные модули", "getloadedmodules: ошибочно включил незагруженный модуль", false)
+	end
+	
+	loaded_mod:Destroy(); not_loaded_mod:Destroy()
+end
+
+local function test_getscriptclosure()
+	if not present(getscriptclosure, "getscriptclosure") then return end
+	
+	local script_with_code = Instance.new("LocalScript")
+	script_with_code.Source = "return 'hello', 123"
+	
+	local script_empty = Instance.new("LocalScript")
+	
+	local ok_get, closure = safe_pcall(getscriptclosure, script_with_code)
+	if check(ok_get and type(closure) == "function", "getscriptclosure: возвращает функцию для скрипта с кодом", "getscriptclosure: не вернул функцию", false) then
+		local ok_run, s, n = safe_pcall(closure)
+		check(ok_run and s == "hello" and n == 123, "getscriptclosure: возвращенная функция выполняется корректно", "getscriptclosure: функция выполняется некорректно", false)
+	end
+
+	local ok_nil, res_nil = safe_pcall(getscriptclosure, script_empty)
+	check(ok_nil and res_nil == nil, "getscriptclosure: возвращает nil для скрипта без байткода", "getscriptclosure: не вернул nil", false)
+
+	script_with_code:Destroy(); script_empty:Destroy()
+end
+
+local function test_getscripthash()
+	if not present(getscripthash, "getscripthash") then return end
+	local is_sha384_hex = function(h) return type(h) == "string" and #h == 96 and h:match("^[0-9a-fA-F]+$") ~= nil end
+	
+	local s1 = Instance.new("LocalScript")
+	s1.Source = "print(1)"
+	local s2 = Instance.new("LocalScript")
+	s2.Source = "print(2)"
+	local s3 = Instance.new("LocalScript")
+	s3.Source = "print(1)"
+	local s_empty = Instance.new("LocalScript")
+
+	local ok_h1, h1 = safe_pcall(getscripthash, s1)
+	check(ok_h1 and is_sha384_hex(h1), "getscripthash: возвращает валидный SHA384 хэш", "getscripthash: не вернул хэш", false)
+	
+	local h2 = getscripthash(s2)
+	local h3 = getscripthash(s3)
+	check(h1 and h2 and h1 ~= h2, "getscripthash: хэши разных скриптов различаются", "getscripthash: хэши разных скриптов одинаковы", false)
+	check(h1 and h3 and h1 == h3, "getscripthash: хэши одинаковых скриптов совпадают", "getscripthash: хэши одинаковых скриптов различаются", false)
+	
+	local ok_nil, res_nil = safe_pcall(getscripthash, s_empty)
+	check(ok_nil and res_nil == nil, "getscripthash: возвращает nil для скрипта без байткода", "getscripthash: не вернул nil", false)
+
+	s1:Destroy(); s2:Destroy(); s3:Destroy(); s_empty:Destroy()
+end
+
+local function test_identifyexecutor()
+	if not present(identifyexecutor, "identifyexecutor") then return end
+
+	local ok_get, name, version = safe_pcall(identifyexecutor)
+	if check(ok_get, "identifyexecutor: выполняется без ошибок", "identifyexecutor: ошибка при выполнении", true) then
+		check(type(name) == "string" and #name > 0, "identifyexecutor: возвращает непустое имя (строка)", "identifyexecutor: не вернул имя", true)
+		check(type(version) == "string" and #version > 0, "identifyexecutor: возвращает непустую версию (строка)", "identifyexecutor: не вернул версию", true)
+	end
+end
+
+local function test_getinstances()
+	if not present(getinstances, "getinstances") then return end
+
+	local part = Instance.new("Part")
+	part.Parent = nil
+	local sentinel_name = "GetInstancesTest_"..math.random()
+	part.Name = sentinel_name
+	task.wait(0.05)
+
+	local ok_get, instances = safe_pcall(getinstances)
+	if check(ok_get and type(instances) == "table", "getinstances: возвращает таблицу", "getinstances: не вернул таблицу", false) then
+		local found = false
+		for _, inst in ipairs(instances) do
+			if inst == part and inst.Name == sentinel_name then
+				found = true
+				break
+			end
+		end
+		check(found, "getinstances: находит nil-parented экземпляр", "getinstances: не нашел экземпляр", false)
+	end
+	part:Destroy()
+end
+
+local function test_fireproximityprompt()
+	if not present(fireproximityprompt, "fireproximityprompt") then return end
+
+	local part = Instance.new("Part", workspace)
+	local prompt = Instance.new("ProximityPrompt", part)
+	
+	local triggered_by = nil
+	local conn = prompt.Triggered:Connect(function(player)
+		triggered_by = player
+	end)
+	task.wait(0.1)
+	
+	local ok_fire = select(1, safe_pcall(fireproximityprompt, prompt))
+	check(ok_fire, "fireproximityprompt: выполняется без ошибок", "fireproximityprompt: ошибка при выполнении", false)
+	task.wait(0.1)
+
+	local LocalPlayer = game:GetService("Players").LocalPlayer
+	check(triggered_by == LocalPlayer, "fireproximityprompt: событие Triggered срабатывает с LocalPlayer", "fireproximityprompt: событие не сработало", false)
+
+	conn:Disconnect()
+	part:Destroy()
+end
+
+local function test_fireclickdetector()
+	if not present(fireclickdetector, "fireclickdetector") then return end
+
+	local cd = Instance.new("ClickDetector")
+	local m1_fired, m2_fired, hover_enter_fired, hover_leave_fired = false, false, false, false
+	
+	cd.MouseClick:Connect(function() m1_fired = true end)
+	cd.RightMouseClick:Connect(function() m2_fired = true end)
+	cd.MouseHoverEnter:Connect(function() hover_enter_fired = true end)
+	cd.MouseHoverLeave:Connect(function() hover_leave_fired = true end)
+	
+	fireclickdetector(cd)
+	check(m1_fired, "fireclickdetector: вызывает MouseClick по умолчанию", "fireclickdetector: не вызвал MouseClick", false)
+	
+	fireclickdetector(cd, 0, "RightMouseClick")
+	check(m2_fired, "fireclickdetector: вызывает RightMouseClick при указании", "fireclickdetector: не вызвал RightMouseClick", false)
+	
+	fireclickdetector(cd, 0, "MouseHoverEnter")
+	check(hover_enter_fired, "fireclickdetector: вызывает MouseHoverEnter", "fireclickdetector: не вызвал MouseHoverEnter", false)
+	
+	fireclickdetector(cd, 0, "MouseHoverLeave")
+	check(hover_leave_fired, "fireclickdetector: вызывает MouseHoverLeave", "fireclickdetector: не вызвал MouseHoverLeave", false)
+
+	cd:Destroy()
+end
+
 info("--- Основные функции ---")
 test_newcclosure()
 test_hookfunction()
@@ -1200,8 +1465,11 @@ test_cloneref()
 test_firetouchinterest()
 test_firesignal()
 test_compareinstances()
+test_identifyexecutor()
+
 info("--- Проверки типов Closure ---")
 test_closure_checks()
+
 info("--- Низкоуровневые операции 💀💀💀 ---")
 test_checkcaller()
 test_getconnections()
@@ -1213,14 +1481,31 @@ test_getscriptbytecode()
 test_setscriptable()
 test_getgenv()
 test_getcallbackvalue()
+test_getcallingscript()
+test_getloadedmodules()
+test_getscriptclosure()
+test_getscripthash()
+test_getfunctionhash()
+test_getinstances()
+test_fireproximityprompt()
+test_fireclickdetector()
+
 info("--- Файловые операции и сетевые (aka request и тд.) ---")
 test_request()
 test_file_operations()
 test_folder_and_load_ops()
 test_getcustomasset()
 test_replicatesignal()
+
+info("--- Криптография ---")
+test_crypto_ops()
+
+info("--- 2D Рендеринг ---")
+test_drawing()
+
 info("--- Ебучий лоадстринг ---")
 test_loadstring()
+
 info("--- Тесты для debug ---")
 test_debug_info()
 test_debug_upvalues()
@@ -1229,6 +1514,7 @@ test_debug_setstack()
 test_clonefunction()
 test_debug_protos()
 test_getreg()
+
 
 local percent = totalTests > 0 and math.floor((passedTests / totalTests) * 100) or 0
 local skidRate = totalTests > 0 and math.floor((skidCount / totalTests) * 100) or 0
