@@ -30,10 +30,47 @@ UNC — это стандарт, созданный для унификации 
 loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rUNC.lua"))()
 ```
 
-| Клиент       | Тип       | Итого                                                                 | Skid Rate                                                                 | Обновление                                                                 | Статус                                                                 |
-|--------------|-----------|-----------------------------------------------------------------------|----------------------------------------------------------------------------|-----------------------------------------------------------------------------|------------------------------------------------------------------------|
-| **bunni.lol** | 🖥 ПК      | ![Итого](https://img.shields.io/badge/268%2F317-84%25-00ff99?style=for-the-badge&logo=starship&logoColor=white)    | ![Skid](https://img.shields.io/badge/35%2F317-11%25-00ff99?style=for-the-badge&logo=checkmarx&logoColor=white)           | ![Updated](https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff?style=for-the-badge&logo=github)          | ![Status](https://img.shields.io/badge/Отличный%20executor-00ff99?style=for-the-badge&logo=rocket&logoColor=white)         |
-| **Delta**     | 📱 Мобильный | ![Итого](https://img.shields.io/badge/239%2F286-83%25-32cd32?style=for-the-badge&logo=android&logoColor=white)          | ![Skid](https://img.shields.io/badge/39%2F286-13%25-32cd32?style=for-the-badge&logo=checkmarx&logoColor=white)                 | ![Updated](https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff?style=for-the-badge&logo=github)          | ![Good](https://img.shields.io/badge/Норм%20Executor-32cd32?style=for-the-badge&logo=thumbsup&logoColor=white)   |
-| **Xeno**      | 🖥 ПК      | ![Итого](https://img.shields.io/badge/159%2F234-67%25-ffd700?style=for-the-badge&logo=lua&logoColor=black)         | ![Skid](https://img.shields.io/badge/50%2F234-21%25-ffa500?style=for-the-badge&logo=alert&logoColor=white)                | ![Updated](https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff?style=for-the-badge&logo=github)          | ![Status](https://img.shields.io/badge/Подделывают%20некоторые%20функции%2C%20но%20неплохо%20для%20Level%203-ffd700?style=for-the-badge&logo=balance-scale&logoColor=black)    |
-| **Velocity**  | 🖥 ПК      | ![Crashed](https://img.shields.io/badge/Провалился%20на%20половине%20теста-ff0000?style=for-the-badge&logo=skull&logoColor=white)                  | ![Skid](https://img.shields.io/badge/Отвратительные%20метаметод%20хуки%20%F0%9F%98%A1-ff0000?style=for-the-badge&logo=skull-crossbones&logoColor=white) | ![Updated](https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff?style=for-the-badge&logo=github)          | ![Unstable](https://img.shields.io/badge/%F0%9F%92%80%20Параша%20Полная-critical?style=for-the-badge&logo=skull&logoColor=white)        |
-
+<table style="font-size:28px; text-align:center;">
+  <thead>
+    <tr>
+      <th style="background-color:#ffcccc;">Клиент</th>
+      <th style="background-color:#ccffcc;">Тип</th>
+      <th style="background-color:#ccccff;">Итого</th>
+      <th style="background-color:#fff0b3;">Skid Rate</th>
+      <th style="background-color:#e0ccff;">Обновление</th>
+      <th style="background-color:#ffd9b3;">Статус</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>bunni.lol</b></td>
+      <td>🖥 ПК</td>
+      <td><img src="https://img.shields.io/badge/268%2F317-84%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/35%2F317-11%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/Отличный%20executor-00ff99"></td>
+    </tr>
+    <tr>
+      <td><b>Delta</b></td>
+      <td>📱 Мобильный</td>
+      <td><img src="https://img.shields.io/badge/239%2F286-83%25-32cd32"></td>
+      <td><img src="https://img.shields.io/badge/39%2F286-13%25-32cd32"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/Норм%20Executor-32cd32"></td>
+    </tr>
+    <tr>
+      <td><b>Xeno</b></td>
+      <td>🖥 ПК</td>
+      <td><img src="https://img.shields.io/badge/159%2F234-67%25-ffd700"></td>
+      <td><img src="https://img.shields.io/badge/50%2F234-21%25-ffa500"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/Подделывают%20некоторые%20функции%2C%20но%20неплохо%20для%20Level%203-ffd700"></td>
+    </tr>
+    <tr>
+      <td><b>Velocity</b></td>
+      <td>🖥 ПК</td>
+      <td><img src="https://img.shields.io/badge/Провалился%20на%20половине%20теста-ff0000"></td>
+      <td><img src="https://img.shields.io/badge/Отвратительные%20метаметод%20хуки%20%F0%9F%98%A1-ff0000"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/%F0%9F%92%80%20Параша%20Полная-critical"></td>
+    </
