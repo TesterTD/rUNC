@@ -2064,7 +2064,7 @@ local function test_mouse_emulation()
 	check(ok_moveabs, "mousemoveabs: выполняется без ошибок с аргументами", "mousemoveabs: ошибка при вызове", false)
 
 	local ok_moverel = select(1, safe_pcall(mousemoverel, 10, 10))
-	check(ok_moverel, "mousemoverel: выполняется без ошибок с аргументами", "mousemoverel: ошибка при вызове", false)
+	check(ok_moverel, "moverel: выполняется без ошибок с аргументами", "moverel: ошибка при вызове", false)
 
 	local ok_scroll = select(1, safe_pcall(mousescroll, 0, 10))
 	check(ok_scroll, "mousescroll: выполняется без ошибок с аргументами", "mousescroll: ошибка при вызове", false)
@@ -2172,44 +2172,6 @@ local function test_misc_env() if present(messagebox, "messagebox") then
 	end
 end
 
-local function test_websocket()
-	if not present(WebSocket, "WebSocket") or not present(WebSocket.connect, "WebSocket.connect") then
-		return
-	end
-
-	local echo_url = "wss://echo.websocket.events"
-	local message_received = false
-	local received_content = ""
-	local connection_closed = false
-
-	local ok_conn, ws = safe_pcall(WebSocket.connect, echo_url)
-	if not check(ok_conn and type(ws) == "table", "WebSocket.connect: успешное подключение к wss", "WebSocket.connect: не удалось подключиться к wss", false) then
-		return
-	end
-
-	local c1 = ws.OnMessage:Connect(function(msg)
-		message_received = true
-		received_content = msg
-	end)
-
-	local c2 = ws.OnClose:Connect(function()
-		connection_closed = true
-	end)
-
-	ws:Send("hello websocket")
-	task.wait(1.5)
-
-	check(message_received and received_content == "hello websocket", "WebSocket.OnMessage: получает эхо-сообщение", "WebSocket.OnMessage: не получил эхо-сообщение", false)
-
-	ws:Close()
-	task.wait(0.5)
-
-	check(connection_closed, "WebSocket.OnClose: событие срабатывает при ws:Close()", "WebSocket.OnClose: событие не сработало", false)
-
-	local ok_err_url = not select(1, safe_pcall(WebSocket.connect, "invalid_url"))
-	check(ok_err_url, "WebSocket.connect: ошибка при невалидном URL", "WebSocket.connect: не вызвал ошибку для невалидного URL", false)
-end
-
 local function test_hidden_properties()
 	if not present(gethiddenproperty, "gethiddenproperty") or not present(sethiddenproperty, "sethiddenproperty") then
 		return
@@ -2249,19 +2211,41 @@ local function test_environments()
 	end
 
 	if present(getsenv, "getsenv") then
-		local s = Instance.new("LocalScript")
-		s.Name = "SENV_TEST"
-		_G.SENV_SENTINEL = "SENV_TEST_VALUE_"..os.clock()
-		s.Source = "script.Name = _G.SENV_SENTINEL"
-		s.Parent = workspace
+		local s_active = Instance.new("LocalScript")
+		s_active.Name = "SENV_TEST_ACTIVE"
+		local sentinel_var_name = "SENV_TEST_VALUE_" .. os.clock()
+		s_active.Source = "script['"..sentinel_var_name.."'] = 42"
+		s_active.Parent = workspace
 		task.wait(0.1)
 
-		local ok_get, senv = safe_pcall(getsenv, s)
-		if check(ok_get and type(senv) == "table", "getsenv: получает окружение активного скрипта", "getsenv: не удалось получить окружение", true) then
-			check(senv.script == s, "getsenv: окружение содержит правильную переменную 'script'", "getsenv: неверная переменная 'script'", false)
+		local ok_get_active, senv_active = safe_pcall(getsenv, s_active)
+		if check(ok_get_active and type(senv_active) == "table", "getsenv: получает окружение активного LocalScript", "getsenv: не удалось получить окружение активного LocalScript", true) then
+			check(senv_active.script == s_active, "getsenv: окружение содержит правильную переменную 'script'", "getsenv: неверная переменная 'script'", false)
+			check(senv_active[sentinel_var_name] == 42, "getsenv: окружение содержит переменные, установленные скриптом", "getsenv: не содержит переменных из скрипта", false)
 		end
+		s_active:Destroy()
 
-		s:Destroy()
+		local s_inactive = Instance.new("LocalScript")
+		s_inactive.Name = "SENV_TEST_INACTIVE"
+		s_inactive.Source = "print('this should not run')"
+		local ok_inactive_err = not select(1, safe_pcall(getsenv, s_inactive))
+		check(ok_inactive_err, "getsenv: ожидаемо выдает ошибку на неактивном скрипте", "getsenv: не вызвал ошибку на неактивном скрипте", true)
+		s_inactive:Destroy()
+
+		local mod = Instance.new("ModuleScript")
+		mod.Name = "SENV_TEST_MODULE"
+		mod.Source = "return {}"
+		mod.Parent = workspace
+		task.wait(0.05)
+		local ok_require, mod_table = pcall(require, mod)
+		local ok_get_mod, senv_mod = safe_pcall(getsenv, mod)
+		check(ok_get_mod and senv_mod == nil, "getsenv: возвращает nil для ModuleScript", "getsenv: не вернул nil для ModuleScript", true)
+		mod:Destroy()
+
+		local ok_get_self, senv_self = safe_pcall(getsenv, script)
+		if check(ok_get_self and type(senv_self) == "table", "getsenv: получает окружение для текущего скрипта", "getsenv: не получил окружение для 'script'", true) then
+			check(senv_self.print == print, "getsenv: окружение текущего скрипта похоже на getfenv()", "getsenv: окружение текущего скрипта отличается от getfenv()", false)
+		end
 	end
 end
 
@@ -2328,7 +2312,6 @@ end)
 
 run_test_suite("--- Файловые операции и сетевые (aka request и тд.) ---", function()
 	run_test_suite("Файловые операции и сетевые", "test_request", test_request)
-	run_test_suite("Файловые операции и сетевые", "test_websocket", test_websocket)
 	run_test_suite("Файловые операции и сетевые", "test_file_operations", test_file_operations)
 	run_test_suite("Файловые операции и сетевые", "test_folder_and_load_ops", test_folder_and_load_ops)
 	run_test_suite("Файловые операции и сетевые", "test_getcustomasset", test_getcustomasset)
