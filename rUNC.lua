@@ -990,21 +990,27 @@ local function test_getreg()
 	end)
 	task.wait(0.05)
 
-	local thread_found = false
-	for _, value in pairs(getreg()) do
-		if value == loop_thread then
-			thread_found = true
-			local close_ok, _ = safe_pcall(coroutine.close, loop_thread)
-			if close_ok then
-				task.wait(0.05)
-				thread_closed = coroutine.status(loop_thread) == "dead"
-			end
-			break
+	local thread_found, function_found, userdata_found = false, false, false
+	local dummy_part = Instance.new("Part")
+	local current_reg = getreg()
+	for _, value in pairs(current_reg) do
+		if value == loop_thread then thread_found = true end
+		if type(value) == "function" then function_found = true end
+		if value == dummy_part then userdata_found = true end
+	end
+	dummy_part:Destroy()
+
+	if thread_found then
+		local close_ok, _ = safe_pcall(coroutine.close, loop_thread)
+		if close_ok then
+			task.wait(0.05)
+			thread_closed = coroutine.status(loop_thread) == "dead"
 		end
 	end
 	check(thread_found, "getreg: находит созданный поток в реестре", "getreg: не нашел поток", false)
 	check(thread_closed, "getreg: можно использовать для закрытия потока через coroutine.close", "getreg: не удалось закрыть поток", false)
-
+	check(function_found, "getreg: содержит функции", "getreg: не содержит функции", false)
+	check(userdata_found, "getreg: содержит userdata (Instance)", "getreg: не содержит userdata", false)
 end
 
 local function test_debug_constants()
@@ -2073,7 +2079,6 @@ local function test_cache()
 		if not present(funcs[i], names[i]) then return end
 	end
 
-	-- cache.invalidate опора с UNC (Я не владею информацией что это за функции особо, поэтому как - то так👌)
 	do
 		local container = Instance.new("Folder")
 		local part = Instance.new("Part", container)
@@ -2083,7 +2088,6 @@ local function test_cache()
 			"cache.invalidate: ссылка на объект не изменилась", false)
 	end
 
-	-- cache.iscached
 	do
 		local part = Instance.new("Part")
 		check(cache.iscached(part),
@@ -2095,7 +2099,6 @@ local function test_cache()
 			"cache.iscached: объект всё ещё в кэше", false)
 	end
 
-	-- cache.replace
 	do
 		local part = Instance.new("Part")
 		local fire = Instance.new("Fire")
@@ -2169,91 +2172,191 @@ local function test_misc_env() if present(messagebox, "messagebox") then
 	end
 end
 
-local function run_test_suite(name, func)
-	info(name)
+local function test_websocket()
+	if not present(WebSocket, "WebSocket") or not present(WebSocket.connect, "WebSocket.connect") then
+		return
+	end
+
+	local echo_url = "wss://echo.websocket.events"
+	local message_received = false
+	local received_content = ""
+	local connection_closed = false
+
+	local ok_conn, ws = safe_pcall(WebSocket.connect, echo_url)
+	if not check(ok_conn and type(ws) == "table", "WebSocket.connect: успешное подключение к wss", "WebSocket.connect: не удалось подключиться к wss", false) then
+		return
+	end
+
+	local c1 = ws.OnMessage:Connect(function(msg)
+		message_received = true
+		received_content = msg
+	end)
+
+	local c2 = ws.OnClose:Connect(function()
+		connection_closed = true
+	end)
+
+	ws:Send("hello websocket")
+	task.wait(1.5)
+
+	check(message_received and received_content == "hello websocket", "WebSocket.OnMessage: получает эхо-сообщение", "WebSocket.OnMessage: не получил эхо-сообщение", false)
+
+	ws:Close()
+	task.wait(0.5)
+
+	check(connection_closed, "WebSocket.OnClose: событие срабатывает при ws:Close()", "WebSocket.OnClose: событие не сработало", false)
+
+	local ok_err_url = not select(1, safe_pcall(WebSocket.connect, "invalid_url"))
+	check(ok_err_url, "WebSocket.connect: ошибка при невалидном URL", "WebSocket.connect: не вызвал ошибку для невалидного URL", false)
+end
+
+local function test_hidden_properties()
+	if not present(gethiddenproperty, "gethiddenproperty") or not present(sethiddenproperty, "sethiddenproperty") then
+		return
+	end
+
+	local part = Instance.new("Part")
+	part.Name = "HiddenPropTest"
+
+	local ok_get_normal, name_val, name_hidden = safe_pcall(gethiddenproperty, part, "Name")
+	check(ok_get_normal and name_val == "HiddenPropTest" and name_hidden == false, "gethiddenproperty: получает обычное свойство (Name)", "gethiddenproperty: не получил обычное свойство", true)
+
+	local ok_get_hidden, cost_val_before, cost_hidden_before = safe_pcall(gethiddenproperty, part, "DataCost")
+	if check(ok_get_hidden and type(cost_val_before) == "number", "gethiddenproperty: получает скрытое свойство (DataCost)", "gethiddenproperty: не получил скрытое свойство", true) then
+		local ok_set, set_res = safe_pcall(sethiddenproperty, part, "DataCost", cost_val_before + 100)
+		if check(ok_set, "sethiddenproperty: выполняется для DataCost", "sethiddenproperty: ошибка для DataCost", true) then
+			local ok_get_after, cost_val_after, _ = safe_pcall(gethiddenproperty, part, "DataCost")
+			check(ok_get_after and cost_val_after == cost_val_before + 100, "sethiddenproperty: успешно изменил значение DataCost", "sethiddenproperty: не изменил DataCost", true)
+		end
+	end
+
+	local ok_err, _ = safe_pcall(gethiddenproperty, part, "NonExistent")
+	check(not ok_err, "gethiddenproperty: ошибка для несуществующего свойства", "gethiddenproperty: не вызвал ошибку для несуществующего свойства", true)
+
+	part:Destroy()
+end
+
+local function test_environments()
+	if present(getrenv, "getrenv") then
+		local ok_get, renv = safe_pcall(getrenv)
+		if check(ok_get and type(renv) == "table", "getrenv: возвращает таблицу", "getrenv: не вернул таблицу", true) then
+			local sentinel = "RENV_TEST_SENTINEL"
+			renv.RENV_TEST_SENTINEL = true
+			check(getrenv().RENV_TEST_SENTINEL, "getrenv: изменения персистентны", "getrenv: изменения не сохраняются", false)
+			renv.RENV_TEST_SENTINEL = nil
+			check(not getrenv().RENV_TEST_SENTINEL, "getrenv: изменения можно отменить (очистка)", "getrenv: не удалось очистить", false)
+		end
+	end
+
+	if present(getsenv, "getsenv") then
+		local s = Instance.new("LocalScript")
+		s.Name = "SENV_TEST"
+		_G.SENV_SENTINEL = "SENV_TEST_VALUE_"..os.clock()
+		s.Source = "script.Name = _G.SENV_SENTINEL"
+		s.Parent = workspace
+		task.wait(0.1)
+
+		local ok_get, senv = safe_pcall(getsenv, s)
+		if check(ok_get and type(senv) == "table", "getsenv: получает окружение активного скрипта", "getsenv: не удалось получить окружение", true) then
+			check(senv.script == s, "getsenv: окружение содержит правильную переменную 'script'", "getsenv: неверная переменная 'script'", false)
+		end
+
+		s:Destroy()
+	end
+end
+
+local function run_test_suite(suite_name, func_name, func)
+	if type(func_name) == "function" and func == nil then
+		func = func_name
+		func_name = suite_name
+	end
+	info(func_name)
 	local success, err = safe_pcall(func)
 	if not success then
-		fail("!!! КРАШ В ТЕСТЕ '" .. name .. "': " .. tostring(err))
+		fail("!!! КРАШ В ТЕСТЕ '" .. suite_name .. " -> " .. func_name .."': " .. tostring(err))
 	end
 end
 
 run_test_suite("--- Основные функции ---", function()
-	test_newcclosure()
-	test_hookfunction()
-	test_restorefunction()
-	test_getrawmetatable()
-	test_setrawmetatable()
-	test_readonly()
-	test_hookmetamethod()
-	test_getgc()
-	test_cloneref()
-	test_firetouchinterest()
-	test_firesignal()
-	test_compareinstances()
-	test_identifyexecutor()
-	test_isrbxactive()
-	test_fpscap()
-	test_hui()
+	run_test_suite("Основные функции", "test_newcclosure", test_newcclosure)
+	run_test_suite("Основные функции", "test_hookfunction", test_hookfunction)
+	run_test_suite("Основные функции", "test_restorefunction", test_restorefunction)
+	run_test_suite("Основные функции", "test_getrawmetatable", test_getrawmetatable)
+	run_test_suite("Основные функции", "test_setrawmetatable", test_setrawmetatable)
+	run_test_suite("Основные функции", "test_readonly", test_readonly)
+	run_test_suite("Основные функции", "test_hookmetamethod", test_hookmetamethod)
+	run_test_suite("Основные функции", "test_getgc", test_getgc)
+	run_test_suite("Основные функции", "test_cloneref", test_cloneref)
+	run_test_suite("Основные функции", "test_firetouchinterest", test_firetouchinterest)
+	run_test_suite("Основные функции", "test_firesignal", test_firesignal)
+	run_test_suite("Основные функции", "test_compareinstances", test_compareinstances)
+	run_test_suite("Основные функции", "test_identifyexecutor", test_identifyexecutor)
+	run_test_suite("Основные функции", "test_isrbxactive", test_isrbxactive)
+	run_test_suite("Основные функции", "test_fpscap", test_fpscap)
+	run_test_suite("Основные функции", "test_hui", test_hui)
 end)
 
 run_test_suite("--- Проверки типов Closure ---", function()
-	test_closure_checks()
-	test_replaceclosure()
-	test_newlclosure()
+	run_test_suite("Проверки типов Closure", "test_closure_checks", test_closure_checks)
+	run_test_suite("Проверки типов Closure", "test_replaceclosure", test_replaceclosure)
+	run_test_suite("Проверки типов Closure", "test_newlclosure", test_newlclosure)
 end)
 
 run_test_suite("--- Низкоуровневые операции 💀💀💀 ---", function()
-	test_checkcaller()
-	test_getconnections()
-	test_getnilinstances()
-	test_threadidentity()
-	test_getscripts()
-	test_getrunningscripts()
-	test_getscriptbytecode()
-	test_setscriptable()
-	test_isscriptable()
-	test_getgenv()
-	test_getcallbackvalue()
-	test_getcallingscript()
-	test_getloadedmodules()
-	test_getscriptclosure()
-	test_getscripthash()
-	test_getfunctionhash()
-	test_getinstances()
-	test_fireproximityprompt()
-	test_fireclickdetector()
+	run_test_suite("Низкоуровневые операции", "test_checkcaller", test_checkcaller)
+	run_test_suite("Низкоуровневые операции", "test_getconnections", test_getconnections)
+	run_test_suite("Низкоуровневые операции", "test_getnilinstances", test_getnilinstances)
+	run_test_suite("Низкоуровневые операции", "test_threadidentity", test_threadidentity)
+	run_test_suite("Низкоуровневые операции", "test_getscripts", test_getscripts)
+	run_test_suite("Низкоуровневые операции", "test_getrunningscripts", test_getrunningscripts)
+	run_test_suite("Низкоуровневые операции", "test_getscriptbytecode", test_getscriptbytecode)
+	run_test_suite("Низкоуровневые операции", "test_setscriptable", test_setscriptable)
+	run_test_suite("Низкоуровневые операции", "test_isscriptable", test_isscriptable)
+	run_test_suite("Низкоуровневые операции", "test_getgenv", test_getgenv)
+	run_test_suite("Низкоуровневые операции", "test_getcallbackvalue", test_getcallbackvalue)
+	run_test_suite("Низкоуровневые операции", "test_getcallingscript", test_getcallingscript)
+	run_test_suite("Низкоуровневые операции", "test_getloadedmodules", test_getloadedmodules)
+	run_test_suite("Низкоуровневые операции", "test_getscriptclosure", test_getscriptclosure)
+	run_test_suite("Низкоуровневые операции", "test_getscripthash", test_getscripthash)
+	run_test_suite("Низкоуровневые операции", "test_getfunctionhash", test_getfunctionhash)
+	run_test_suite("Низкоуровневые операции", "test_getinstances", test_getinstances)
+	run_test_suite("Низкоуровневые операции", "test_fireproximityprompt", test_fireproximityprompt)
+	run_test_suite("Низкоуровневые операции", "test_fireclickdetector", test_fireclickdetector)
+	run_test_suite("Низкоуровневые операции", "test_hidden_properties", test_hidden_properties)
+	run_test_suite("Низкоуровневые операции", "test_environments", test_environments)
 end)
 
 run_test_suite("--- Файловые операции и сетевые (aka request и тд.) ---", function()
-	test_request()
-	test_file_operations()
-	test_folder_and_load_ops()
-	test_getcustomasset()
-	test_replicatesignal()
-	test_cache()
-	test_misc_env()
-	test_mouse_emulation()
+	run_test_suite("Файловые операции и сетевые", "test_request", test_request)
+	run_test_suite("Файловые операции и сетевые", "test_websocket", test_websocket)
+	run_test_suite("Файловые операции и сетевые", "test_file_operations", test_file_operations)
+	run_test_suite("Файловые операции и сетевые", "test_folder_and_load_ops", test_folder_and_load_ops)
+	run_test_suite("Файловые операции и сетевые", "test_getcustomasset", test_getcustomasset)
+	run_test_suite("Файловые операции и сетевые", "test_replicatesignal", test_replicatesignal)
+	run_test_suite("Файловые операции и сетевые", "test_cache", test_cache)
+	run_test_suite("Файловые операции и сетевые", "test_misc_env", test_misc_env)
+	run_test_suite("Файловые операции и сетевые", "test_mouse_emulation", test_mouse_emulation)
 end)
 
 run_test_suite("--- Криптография ---", function()
-	test_crypto_ops()
-	test_crypto_extended()
-	test_compression()
+	run_test_suite("Криптография", "test_crypto_ops", test_crypto_ops)
+	run_test_suite("Криптография", "test_crypto_extended", test_crypto_extended)
+	run_test_suite("Криптография", "test_compression", test_compression)
 end)
 
-run_test_suite("--- 2D Рендеринг ---", test_drawing)
-run_test_suite("--- Ебучий лоадстринг ---", test_loadstring)
+run_test_suite("--- 2D Рендеринг ---", "test_drawing", test_drawing)
+run_test_suite("--- Ебучий лоадстринг ---", "test_loadstring", test_loadstring)
 
 run_test_suite("--- Тесты для debug ---", function()
-	test_debug_info()
-	test_debug_upvalues()
-	test_debug_constants()
-	test_debug_setstack()
-	test_debug_setmetatable()
-	test_clonefunction()
-	test_debug_protos()
-	test_getreg()
-	test_debug_more()
+	run_test_suite("Тесты для debug", "test_debug_info", test_debug_info)
+	run_test_suite("Тесты для debug", "test_debug_upvalues", test_debug_upvalues)
+	run_test_suite("Тесты для debug", "test_debug_constants", test_debug_constants)
+	run_test_suite("Тесты для debug", "test_debug_setstack", test_debug_setstack)
+	run_test_suite("Тесты для debug", "test_debug_setmetatable", test_debug_setmetatable)
+	run_test_suite("Тесты для debug", "test_clonefunction", test_clonefunction)
+	run_test_suite("Тесты для debug", "test_debug_protos", test_debug_protos)
+	run_test_suite("Тесты для debug", "test_getreg", test_getreg)
+	run_test_suite("Тесты для debug", "test_debug_more", test_debug_more)
 end)
 
 info("\n" .. string.rep("-", 20))
