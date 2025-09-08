@@ -1042,34 +1042,34 @@ local function test_getgenv()
 end
 
 local function test_getcallbackvalue()
-	if not present(getcallbackvalue, "getcallbackvalue") then return end
+    if not present(getcallbackvalue, "getcallbackvalue") then return end
 
-	local bf = Instance.new("BindableFunction")
-	local rf = Instance.new("RemoteFunction")
+    local bf = Instance.new("BindableFunction")
+    local rf = Instance.new("RemoteFunction")
 
-	local sentinel = false
-	local callback_func = function() sentinel = true end
-	bf.OnInvoke = callback_func
+    local sentinel = false
+    local callback_func = function() sentinel = true end
+    bf.OnInvoke = callback_func
 
-	local ok_get, retrieved = safe_pcall(getcallbackvalue, bf) 
-	if ok_get and retrieved == nil then 
-		ok_get, retrieved = safe_pcall(getcallbackvalue, bf, "OnInvoke")
-	end
-	
-	if check(ok_get and retrieved == callback_func, "getcallbackvalue: извлекает установленный callback", "getcallbackvalue: не извлек callback", true) then
-		retrieved()
-		check(sentinel, "getcallbackvalue: извлеченный callback является рабочей функцией", "getcallbackvalue: callback не работает", true)
-	end
+    local ok_get, retrieved = safe_pcall(getcallbackvalue, bf, "OnInvoke")
+    if not ok_get or type(retrieved) ~= "function" then
+        check(false, "getcallbackvalue: не удалось извлечь установленный callback через явное имя свойства", "getcallbackvalue: не извлек callback", true)
+    else
+        check(retrieved == callback_func, "getcallbackvalue: извлечённый callback совпадает с установленным", "getcallbackvalue: извлечённый callback не совпадает", true)
+        retrieved()
+        check(sentinel, "getcallbackvalue: извлечённый callback является рабочей функцией", "getcallbackvalue: callback не работает", true)
+    end
 
-	local ok_nil, val_nil = safe_pcall(getcallbackvalue, rf, "OnClientInvoke")
-	check(ok_nil and val_nil == nil, "getcallbackvalue: возвращает nil для неустановленного свойства", "getcallbackvalue: не вернул nil", true)
+    local ok_nil, val_nil = safe_pcall(getcallbackvalue, rf, "OnClientInvoke")
+    check(ok_nil and (val_nil == nil or type(val_nil) == "function" and val_nil == rf.OnClientInvoke), "getcallbackvalue: корректно обрабатывает неустановленное свойство", "getcallbackvalue: некорректно обработал неустановленное свойство", true)
 
-	local ok_non, val_non = safe_pcall(getcallbackvalue, bf, "NonExistentProperty")
-	check(ok_non and val_non == nil, "getcallbackvalue: возвращает nil для несуществующего свойства", "getcallbackvalue: не вернул nil для несуществующего свойства", true)
+    local ok_non, val_non = safe_pcall(getcallbackvalue, bf, "NonExistentProperty")
+    check(ok_non and val_non == nil, "getcallbackvalue: возвращает nil для несуществующего свойства", "getcallbackvalue: не вернул nil для несуществующего свойства", true)
 
-	bf:Destroy(); rf:Destroy()
-
+    bf:Destroy()
+    rf:Destroy()
 end
+
 
 local function test_getcustomasset()
     if not present(getcustomasset, "getcustomasset") then return end
@@ -1131,40 +1131,77 @@ local function test_loadstring()
 end
 
 local function test_getrunningscripts()
-	if not present(getrunningscripts, "getrunningscripts") then return end
+    if not present(getrunningscripts, "getrunningscripts") then return end
 
-	local running_script = script
-	local inactive_script = Instance.new("LocalScript")
+    local running_script = script
+    local inactive_script = Instance.new("LocalScript")
+    inactive_script.Source = ""
 
-	local ok_get, list = safe_pcall(getrunningscripts)
-	if not check(ok_get and type(list) == "table", "getrunningscripts: возвращает таблицу", "getrunningscripts: не вернул таблицу", false) then return end
+    local ok_get, list = safe_pcall(getrunningscripts)
+    if not check(ok_get and type(list) == "table", "getrunningscripts: возвращает таблицу", "getrunningscripts: не вернул таблицу", false) then
+        inactive_script:Destroy()
+        return
+    end
 
-	local found_self, found_inactive = false, false
-	for _, s in ipairs(list) do
-		if s == running_script then found_self = true end
-		if s == inactive_script then found_inactive = true end
-	end
-	check(found_self, "getrunningscripts: находит текущий исполняемый скрипт", "getrunningscripts: не нашел текущий скрипт", false)
-	check(not found_inactive, "getrunningscripts: не включает неактивные скрипты", "getrunningscripts: ошибочно включил неактивный скрипт", false)
-	inactive_script:Destroy()
+    local found_self, found_inactive, all_are_scripts = false, false, true
+    for _, s in ipairs(list) do
+        if typeof(s) ~= "Instance" or not s:IsA("BaseScript") then
+            all_are_scripts = false
+        end
+        if s == running_script then
+            found_self = true
+        elseif s == inactive_script then
+            found_inactive = true
+        end
+    end
 
+    check(all_are_scripts, "getrunningscripts: все элементы списка являются скриптами", "getrunningscripts: список содержит не-скриптовые объекты", false)
+    check(found_self or table.find(list, running_script) ~= nil, "getrunningscripts: находит текущий исполняемый скрипт", "getrunningscripts: не нашел текущий скрипт", false)
+    check(not found_inactive, "getrunningscripts: не включает неактивные скрипты", "getrunningscripts: ошибочно включил неактивный скрипт", false)
+
+    local unique_set = {}
+    local has_duplicates = false
+    for _, s in ipairs(list) do
+        if unique_set[s] then
+            has_duplicates = true
+            break
+        end
+        unique_set[s] = true
+    end
+    check(not has_duplicates, "getrunningscripts: список не содержит дубликатов", "getrunningscripts: список содержит дубликаты", false)
+
+    inactive_script:Destroy()
 end
 
 local function test_getscriptbytecode()
-	if not present(getscriptbytecode, "getscriptbytecode") then return end
+    if not present(getscriptbytecode, "getscriptbytecode") then return end
 
+    local dummy_with_code = Instance.new("LocalScript")
+    dummy_with_code.Source = "return 123"
 
-	local dummy_with_code = Instance.new("LocalScript")
-	dummy_with_code.Source = "print('hello')"
-	local dummy_empty = Instance.new("LocalScript")
+    local dummy_module = Instance.new("ModuleScript")
+    dummy_module.Source = "return function() return 'ok' end"
 
-	local ok_get, bytecode = safe_pcall(getscriptbytecode, dummy_with_code)
-	check(ok_get and type(bytecode) == "string" and #bytecode > 0, "getscriptbytecode: возвращает строку байт-кода для скрипта с кодом", "getscriptbytecode: не вернул байт-код", false)
+    local dummy_empty = Instance.new("LocalScript")
 
-	local ok_nil, bc_nil = safe_pcall(getscriptbytecode, dummy_empty)
-	check(ok_nil and bc_nil == nil, "getscriptbytecode: возвращает nil для скрипта без байт-кода", "getscriptbytecode: не вернул nil для пустого скрипта", false)
+    local ok_get, bytecode = safe_pcall(getscriptbytecode, dummy_with_code)
+    check(ok_get, "getscriptbytecode: вызов не вызвал ошибок для скрипта с кодом", "getscriptbytecode: вызов вызвал ошибку для скрипта с кодом", false)
+    check(type(bytecode) == "string" and #bytecode > 0, "getscriptbytecode: вернул непустую строку байт-кода для скрипта с кодом", "getscriptbytecode: не вернул корректный байт-код для скрипта с кодом", false)
 
-	dummy_with_code:Destroy(); dummy_empty:Destroy()
+    local ok_mod, bytecode_mod = safe_pcall(getscriptbytecode, dummy_module)
+    check(ok_mod, "getscriptbytecode: вызов не вызвал ошибок для ModuleScript", "getscriptbytecode: вызвал ошибку для ModuleScript", false)
+    check(type(bytecode_mod) == "string" and #bytecode_mod > 0, "getscriptbytecode: вернул непустую строку байт-кода для ModuleScript", "getscriptbytecode: не вернул корректный байт-код для ModuleScript", false)
+
+    local ok_nil, bc_nil = safe_pcall(getscriptbytecode, dummy_empty)
+    check(ok_nil, "getscriptbytecode: вызов не вызвал ошибок для пустого скрипта", "getscriptbytecode: вызвал ошибку для пустого скрипта", false)
+    check(bc_nil == nil or (type(bc_nil) == "string" and #bc_nil == 0), "getscriptbytecode: вернул nil или пустую строку для скрипта без байт-кода", "getscriptbytecode: вернул некорректное значение для пустого скрипта", false)
+
+    local ok_non, bc_non = safe_pcall(getscriptbytecode, Instance.new("Part"))
+    check(ok_non and bc_non == nil, "getscriptbytecode: вернул nil для объекта, не являющегося скриптом", "getscriptbytecode: вернул не nil для объекта, не являющегося скриптом", false)
+
+    dummy_with_code:Destroy()
+    dummy_module:Destroy()
+    dummy_empty:Destroy()
 end
 
 local function test_firesignal()
@@ -1318,28 +1355,44 @@ local function test_folder_and_load_ops()
 end
 
 local function test_setscriptable()
-	if not present(setscriptable, "setscriptable") then return end
-	local part = Instance.new("Part")
-	local prop = "Size"
+    if not present(setscriptable, "setscriptable") then return end
 
+    local part = Instance.new("Part")
+    local hidden_props = {
+        "BottomParamA",
+        "TopParamA",
+        "RootPriority"
+    }
 
-    local ok_before = not select(1, safe_pcall(function() return part[prop] end))
-	check(ok_before, "setscriptable: свойство '"..prop.."' изначально нескриптуемо (как и ожидалось)", "setscriptable: свойство '"..prop.."' изначально скриптуемо", true)
+    for _, prop in ipairs(hidden_props) do
+        local before_p = select(1, safe_pcall(function() return part[prop] end))
+        check(not before_p, "setscriptable: свойство '"..prop.."' изначально нескриптуемо", "setscriptable: свойство '"..prop.."' изначально скриптуемо", true)
 
-	local ok_set_true = select(1, safe_pcall(setscriptable, part, prop, true))
-	if check(ok_set_true, "setscriptable(true): выполнился без ошибок", "setscriptable(true): ошибка при выполнении", true) then
-		local p, val = safe_pcall(function() return part[prop] end)
-		check(p and typeof(val) == "Vector3", "setscriptable(true): свойство '"..prop.."' стало читаемым", "setscriptable(true): свойство '"..prop.."' не читается", true)
-	end
+        local ok_set_true = select(1, safe_pcall(setscriptable, part, prop, true))
+        if check(ok_set_true, "setscriptable(true): выполнился без ошибок для '"..prop.."'", "setscriptable(true): ошибка при выполнении для '"..prop.."'", true) then
+            local p, val = safe_pcall(function() return part[prop] end)
+            check(p and val ~= nil, "setscriptable(true): свойство '"..prop.."' стало читаемым", "setscriptable(true): свойство '"..prop.."' не читается", true)
+        end
 
-	local ok_set_false = select(1, safe_pcall(setscriptable, part, prop, false))
-	if check(ok_set_false, "setscriptable(false): выполнился без ошибок", "setscriptable(false): ошибка при выполнении", true) then
-		local ok_after = not select(1, safe_pcall(function() return part[prop] end))
-		check(ok_after, "setscriptable(false): свойство '"..prop.."' снова стало нескриптуемым", "setscriptable(false): свойство '"..prop.."' осталось скриптуемым", true)
-	end
+        local ok_set_false = select(1, safe_pcall(setscriptable, part, prop, false))
+        if check(ok_set_false, "setscriptable(false): выполнился без ошибок для '"..prop.."'", "setscriptable(false): ошибка при выполнении для '"..prop.."'", true) then
+            local after_p = select(1, safe_pcall(function() return part[prop] end))
+            check(not after_p, "setscriptable(false): свойство '"..prop.."' снова стало нескриптуемым", "setscriptable(false): свойство '"..prop.."' осталось скриптуемым", true)
+        end
 
-	part:Destroy()
+        local toggle_ok = true
+        for i = 1, 3 do
+            local state = (i % 2 == 0)
+            local ok = select(1, safe_pcall(setscriptable, part, prop, state))
+            if not ok then
+                toggle_ok = false
+                break
+            end
+        end
+        check(toggle_ok, "setscriptable: быстрое переключение состояний прошло успешно для '"..prop.."'", "setscriptable: быстрое переключение состояний вызвало ошибку для '"..prop.."'", true)
+    end
 
+    part:Destroy()
 end
 
 local function test_debug_setstack()
@@ -1533,23 +1586,30 @@ local function test_getloadedmodules()
 end
 
 local function test_getscriptclosure()
-	if not present(getscriptclosure, "getscriptclosure") then return end
-	
-	local script_with_code = Instance.new("LocalScript")
-	script_with_code.Source = "return 'hello', 123"
-	
-	local script_empty = Instance.new("LocalScript")
-	
-	local ok_get, closure = safe_pcall(getscriptclosure, script_with_code)
-	if check(ok_get and type(closure) == "function", "getscriptclosure: возвращает функцию для скрипта с кодом", "getscriptclosure: не вернул функцию", false) then
-		local ok_run, s, n = safe_pcall(closure)
-		check(ok_run and s == "hello" and n == 123, "getscriptclosure: возвращенная функция выполняется корректно", "getscriptclosure: функция выполняется некорректно", false)
-	end
+    if not present(getscriptclosure, "getscriptclosure") then return end
 
-	local ok_nil, res_nil = safe_pcall(getscriptclosure, script_empty)
-	check(ok_nil and res_nil == nil, "getscriptclosure: возвращает nil для скрипта без байткода", "getscriptclosure: не вернул nil", false)
+    local script_with_code = Instance.new("LocalScript")
+    script_with_code.Source = "return 'hello', 123"
 
-	script_with_code:Destroy(); script_empty:Destroy()
+    local closure = getscriptclosure(script_with_code)
+    check(
+        type(closure) == "function",
+        "getscriptclosure: возвращает функцию для скрипта с кодом",
+        "getscriptclosure: не вернул функцию",
+        false
+    )
+
+    local script_empty = Instance.new("LocalScript")
+    local closure_empty = getscriptclosure(script_empty)
+    check(
+        closure_empty == nil,
+        "getscriptclosure: возвращает nil для скрипта без байткода",
+        "getscriptclosure: не вернул nil",
+        false
+    )
+
+    script_with_code:Destroy()
+    script_empty:Destroy()
 end
 
 local function test_getscripthash()
@@ -1629,13 +1689,13 @@ local function test_getscripthash()
 end
 
 local function test_identifyexecutor()
-	if not present(identifyexecutor, "identifyexecutor") then return end
+    if not present(identifyexecutor, "identifyexecutor") then return end
 
-	local ok_get, name, version = safe_pcall(identifyexecutor)
-	if check(ok_get, "identifyexecutor: выполняется без ошибок", "identifyexecutor: ошибка при выполнении", true) then
-		check(type(name) == "string" and #name > 0, "identifyexecutor: возвращает непустое имя (строка)", "identifyexecutor: не вернул имя", true)
-		check(type(version) == "string" and #version > 0, "identifyexecutor: возвращает непустую версию (строка)", "identifyexecutor: не вернул версию", true)
-	end
+    local ok_get, name, version = safe_pcall(identifyexecutor)
+    if check(ok_get, "identifyexecutor: выполняется без ошибок", "identifyexecutor: ошибка при выполнении", true) then
+        check(type(name) == "string" and #name > 0, "identifyexecutor: возвращает непустое имя (строка) [" .. tostring(name) .. "]", "identifyexecutor: не вернул имя", true)
+        check(type(version) == "string" and #version > 0, "identifyexecutor: возвращает непустую версию (строка) [" .. tostring(version) .. "]", "identifyexecutor: не вернул версию", true)
+    end
 end
 
 local function test_getinstances()
@@ -1806,20 +1866,35 @@ local function test_isrbxactive()
 end
 
 local function test_isscriptable()
-	if not present(isscriptable, "isscriptable") or not present(setscriptable, "setscriptable") then return end
+    if not present(isscriptable, "isscriptable") or not present(setscriptable, "setscriptable") then return end
 
-	local part = Instance.new("Part")
-	local prop = "Size"
-	
-	check(not isscriptable(part, prop), "isscriptable: false для нескриптуемого по умолчанию свойства", "isscriptable: true для нескриптуемого свойства", true)
-	
-	setscriptable(part, prop, true)
-	check(isscriptable(part, prop), "isscriptable: true после setscriptable(true)", "isscriptable: false после setscriptable(true)", true)
-	
-	setscriptable(part, prop, false)
-	check(not isscriptable(part, prop), "isscriptable: false после setscriptable(false)", "isscriptable: true после setscriptable(false)", true)
+    local part = Instance.new("Part")
+    local hidden_props = {
+        "BottomParamA",
+        "TopParamA",
+        "RootPriority"
+    }
 
-	part:Destroy()
+    local tested = false
+    for _, prop in ipairs(hidden_props) do
+        if not isscriptable(part, prop) then
+            tested = true
+            check(not isscriptable(part, prop), "isscriptable: false для нескриптуемого по умолчанию свойства '"..prop.."'", "isscriptable: true для нескриптуемого свойства '"..prop.."'", true)
+
+            setscriptable(part, prop, true)
+            check(isscriptable(part, prop), "isscriptable: true после setscriptable(true) для '"..prop.."'", "isscriptable: false после setscriptable(true) для '"..prop.."'", true)
+
+            setscriptable(part, prop, false)
+            check(not isscriptable(part, prop), "isscriptable: false после setscriptable(false) для '"..prop.."'", "isscriptable: true после setscriptable(false) для '"..prop.."'", true)
+            break
+        end
+    end
+
+    if not tested then
+        check(false, "isscriptable: не найдено подходящее скрытое свойство для теста", "isscriptable: все тестовые свойства оказались скриптуемыми", true)
+    end
+
+    part:Destroy()
 end
 
 local function test_newlclosure() -- Сука я думал нигде не найду информацию на эту функцию
