@@ -1,21 +1,39 @@
 local totalTests = 0
 local passedTests = 0
 local skidCount = 0
+local logFileName = "rUNC.txt"
+
+if writefile then
+	pcall(writefile, logFileName, "--- Log started at: " .. os.date() .. " ---\n\n")
+end
+
+local function logToFile(msg)
+	if appendfile then
+		pcall(appendfile, logFileName, msg .. "\n")
+	end
+end
 
 local function info(msg)
 	print(msg)
+	logToFile("[INFO] " .. msg)
 end
 
 local function ok(msg)
-	print("✅ "..msg)
+	local formatted = "✅ "..msg
+	print(formatted)
+	logToFile("[PASS] " .. msg)
 end
 
 local function fail(msg)
-	print("❌ "..msg)
+	local formatted = "❌ "..msg
+	print(formatted)
+	logToFile("[FAIL] " .. msg)
 end
 
 local function warnEmoji(msg)
-	print("⚠️ "..msg)
+	local formatted = "⚠️ "..msg
+	print(formatted)
+	logToFile("[WARN] " .. msg)
 end
 
 local function safe_pcall(f, ...)
@@ -126,7 +144,7 @@ local function test_closure_checks()
 	if c_fn_new then
 		check(iscclosure(c_fn_new), "iscclosure: true для newcclosure", "iscclosure: false для newcclosure", true)
 	end
-	
+
 	check(isexecutorclosure(lua_fn), "isexecutorclosure: true для локальной Luau функции", "isexecutorclosure: false для локальной Luau функции", true)
 	check(not isexecutorclosure(c_fn_standard), "isexecutorclosure: false для стандартной C-функции (print)", "isexecutorclosure: true для print", true)
 	if c_fn_executor then
@@ -222,57 +240,57 @@ local function test_restorefunction()
 end
 
 local function test_debug_upvalues()
-    local d_gu, d_gus, d_su = debug.getupvalue, debug.getupvalues, debug.setupvalue
-    if not present(d_gu, "debug.getupvalue") or not present(d_gus, "debug.getupvalues") or not present(d_su, "debug.setupvalue") then
-        return
-    end
+	local d_gu, d_gus, d_su = debug.getupvalue, debug.getupvalues, debug.setupvalue
+	if not present(d_gu, "debug.getupvalue") or not present(d_gus, "debug.getupvalues") or not present(d_su, "debug.setupvalue") then
+		return
+	end
 
-    do
-        local var1, var2, var3 = "hello", 123, { key = "val" }
-        local func = function() return var1, var2, var3.key end
+	do
+		local var1, var2, var3 = "hello", 123, { key = "val" }
+		local func = function() return var1, var2, var3.key end
 
-        local ok_gus, upvals = safe_pcall(d_gus, func)
-        if check(ok_gus and type(upvals) == "table", "getupvalues: возвращает таблицу", "getupvalues: не вернул таблицу", true) then
-            check(#upvals == 3 and upvals[1] == var1 and upvals[2] == var2 and upvals[3] == var3, "getupvalues: корректные значения", "getupvalues: неверные значения", true)
-        end
+		local ok_gus, upvals = safe_pcall(d_gus, func)
+		if check(ok_gus and type(upvals) == "table", "getupvalues: возвращает таблицу", "getupvalues: не вернул таблицу", true) then
+			check(#upvals == 3 and upvals[1] == var1 and upvals[2] == var2 and upvals[3] == var3, "getupvalues: корректные значения", "getupvalues: неверные значения", true)
+		end
 
-        local ok_gu, upval1 = safe_pcall(d_gu, func, 1)
-        check(ok_gu and upval1 == "hello", "getupvalue: корректное значение по индексу", "getupvalue: неверное значение", true)
+		local ok_gu, upval1 = safe_pcall(d_gu, func, 1)
+		check(ok_gu and upval1 == "hello", "getupvalue: корректное значение по индексу", "getupvalue: неверное значение", true)
 
-        local ok_su = select(1, safe_pcall(d_su, func, 2, 456))
-        if check(ok_su, "setupvalue: без ошибок", "setupvalue: ошибка", true) then
-            local _, r2 = func()
-            check(r2 == 456 and var2 == 123, "setupvalue: изменяет upvalue внутри функции", "setupvalue: не изменил upvalue", true)
-        end
+		local ok_su = select(1, safe_pcall(d_su, func, 2, 456))
+		if check(ok_su, "setupvalue: без ошибок", "setupvalue: ошибка", true) then
+			local _, r2 = func()
+			check(r2 == 456 and var2 == 123, "setupvalue: изменяет upvalue внутри функции", "setupvalue: не изменил upvalue", true)
+		end
 
-        local ok_su2 = select(1, safe_pcall(d_su, func, 1, "world"))
-        check(ok_su2, "setupvalue: смена типа upvalue (string)", "setupvalue: ошибка при смене типа", true)
-        local r1_new = select(1, func())
-        check(r1_new == "world", "setupvalue: смена типа отразилась на вызове", "setupvalue: смена типа не сработала", true)
-    end
+		local ok_su2 = select(1, safe_pcall(d_su, func, 1, "world"))
+		check(ok_su2, "setupvalue: смена типа upvalue (string)", "setupvalue: ошибка при смене типа", true)
+		local r1_new = select(1, func())
+		check(r1_new == "world", "setupvalue: смена типа отразилась на вызове", "setupvalue: смена типа не сработала", true)
+	end
 
-    do
-        local no_upval_func = function() return 1 end
-        local ok_gus, upvals = safe_pcall(d_gus, no_upval_func)
-        check(ok_gus and type(upvals) == "table" and #upvals == 0, "getupvalues: пустая таблица для функции без upvalues", "getupvalues: не пустая таблица", true)
-    end
+	do
+		local no_upval_func = function() return 1 end
+		local ok_gus, upvals = safe_pcall(d_gus, no_upval_func)
+		check(ok_gus and type(upvals) == "table" and #upvals == 0, "getupvalues: пустая таблица для функции без upvalues", "getupvalues: не пустая таблица", true)
+	end
 
-    do
-        local upval_func = function() local a = 1 end
-        local ok_err_gu = not select(1, safe_pcall(d_gu, upval_func, 0))
-        check(ok_err_gu, "getupvalue: ошибка при индексе 0", "getupvalue: нет ошибки при индексе 0", true)
-        local ok_err_gu2 = not select(1, safe_pcall(d_gu, upval_func, 2))
-        check(ok_err_gu2, "getupvalue: ошибка при выходе за пределы", "getupvalue: нет ошибки при выходе за пределы", true)
-    end
+	do
+		local upval_func = function() local a = 1 end
+		local ok_err_gu = not select(1, safe_pcall(d_gu, upval_func, 0))
+		check(ok_err_gu, "getupvalue: ошибка при индексе 0", "getupvalue: нет ошибки при индексе 0", true)
+		local ok_err_gu2 = not select(1, safe_pcall(d_gu, upval_func, 2))
+		check(ok_err_gu2, "getupvalue: ошибка при выходе за пределы", "getupvalue: нет ошибки при выходе за пределы", true)
+	end
 
-    do
-        local ok_err_gu_c = not select(1, safe_pcall(d_gu, print, 1))
-        local ok_err_gus_c = not select(1, safe_pcall(d_gus, print))
-        local ok_err_su_c = not select(1, safe_pcall(d_su, print, 1, nil))
-        check(ok_err_gu_c, "getupvalue: ошибка на C closure", "getupvalue: нет ошибки на C closure", true)
-        check(ok_err_gus_c, "getupvalues: ошибка на C closure", "getupvalues: нет ошибки на C closure", true)
-        check(ok_err_su_c, "setupvalue: ошибка на C closure", "setupvalue: нет ошибки на C closure", true)
-    end
+	do
+		local ok_err_gu_c = not select(1, safe_pcall(d_gu, print, 1))
+		local ok_err_gus_c = not select(1, safe_pcall(d_gus, print))
+		local ok_err_su_c = not select(1, safe_pcall(d_su, print, 1, nil))
+		check(ok_err_gu_c, "getupvalue: ошибка на C closure", "getupvalue: нет ошибки на C closure", true)
+		check(ok_err_gus_c, "getupvalues: ошибка на C closure", "getupvalues: нет ошибки на C closure", true)
+		check(ok_err_su_c, "setupvalue: ошибка на C closure", "setupvalue: нет ошибки на C closure", true)
+	end
 end
 
 local function test_getrawmetatable()
@@ -353,92 +371,92 @@ local function test_readonly()
 end
 
 local function test_hookmetamethod()
-    if not present(hookmetamethod, "hookmetamethod") then return end
+	if not present(hookmetamethod, "hookmetamethod") then return end
 
-    do
-        local inst = Instance.new("Folder")
-        inst.Name = "OrigName"
-        local old_newindex
-        local ni_triggered = false
-        local function newindex_body(self, k, v)
-            if self == inst and k == "Name" and v == "HookedName" then
-                ni_triggered = true
-                return
-            end
-            return old_newindex(self, k, v)
-        end
-        local okh_ni, orig_ni = safe_pcall(hookmetamethod, game, "__newindex", newindex_body)
-        if check(okh_ni and type(orig_ni) == "function", "hookmetamethod: __newindex хук установлен для game", "hookmetamethod: ошибка хука __newindex для game", true) then
-            old_newindex = orig_ni
-            inst.Name = "HookedName"
-            check(ni_triggered and inst.Name == "OrigName", "hookmetamethod: __newindex перехват работает", "hookmetamethod: __newindex перехват не работает", true)
-            local ok_restore = safe_pcall(hookmetamethod, game, "__newindex", old_newindex)
-            check(ok_restore, "hookmetamethod: __newindex восстановлен", "hookmetamethod: __newindex ошибка восстановления", true)
-        end
-        inst:Destroy()
-    end
+	do
+		local inst = Instance.new("Folder")
+		inst.Name = "OrigName"
+		local old_newindex
+		local ni_triggered = false
+		local function newindex_body(self, k, v)
+			if self == inst and k == "Name" and v == "HookedName" then
+				ni_triggered = true
+				return
+			end
+			return old_newindex(self, k, v)
+		end
+		local okh_ni, orig_ni = safe_pcall(hookmetamethod, game, "__newindex", newindex_body)
+		if check(okh_ni and type(orig_ni) == "function", "hookmetamethod: __newindex хук установлен для game", "hookmetamethod: ошибка хука __newindex для game", true) then
+			old_newindex = orig_ni
+			inst.Name = "HookedName"
+			check(ni_triggered and inst.Name == "OrigName", "hookmetamethod: __newindex перехват работает", "hookmetamethod: __newindex перехват не работает", true)
+			local ok_restore = safe_pcall(hookmetamethod, game, "__newindex", old_newindex)
+			check(ok_restore, "hookmetamethod: __newindex восстановлен", "hookmetamethod: __newindex ошибка восстановления", true)
+		end
+		inst:Destroy()
+	end
 
-    do
-        local target = Instance.new("Folder")
-        target.Name = "TostringTarget"
-        local old_tostring
-        local ts_triggered = false
-        local function tostring_body(s)
-            if s == target then
-                ts_triggered = true
-                return "hooked_tostring_object"
-            end
-            return old_tostring(s)
-        end
-        local okh_ts, orig_ts = safe_pcall(hookmetamethod, game, "__tostring", tostring_body)
-        if check(okh_ts and type(orig_ts) == "function", "hookmetamethod: __tostring хук установлен", "hookmetamethod: ошибка __tostring", true) then
-            old_tostring = orig_ts
-            check(tostring(target) == "hooked_tostring_object" and ts_triggered, "hookmetamethod: __tostring перехват работает", "hookmetamethod: __tostring не работает", true)
-            local ok_restore = safe_pcall(hookmetamethod, game, "__tostring", old_tostring)
-            check(ok_restore, "hookmetamethod: __tostring восстановлен", "hookmetamethod: __tostring ошибка восстановления", true)
-        end
-        target:Destroy()
-    end
+	do
+		local target = Instance.new("Folder")
+		target.Name = "TostringTarget"
+		local old_tostring
+		local ts_triggered = false
+		local function tostring_body(s)
+			if s == target then
+				ts_triggered = true
+				return "hooked_tostring_object"
+			end
+			return old_tostring(s)
+		end
+		local okh_ts, orig_ts = safe_pcall(hookmetamethod, game, "__tostring", tostring_body)
+		if check(okh_ts and type(orig_ts) == "function", "hookmetamethod: __tostring хук установлен", "hookmetamethod: ошибка __tostring", true) then
+			old_tostring = orig_ts
+			check(tostring(target) == "hooked_tostring_object" and ts_triggered, "hookmetamethod: __tostring перехват работает", "hookmetamethod: __tostring не работает", true)
+			local ok_restore = safe_pcall(hookmetamethod, game, "__tostring", old_tostring)
+			check(ok_restore, "hookmetamethod: __tostring восстановлен", "hookmetamethod: __tostring ошибка восстановления", true)
+		end
+		target:Destroy()
+	end
 
-    do
-        local index_triggered = false
-        local old_index
-        local function index_hook(self, key)
-            if self == game and key == "TestService" then
-                index_triggered = true
-                return "hooked_service"
-            end
-            return old_index(self, key)
-        end
-        local ok_hook, orig_index = safe_pcall(hookmetamethod, game, "__index", index_hook)
-        if check(ok_hook and type(orig_index) == "function", "hookmetamethod: __index хук на game", "hookmetamethod: __index ошибка хука на game", true) then
-            old_index = orig_index
-            local val = game.TestService
-            check(index_triggered and val == "hooked_service", "hookmetamethod: __index хук на game сработал", "hookmetamethod: __index хук на game не сработал", true)
-            local ok_restore = safe_pcall(hookmetamethod, game, "__index", old_index)
-            check(ok_restore, "hookmetamethod: __index восстановлен", "hookmetamethod: __index ошибка восстановления", true)
-        end
-    end
+	do
+		local index_triggered = false
+		local old_index
+		local function index_hook(self, key)
+			if self == game and key == "TestService" then
+				index_triggered = true
+				return "hooked_service"
+			end
+			return old_index(self, key)
+		end
+		local ok_hook, orig_index = safe_pcall(hookmetamethod, game, "__index", index_hook)
+		if check(ok_hook and type(orig_index) == "function", "hookmetamethod: __index хук на game", "hookmetamethod: __index ошибка хука на game", true) then
+			old_index = orig_index
+			local val = game.TestService
+			check(index_triggered and val == "hooked_service", "hookmetamethod: __index хук на game сработал", "hookmetamethod: __index хук на game не сработал", true)
+			local ok_restore = safe_pcall(hookmetamethod, game, "__index", old_index)
+			check(ok_restore, "hookmetamethod: __index восстановлен", "hookmetamethod: __index ошибка восстановления", true)
+		end
+	end
 
-    do
-        local nc_triggered = false
-        local old_namecall
-        local function namecall_hook(self, ...)
-            if self == game and getnamecallmethod() == "GetService" then
-                nc_triggered = true
-                return "hooked_namecall_service"
-            end
-            return old_namecall(self, ...)
-        end
-        local ok_hook, orig_nc = safe_pcall(hookmetamethod, game, "__namecall", namecall_hook)
-        if check(ok_hook and type(orig_nc) == "function", "hookmetamethod: __namecall хук на game", "hookmetamethod: __namecall ошибка хука на game", true) then
-            old_namecall = orig_nc
-            local val = game:GetService("TestService")
-            check(nc_triggered and val == "hooked_namecall_service", "hookmetamethod: __namecall хук на game сработал", "hookmetamethod: __namecall хук на game не сработал", true)
-            local ok_restore = safe_pcall(hookmetamethod, game, "__namecall", old_namecall)
-            check(ok_restore, "hookmetamethod: __namecall восстановлен", "hookmetamethod: __namecall ошибка восстановления", true)
-        end
-    end
+	do
+		local nc_triggered = false
+		local old_namecall
+		local function namecall_hook(self, ...)
+			if self == game and getnamecallmethod() == "GetService" then
+				nc_triggered = true
+				return "hooked_namecall_service"
+			end
+			return old_namecall(self, ...)
+		end
+		local ok_hook, orig_nc = safe_pcall(hookmetamethod, game, "__namecall", namecall_hook)
+		if check(ok_hook and type(orig_nc) == "function", "hookmetamethod: __namecall хук на game", "hookmetamethod: __namecall ошибка хука на game", true) then
+			old_namecall = orig_nc
+			local val = game:GetService("TestService")
+			check(nc_triggered and val == "hooked_namecall_service", "hookmetamethod: __namecall хук на game сработал", "hookmetamethod: __namecall хук на game не сработал", true)
+			local ok_restore = safe_pcall(hookmetamethod, game, "__namecall", old_namecall)
+			check(ok_restore, "hookmetamethod: __namecall восстановлен", "hookmetamethod: __namecall ошибка восстановления", true)
+		end
+	end
 end
 
 local function test_getgc()
@@ -480,181 +498,181 @@ local function test_getgc()
 end
 
 local function test_cloneref()
-    if not present(cloneref, "cloneref") then return end
+	if not present(cloneref, "cloneref") then return end
 
-    local original = Instance.new("Part", workspace)
-    local ok_clone, clone = safe_pcall(cloneref, original)
+	local original = Instance.new("Part", workspace)
+	local ok_clone, clone = safe_pcall(cloneref, original)
 
-    if not check(ok_clone and typeof(clone) == "Instance", "cloneref: создает клон типа Instance", "cloneref: не смог создать клон", true) then
-        original:Destroy()
-        return
-    end
+	if not check(ok_clone and typeof(clone) == "Instance", "cloneref: создает клон типа Instance", "cloneref: не смог создать клон", true) then
+		original:Destroy()
+		return
+	end
 
-    check(original ~= clone, "cloneref: клон не равен (==) оригиналу", "cloneref: клон равен оригиналу", true)
+	check(original ~= clone, "cloneref: клон не равен (==) оригиналу", "cloneref: клон равен оригиналу", true)
 
-    local connectionsBefore = #getconnections(original:GetPropertyChangedSignal("Name"))
-    clone:GetPropertyChangedSignal("Name"):Connect(function() end)
-    local hasGetConnections = select(1, pcall(getconnections, original:GetPropertyChangedSignal("Name")))
-    if hasGetConnections then
-        check(#getconnections(original:GetPropertyChangedSignal("Name")) > connectionsBefore, "cloneref: соединение с клона влияет на оригинал", "cloneref: соединения изолированы", true)
-    end
+	local connectionsBefore = #getconnections(original:GetPropertyChangedSignal("Name"))
+	clone:GetPropertyChangedSignal("Name"):Connect(function() end)
+	local hasGetConnections = select(1, pcall(getconnections, original:GetPropertyChangedSignal("Name")))
+	if hasGetConnections then
+		check(#getconnections(original:GetPropertyChangedSignal("Name")) > connectionsBefore, "cloneref: соединение с клона влияет на оригинал", "cloneref: соединения изолированы", true)
+	end
 
-    original:Destroy()
-    task.wait()
+	original:Destroy()
+	task.wait()
 
-    local inTreeOriginal = original:IsDescendantOf(game)
-    local inTreeClone = clone:IsDescendantOf(game)
-    check(not inTreeOriginal and not inTreeClone, "cloneref: оба объекта удалены из дерева", "cloneref: один из объектов остался в дереве", true)
+	local inTreeOriginal = original:IsDescendantOf(game)
+	local inTreeClone = clone:IsDescendantOf(game)
+	check(not inTreeOriginal and not inTreeClone, "cloneref: оба объекта удалены из дерева", "cloneref: один из объектов остался в дереве", true)
 
-    local ok_method_clone = pcall(function() return clone:GetFullName() end)
-    local ok_parent_access = pcall(function() return clone.Parent end)
-    check(not ok_method_clone or clone.Parent == nil, "cloneref: клон становится невалидным или безродным после уничтожения оригинала", "cloneref: клон остался валидным с родителем", true)
+	local ok_method_clone = pcall(function() return clone:GetFullName() end)
+	local ok_parent_access = pcall(function() return clone.Parent end)
+	check(not ok_method_clone or clone.Parent == nil, "cloneref: клон становится невалидным или безродным после уничтожения оригинала", "cloneref: клон остался валидным с родителем", true)
 end
 
 local function test_firetouchinterest()
-    if not present(firetouchinterest, "firetouchinterest") then -- залупа
-        return
-    end
+	if not present(firetouchinterest, "firetouchinterest") then -- залупа
+		return
+	end
 
-    local function make_part(pos)
-        local p = Instance.new("Part")
-        p.Size = Vector3.new(2, 2, 2)
-        p.CFrame = pos
-        p.Anchored = true
-        p.Parent = workspace
-        return p
-    end
+	local function make_part(pos)
+		local p = Instance.new("Part")
+		p.Size = Vector3.new(2, 2, 2)
+		p.CFrame = pos
+		p.Anchored = true
+		p.Parent = workspace
+		return p
+	end
 
-    local part1 = make_part(CFrame.new(0, 20, 0))
-    local part2 = make_part(CFrame.new(0, 20.1, 0))
+	local part1 = make_part(CFrame.new(0, 20, 0))
+	local part2 = make_part(CFrame.new(0, 20.1, 0))
 
-    local touch_started, touch_ended = 0, 0
-    local c1 = part1.Touched:Connect(function() touch_started += 1 end)
-    local c2 = part1.TouchEnded:Connect(function() touch_ended += 1 end)
+	local touch_started, touch_ended = 0, 0
+	local c1 = part1.Touched:Connect(function() touch_started += 1 end)
+	local c2 = part1.TouchEnded:Connect(function() touch_ended += 1 end)
 
-    part1.CanTouch = false
-    task.wait(0.1)
-    safe_pcall(firetouchinterest, part1, part2, 0)
-    task.wait(0.1)
-    check(touch_started == 0,
-        "firetouchinterest: учитывает свойство CanTouch=false",
-        "firetouchinterest: игнорирует CanTouch=false", true)
+	part1.CanTouch = false
+	task.wait(0.1)
+	safe_pcall(firetouchinterest, part1, part2, 0)
+	task.wait(0.1)
+	check(touch_started == 0,
+		"firetouchinterest: учитывает свойство CanTouch=false",
+		"firetouchinterest: игнорирует CanTouch=false", true)
 
-    part1.CanTouch = true
-    safe_pcall(firetouchinterest, part1, part2, 0)
-    task.wait(0.1)
-    check(touch_started == 1,
-        "firetouchinterest: вызывает Touched при toggle=0",
-        "firetouchinterest: не вызывает Touched при toggle=0", true)
+	part1.CanTouch = true
+	safe_pcall(firetouchinterest, part1, part2, 0)
+	task.wait(0.1)
+	check(touch_started == 1,
+		"firetouchinterest: вызывает Touched при toggle=0",
+		"firetouchinterest: не вызывает Touched при toggle=0", true)
 
-    safe_pcall(firetouchinterest, part1, part2, 1)
-    task.wait(0.1)
-    check(touch_ended == 1,
-        "firetouchinterest: вызывает TouchEnded при toggle=1",
-        "firetouchinterest: не вызывает TouchEnded при toggle=1", true)
+	safe_pcall(firetouchinterest, part1, part2, 1)
+	task.wait(0.1)
+	check(touch_ended == 1,
+		"firetouchinterest: вызывает TouchEnded при toggle=1",
+		"firetouchinterest: не вызывает TouchEnded при toggle=1", true)
 
-    safe_pcall(firetouchinterest, part1, part2, true)
-    task.wait(0.1)
-    check(touch_started == 2,
-        "firetouchinterest: вызывает Touched при toggle=true",
-        "firetouchinterest: не вызывает Touched при toggle=true", true)
+	safe_pcall(firetouchinterest, part1, part2, true)
+	task.wait(0.1)
+	check(touch_started == 2,
+		"firetouchinterest: вызывает Touched при toggle=true",
+		"firetouchinterest: не вызывает Touched при toggle=true", true)
 
-    safe_pcall(firetouchinterest, part1, part2, false)
-    task.wait(0.1)
-    check(touch_ended == 2,
-        "firetouchinterest: вызывает TouchEnded при toggle=false",
-        "firetouchinterest: не вызывает TouchEnded при toggle=false", true)
+	safe_pcall(firetouchinterest, part1, part2, false)
+	task.wait(0.1)
+	check(touch_ended == 2,
+		"firetouchinterest: вызывает TouchEnded при toggle=false",
+		"firetouchinterest: не вызывает TouchEnded при toggle=false", true)
 
-    local ok_err_nil = not select(1, safe_pcall(firetouchinterest, part1, nil, 0))
-    check(ok_err_nil,
-        "firetouchinterest: выбрасывает ошибку при part2=nil",
-        "firetouchinterest: не выбросил ошибку при part2=nil", true)
+	local ok_err_nil = not select(1, safe_pcall(firetouchinterest, part1, nil, 0))
+	check(ok_err_nil,
+		"firetouchinterest: выбрасывает ошибку при part2=nil",
+		"firetouchinterest: не выбросил ошибку при part2=nil", true)
 
-    local ok_err_type = not select(1, safe_pcall(firetouchinterest, {}, part2, 0))
-    check(ok_err_type,
-        "firetouchinterest: выбрасывает ошибку при неверном типе part1",
-        "firetouchinterest: не выбросил ошибку при неверном типе part1", true)
+	local ok_err_type = not select(1, safe_pcall(firetouchinterest, {}, part2, 0))
+	check(ok_err_type,
+		"firetouchinterest: выбрасывает ошибку при неверном типе part1",
+		"firetouchinterest: не выбросил ошибку при неверном типе part1", true)
 
-    c1:Disconnect()
-    c2:Disconnect()
-    part1:Destroy()
-    part2:Destroy()
+	c1:Disconnect()
+	c2:Disconnect()
+	part1:Destroy()
+	part2:Destroy()
 end
 
 
 local function test_checkcaller()
-    if not present(checkcaller, "checkcaller") then return end
+	if not present(checkcaller, "checkcaller") then return end
 
-    local ok_p, v_p = safe_pcall(checkcaller)
-    check(ok_p and v_p, "checkcaller: true в pcall", "checkcaller: не true в pcall/ошибка", true)
+	local ok_p, v_p = safe_pcall(checkcaller)
+	check(ok_p and v_p, "checkcaller: true в pcall", "checkcaller: не true в pcall/ошибка", true)
 
-    local ok_args = safe_pcall(function() return checkcaller("arg") end)
-    check(ok_args, "checkcaller: игнорирует аргументы", "checkcaller: крашит при аргументах", true)
+	local ok_args = safe_pcall(function() return checkcaller("arg") end)
+	check(ok_args, "checkcaller: игнорирует аргументы", "checkcaller: крашит при аргументах", true)
 
-    local gm = game
-    pcall(function() if cloneref then gm = cloneref(game) end end)
+	local gm = game
+	pcall(function() if cloneref then gm = cloneref(game) end end)
 
-    local hook_result
-    local old_nc
-    local in_call = false
+	local hook_result
+	local old_nc
+	local in_call = false
 
-    local function wrapper(self, ...) -- Почти любые спуфы для checkcaller() благодаря этому методу будут обнаружены и скорее всего крашнут RobloxPlayer :D
-        if in_call then
-            return old_nc and old_nc(self, ...)
-        end
-        in_call = true
-        local m = getnamecallmethod()
-        if m == "IsA" then
-            hook_result = checkcaller()
-        end
-        local ok, res = pcall(old_nc, self, ...)
-        in_call = false
-        if ok then
-            return res
-        end
-    end
+	local function wrapper(self, ...) -- Почти любые спуфы для checkcaller() благодаря этому методу будут обнаружены и скорее всего крашнут RobloxPlayer :D
+		if in_call then
+			return old_nc and old_nc(self, ...)
+		end
+		in_call = true
+		local m = getnamecallmethod()
+		if m == "IsA" then
+			hook_result = checkcaller()
+		end
+		local ok, res = pcall(old_nc, self, ...)
+		in_call = false
+		if ok then
+			return res
+		end
+	end
 
-    local ok_hook = false
-    pcall(function()
-        if newcclosure then
-            old_nc = hookmetamethod(gm, "__namecall", newcclosure(wrapper))
-        else
-            old_nc = hookmetamethod(gm, "__namecall", wrapper)
-        end
-        ok_hook = type(old_nc) == "function"
-    end)
+	local ok_hook = false
+	pcall(function()
+		if newcclosure then
+			old_nc = hookmetamethod(gm, "__namecall", newcclosure(wrapper))
+		else
+			old_nc = hookmetamethod(gm, "__namecall", wrapper)
+		end
+		ok_hook = type(old_nc) == "function"
+	end)
 
-    check(ok_hook, "hookmetamethod: оригинал получен", "hookmetamethod: не вернул оригинал __namecall", true)
-    if not ok_hook then return end
+	check(ok_hook, "hookmetamethod: оригинал получен", "hookmetamethod: не вернул оригинал __namecall", true)
+	if not ok_hook then return end
 
-    pcall(function() gm:IsA("Workspace") end)
-    task.wait()
-    check(hook_result == false, "checkcaller: false при вызове из C-кода", "checkcaller: true для C-кода", true)
+	pcall(function() gm:IsA("Workspace") end)
+	task.wait()
+	check(hook_result == false, "checkcaller: false при вызове из C-кода", "checkcaller: true для C-кода", true)
 
-    if newcclosure then
-        local cc_false_fn = newcclosure(function()
-            return checkcaller()
-        end)
-        local ok_cc, v_cc = safe_pcall(cc_false_fn)
-        check(ok_cc and not v_cc, "checkcaller: false из newcclosure", "checkcaller: true из newcclosure", true)
+	if newcclosure then
+		local cc_false_fn = newcclosure(function()
+			return checkcaller()
+		end)
+		local ok_cc, v_cc = safe_pcall(cc_false_fn)
+		check(ok_cc and not v_cc, "checkcaller: false из newcclosure", "checkcaller: true из newcclosure", true)
 
-        local function normal_fn()
-            return cc_false_fn()
-        end
-        local ok_n, v_n = safe_pcall(normal_fn)
-        check(ok_n and v_n, "checkcaller: true при вызове C-closure из Luau", "checkcaller: false при вызове C-closure из Luau", true)
-    end
+		local function normal_fn()
+			return cc_false_fn()
+		end
+		local ok_n, v_n = safe_pcall(normal_fn)
+		check(ok_n and v_n, "checkcaller: true при вызове C-closure из Luau", "checkcaller: false при вызове C-closure из Luau", true)
+	end
 
-    local stable = true
-    for i = 1, 5 do
-        local ok_s, v_s = safe_pcall(checkcaller)
-        if not (ok_s and v_s) then
-            stable = false
-            break
-        end
-        task.wait()
-    end
-    check(stable, "checkcaller: стабилен при повторных вызовах", "checkcaller: нестабилен при повторных вызовах", true)
+	local stable = true
+	for i = 1, 5 do
+		local ok_s, v_s = safe_pcall(checkcaller)
+		if not (ok_s and v_s) then
+			stable = false
+			break
+		end
+		task.wait()
+	end
+	check(stable, "checkcaller: стабилен при повторных вызовах", "checkcaller: нестабилен при повторных вызовах", true)
 end
 
 
@@ -727,183 +745,183 @@ local function test_request()
 end
 
 local function test_getnilinstances()
-    if not present(getnilinstances, "getnilinstances") then return end
+	if not present(getnilinstances, "getnilinstances") then return end
 
-    local ok_before, list_before = safe_pcall(getnilinstances)
-    check(ok_before and type(list_before) == "table", "getnilinstances: возвращает таблицу", "getnilinstances: не вернул таблицу/ошибка", true)
+	local ok_before, list_before = safe_pcall(getnilinstances)
+	check(ok_before and type(list_before) == "table", "getnilinstances: возвращает таблицу", "getnilinstances: не вернул таблицу/ошибка", true)
 
-    local nil_part = Instance.new("Part")
-    nil_part.Name = "GNI_Test_" .. tostring(math.random(1e9))
-    local parented_part = Instance.new("Part")
-    parented_part.Name = "GNI_Parented_" .. tostring(math.random(1e9))
-    parented_part.Parent = workspace
+	local nil_part = Instance.new("Part")
+	nil_part.Name = "GNI_Test_" .. tostring(math.random(1e9))
+	local parented_part = Instance.new("Part")
+	parented_part.Name = "GNI_Parented_" .. tostring(math.random(1e9))
+	parented_part.Parent = workspace
 
-    task.wait(0.1)
+	task.wait(0.1)
 
-    local ok_list, list_mid = safe_pcall(getnilinstances)
-    check(ok_list and type(list_mid) == "table", "getnilinstances: вызов успешен", "getnilinstances: ошибка при вызове", true)
+	local ok_list, list_mid = safe_pcall(getnilinstances)
+	check(ok_list and type(list_mid) == "table", "getnilinstances: вызов успешен", "getnilinstances: ошибка при вызове", true)
 
-    local found_nil, found_parented = false, false
-    for _, inst in ipairs(list_mid) do
-        if inst == nil_part then
-            found_nil = true
-        elseif inst == parented_part then
-            found_parented = true
-        end
-        if found_nil and found_parented then break end
-    end
+	local found_nil, found_parented = false, false
+	for _, inst in ipairs(list_mid) do
+		if inst == nil_part then
+			found_nil = true
+		elseif inst == parented_part then
+			found_parented = true
+		end
+		if found_nil and found_parented then break end
+	end
 
-    check(found_nil, "getnilinstances: находит nil-parent экземпляры", "getnilinstances: не находит nil-parent экземпляры", true)
-    check(not found_parented, "getnilinstances: не включает экземпляры с родителем", "getnilinstances: включает экземпляры с родителем", true)
+	check(found_nil, "getnilinstances: находит nil-parent экземпляры", "getnilinstances: не находит nil-parent экземпляры", true)
+	check(not found_parented, "getnilinstances: не включает экземпляры с родителем", "getnilinstances: включает экземпляры с родителем", true)
 
-    nil_part:Destroy()
-    parented_part:Destroy()
+	nil_part:Destroy()
+	parented_part:Destroy()
 end
 
 
 local function test_threadidentity() -- Такую проверку подделать никак не получится😎
-    local gti, sti = getthreadidentity or getidentity, setthreadidentity or setidentity
-    if not present(gti, "getthreadidentity") or not present(sti, "setthreadidentity") then return end
+	local gti, sti = getthreadidentity or getidentity, setthreadidentity or setidentity
+	if not present(gti, "getthreadidentity") or not present(sti, "setthreadidentity") then return end
 
-    local original_identity = gti()
-    check(type(original_identity) == "number", "getthreadidentity: возвращает число", "getthreadidentity: не вернул число", true)
+	local original_identity = gti()
+	check(type(original_identity) == "number", "getthreadidentity: возвращает число", "getthreadidentity: не вернул число", true)
 
-    local stable1 = gti()
-    local stable2 = gti()
-    check(stable1 == stable2, "getthreadidentity: стабилен при повторных вызовах", "getthreadidentity: нестабилен при повторных вызовах", true)
+	local stable1 = gti()
+	local stable2 = gti()
+	check(stable1 == stable2, "getthreadidentity: стабилен при повторных вызовах", "getthreadidentity: нестабилен при повторных вызовах", true)
 
-    local spawn_id = -1
-    task.spawn(function()
-        spawn_id = gti()
-    end)
-    task.wait()
-    check(spawn_id == original_identity, "getthreadidentity: одинаков в новом потоке без sti", "getthreadidentity: отличается в новом потоке без sti", true)
+	local spawn_id = -1
+	task.spawn(function()
+		spawn_id = gti()
+	end)
+	task.wait()
+	check(spawn_id == original_identity, "getthreadidentity: одинаков в новом потоке без sti", "getthreadidentity: отличается в новом потоке без sti", true)
 
-    local defer_id = -1 -- Справедливо проверить новый поток даже на отрицательном кол-ве.
-    task.defer(function()
-        defer_id = gti()
-    end)
-    task.wait()
-    check(defer_id == original_identity, "getthreadidentity: одинаков в task.defer без sti", "getthreadidentity: отличается в task.defer без sti", true)
+	local defer_id = -1 -- Справедливо проверить новый поток даже на отрицательном кол-ве.
+	task.defer(function()
+		defer_id = gti()
+	end)
+	task.wait()
+	check(defer_id == original_identity, "getthreadidentity: одинаков в task.defer без sti", "getthreadidentity: отличается в task.defer без sti", true)
 
-    local pcall_ok, pcall_id = pcall(function()
-        return gti()
-    end)
-    check(pcall_ok and pcall_id == original_identity, "getthreadidentity: одинаков в pcall без sti", "getthreadidentity: отличается в pcall без sti", true)
+	local pcall_ok, pcall_id = pcall(function()
+		return gti()
+	end)
+	check(pcall_ok and pcall_id == original_identity, "getthreadidentity: одинаков в pcall без sti", "getthreadidentity: отличается в pcall без sti", true)
 
-    check(original_identity >= 0 and original_identity <= 8, "getthreadidentity: значение в допустимом диапазоне", "getthreadidentity: значение вне диапазона", true)
+	check(original_identity >= 0 and original_identity <= 8, "getthreadidentity: значение в допустимом диапазоне", "getthreadidentity: значение вне диапазона", true)
 
-    local new_id = -1
-    task.spawn(function()
-        sti(5)
-        new_id = gti()
-    end)
-    task.wait()
-    check(new_id == 5, "setthreadidentity: работает в новом потоке (task.spawn)", "setthreadidentity: не сработал в новом потоке", true)
-    check(gti() == original_identity, "setthreadidentity: не влияет на другие потоки", "setthreadidentity: повлиял на другой поток", true)
+	local new_id = -1
+	task.spawn(function()
+		sti(5)
+		new_id = gti()
+	end)
+	task.wait()
+	check(new_id == 5, "setthreadidentity: работает в новом потоке (task.spawn)", "setthreadidentity: не сработал в новом потоке", true)
+	check(gti() == original_identity, "setthreadidentity: не влияет на другие потоки", "setthreadidentity: повлиял на другой поток", true)
 
-    local defer_set_id = -1
-    task.defer(function()
-        sti(7)
-        defer_set_id = gti()
-    end)
-    task.wait()
-    check(defer_set_id == 7, "setthreadidentity: работает в task.defer", "setthreadidentity: не сработал в task.defer", true)
-    check(gti() == original_identity, "setthreadidentity: task.defer не изменил основной поток", "setthreadidentity: task.defer изменил основной поток", true)
+	local defer_set_id = -1
+	task.defer(function()
+		sti(7)
+		defer_set_id = gti()
+	end)
+	task.wait()
+	check(defer_set_id == 7, "setthreadidentity: работает в task.defer", "setthreadidentity: не сработал в task.defer", true)
+	check(gti() == original_identity, "setthreadidentity: task.defer не изменил основной поток", "setthreadidentity: task.defer изменил основной поток", true)
 
-    local pcall_ok2, pcall_set_id = pcall(function()
-        sti(3)
-        return gti()
-    end)
-    check(pcall_ok2 and pcall_set_id == 3, "setthreadidentity: корректно меняет уровень в pcall", "setthreadidentity: не изменил уровень в pcall", true)
-    check(gti() == original_identity, "setthreadidentity: pcall не повлиял на основной поток", "setthreadidentity: pcall повлиял на основной поток", true)
+	local pcall_ok2, pcall_set_id = pcall(function()
+		sti(3)
+		return gti()
+	end)
+	check(pcall_ok2 and pcall_set_id == 3, "setthreadidentity: корректно меняет уровень в pcall", "setthreadidentity: не изменил уровень в pcall", true)
+	check(gti() == original_identity, "setthreadidentity: pcall не повлиял на основной поток", "setthreadidentity: pcall повлиял на основной поток", true)
 
-    local prev_id = gti()
-    sti(prev_id)
-    check(gti() == prev_id, "setthreadidentity: установка того же уровня не ломает состояние", "setthreadidentity: установка того же уровня изменила состояние", true)
+	local prev_id = gti()
+	sti(prev_id)
+	check(gti() == prev_id, "setthreadidentity: установка того же уровня не ломает состояние", "setthreadidentity: установка того же уровня изменила состояние", true)
 
-    local rapid_ids = {}
-    for i = 1, 3 do
-        sti(i)
-        rapid_ids[i] = gti()
-    end
-    sti(original_identity)
-    local seq_ok = true
-    for i = 1, 3 do
-        if rapid_ids[i] ~= i then
-            seq_ok = false
-            break
-        end
-    end
-    check(seq_ok, "setthreadidentity: быстрое переключение уровней корректно", "setthreadidentity: быстрое переключение уровней некорректно", true)
+	local rapid_ids = {}
+	for i = 1, 3 do
+		sti(i)
+		rapid_ids[i] = gti()
+	end
+	sti(original_identity)
+	local seq_ok = true
+	for i = 1, 3 do
+		if rapid_ids[i] ~= i then
+			seq_ok = false
+			break
+		end
+	end
+	check(seq_ok, "setthreadidentity: быстрое переключение уровней корректно", "setthreadidentity: быстрое переключение уровней некорректно", true)
 
-    sti(original_identity)
+	sti(original_identity)
 end
 
 local function test_debug_info()
-    local getinfo = debug and debug.getinfo
-    if not present or not present(getinfo, "debug.getinfo") then return end
+	local getinfo = debug and debug.getinfo
+	if not present or not present(getinfo, "debug.getinfo") then return end
 
-    local line_defined
-    local upval = "upvalue"
-    local function target_func(arg)
-        local l_var = arg
-        local info = getinfo(1, "l")
-        if info and type(info.currentline) == "number" then
-            line_defined = info.currentline - 3
-        end
-        return upval .. l_var
-    end
+	local line_defined
+	local upval = "upvalue"
+	local function target_func(arg)
+		local l_var = arg
+		local info = getinfo(1, "l")
+		if info and type(info.currentline) == "number" then
+			line_defined = info.currentline - 3
+		end
+		return upval .. l_var
+	end
 
-    local ok_info, info_by_ref = safe_pcall(getinfo, target_func, "Slnu")
-    if check(ok_info and type(info_by_ref) == "table", "debug.getinfo(func): возвращает таблицу", "debug.getinfo(func): вернул не таблицу", true) then
-        check(info_by_ref.what == "Lua" and type(info_by_ref.source) == "string", "debug.getinfo(func, S): 'what' и 'source' корректны", "debug.getinfo(func, S): некорректный 'what' или 'source'", true)
-        check(info_by_ref.linedefined == line_defined and type(info_by_ref.lastlinedefined) == "number", "debug.getinfo(func, l): 'linedefined' корректно", "debug.getinfo(func, l): некорректный 'linedefined'", true)
-        check(info_by_ref.nups == 1, "debug.getinfo(func, u): 'nups' (кол-во upvalue) корректно", "debug.getinfo(func, u): некорректный 'nups'", true)
-        if info_by_ref.name then
-            check(info_by_ref.name == "target_func", "debug.getinfo(func, n): 'name' корректно", "debug.getinfo(func, n): некорректный 'name'", true)
-        end
-    end
+	local ok_info, info_by_ref = safe_pcall(getinfo, target_func, "Slnu")
+	if check(ok_info and type(info_by_ref) == "table", "debug.getinfo(func): возвращает таблицу", "debug.getinfo(func): вернул не таблицу", true) then
+		check(info_by_ref.what == "Lua" and type(info_by_ref.source) == "string", "debug.getinfo(func, S): 'what' и 'source' корректны", "debug.getinfo(func, S): некорректный 'what' или 'source'", true)
+		check(info_by_ref.linedefined == line_defined and type(info_by_ref.lastlinedefined) == "number", "debug.getinfo(func, l): 'linedefined' корректно", "debug.getinfo(func, l): некорректный 'linedefined'", true)
+		check(info_by_ref.nups == 1, "debug.getinfo(func, u): 'nups' (кол-во upvalue) корректно", "debug.getinfo(func, u): некорректный 'nups'", true)
+		if info_by_ref.name then
+			check(info_by_ref.name == "target_func", "debug.getinfo(func, n): 'name' корректно", "debug.getinfo(func, n): некорректный 'name'", true)
+		end
+	end
 
-    local level1_info, level2_func
-    local function wrapper()
-        level1_info = getinfo(1, "l")
-        local level2_info = getinfo(2, "f")
-        if type(level2_info) == "table" then
-            level2_func = level2_info.func
-        end
-    end
-    wrapper()
-    check(type(level1_info) == "table" and type(level1_info.currentline) == "number", "debug.getinfo(level, l): получает 'currentline'", "debug.getinfo(level, l): не получает 'currentline'", true)
-    check(level2_func == test_debug_info, "debug.getinfo(level, f): получает верную функцию-вызывателя", "debug.getinfo(level, f): получил неверную функцию", true)
+	local level1_info, level2_func
+	local function wrapper()
+		level1_info = getinfo(1, "l")
+		local level2_info = getinfo(2, "f")
+		if type(level2_info) == "table" then
+			level2_func = level2_info.func
+		end
+	end
+	wrapper()
+	check(type(level1_info) == "table" and type(level1_info.currentline) == "number", "debug.getinfo(level, l): получает 'currentline'", "debug.getinfo(level, l): не получает 'currentline'", true)
+	check(level2_func == test_debug_info, "debug.getinfo(level, f): получает верную функцию-вызывателя", "debug.getinfo(level, f): получил неверную функцию", true)
 
-    local ok_err_c = not select(1, safe_pcall(function() return getinfo(print, "s") end))
-    check(ok_err_c, "debug.getinfo: ожидаемо выдает ошибку на C-функции", "debug.getinfo: не вызвал ошибку на C-функции", true)
+	local ok_err_c = not select(1, safe_pcall(function() return getinfo(print, "s") end))
+	check(ok_err_c, "debug.getinfo: ожидаемо выдает ошибку на C-функции", "debug.getinfo: не вызвал ошибку на C-функции", true)
 end
 
 local function test_getscripts()
-    if not present(getscripts, "getscripts") then return end
+	if not present(getscripts, "getscripts") then return end
 
-    local dummy_script = Instance.new("LocalScript")
-    dummy_script.Name = "GetScriptsDummy_" .. math.random()
-    dummy_script.Parent = workspace
+	local dummy_script = Instance.new("LocalScript")
+	dummy_script.Name = "GetScriptsDummy_" .. math.random()
+	dummy_script.Parent = workspace
 
-    local ok_get, scripts = safe_pcall(getscripts)
-    check(ok_get and type(scripts) == "table", "getscripts: возвращает таблицу", "getscripts: не вернул таблицу", true)
+	local ok_get, scripts = safe_pcall(getscripts)
+	check(ok_get and type(scripts) == "table", "getscripts: возвращает таблицу", "getscripts: не вернул таблицу", true)
 
-    local found = false
-    if ok_get then
-        for _, s in ipairs(scripts) do
-            if s == dummy_script then
-                found = true
-                break
-            end
-        end
-    end
-    check(found, "getscripts: находит новосозданный LocalScript", "getscripts: не нашел новый LocalScript", false)
+	local found = false
+	if ok_get then
+		for _, s in ipairs(scripts) do
+			if s == dummy_script then
+				found = true
+				break
+			end
+		end
+	end
+	check(found, "getscripts: находит новосозданный LocalScript", "getscripts: не нашел новый LocalScript", false)
 
-    dummy_script:Destroy()
-    task.wait()
+	dummy_script:Destroy()
+	task.wait()
 end
 
 local function test_clonefunction()
@@ -918,7 +936,7 @@ local function test_clonefunction()
 		if getfenv then
 			check(getfenv(original) == getfenv(cloned), "clonefunction: клон и оригинал имеют одно окружение (env)", "clonefunction: окружения разные", true)
 		end
-		
+
 		local okh, old_original = pcall(hookfunction, original, function() return "hooked" end)
 		if okh then
 			local original_res = original()
@@ -948,7 +966,7 @@ local function test_debug_protos()
 		local uncallable_ok, _ = safe_pcall(inactive_p1)
 		check(not uncallable_ok, "debug.getproto: неактивный прототип не может быть вызван", "debug.getproto: неактивный прототип был вызван", true)
 	end
-	
+
 	container()
 	local ok_active, active_protos_table = safe_pcall(getproto, container, 1, true)
 	local active_proto = active_protos_table and active_protos_table[1]
@@ -1042,68 +1060,68 @@ local function test_getgenv()
 end
 
 local function test_getcallbackvalue()
-    if not present(getcallbackvalue, "getcallbackvalue") then return end
+	if not present(getcallbackvalue, "getcallbackvalue") then return end
 
-    local bf = Instance.new("BindableFunction")
-    local rf = Instance.new("RemoteFunction")
+	local bf = Instance.new("BindableFunction")
+	local rf = Instance.new("RemoteFunction")
 
-    local sentinel = false
-    local callback_func = function() sentinel = true end
-    bf.OnInvoke = callback_func
+	local sentinel = false
+	local callback_func = function() sentinel = true end
+	bf.OnInvoke = callback_func
 
-    local ok_get, retrieved = safe_pcall(getcallbackvalue, bf, "OnInvoke")
-    if not ok_get or type(retrieved) ~= "function" then
-        check(false, "getcallbackvalue: не удалось извлечь установленный callback через явное имя свойства", "getcallbackvalue: не извлек callback", true)
-    else
-        check(retrieved == callback_func, "getcallbackvalue: извлечённый callback совпадает с установленным", "getcallbackvalue: извлечённый callback не совпадает", true)
-        retrieved()
-        check(sentinel, "getcallbackvalue: извлечённый callback является рабочей функцией", "getcallbackvalue: callback не работает", true)
-    end
+	local ok_get, retrieved = safe_pcall(getcallbackvalue, bf, "OnInvoke")
+	if not ok_get or type(retrieved) ~= "function" then
+		check(false, "getcallbackvalue: не удалось извлечь установленный callback через явное имя свойства", "getcallbackvalue: не извлек callback", true)
+	else
+		check(retrieved == callback_func, "getcallbackvalue: извлечённый callback совпадает с установленным", "getcallbackvalue: извлечённый callback не совпадает", true)
+		retrieved()
+		check(sentinel, "getcallbackvalue: извлечённый callback является рабочей функцией", "getcallbackvalue: callback не работает", true)
+	end
 
-    local ok_nil, val_nil = safe_pcall(getcallbackvalue, rf, "OnClientInvoke")
-    check(ok_nil and (val_nil == nil or type(val_nil) == "function" and val_nil == rf.OnClientInvoke), "getcallbackvalue: корректно обрабатывает неустановленное свойство", "getcallbackvalue: некорректно обработал неустановленное свойство", true)
+	local ok_nil, val_nil = safe_pcall(getcallbackvalue, rf, "OnClientInvoke")
+	check(ok_nil and (val_nil == nil or type(val_nil) == "function" and val_nil == rf.OnClientInvoke), "getcallbackvalue: корректно обрабатывает неустановленное свойство", "getcallbackvalue: некорректно обработал неустановленное свойство", true)
 
-    local ok_non, val_non = safe_pcall(getcallbackvalue, bf, "NonExistentProperty")
-    check(ok_non and val_non == nil, "getcallbackvalue: возвращает nil для несуществующего свойства", "getcallbackvalue: не вернул nil для несуществующего свойства", true)
+	local ok_non, val_non = safe_pcall(getcallbackvalue, bf, "NonExistentProperty")
+	check(ok_non and val_non == nil, "getcallbackvalue: возвращает nil для несуществующего свойства", "getcallbackvalue: не вернул nil для несуществующего свойства", true)
 
-    bf:Destroy()
-    rf:Destroy()
+	bf:Destroy()
+	rf:Destroy()
 end
 
 
 local function test_getcustomasset()
-    if not present(getcustomasset, "getcustomasset") then return end
+	if not present(getcustomasset, "getcustomasset") then return end
 
-    local path = "gcatest.txt"
-    if isfile and isfile(path) and delfile then
-        delfile(path)
-    end
+	local path = "gcatest.txt"
+	if isfile and isfile(path) and delfile then
+		delfile(path)
+	end
 
-    if writefile then
-        writefile(path, "test")
-        local ok_get, assetId = safe_pcall(getcustomasset, path)
-        if check(ok_get and type(assetId) == "string", "getcustomasset: выполняется без ошибок для существующего файла", "getcustomasset: ошибка при выполнении", false) then -- валидация оказывается не только по rbxasset:// была...
-            local valid_prefixes = {
-                "^rbxasset://",
-                "^rbxassetid://",
-                "^rbxthumb://",
-                "^rbxgameasset://"
-            }
-            local valid = false
-            for _, pattern in ipairs(valid_prefixes) do
-                if assetId:lower():find(pattern, 1) then
-                    valid = true
-                    break
-                end
-            end
-            check(valid, "getcustomasset: возвращает валидный asset id", "getcustomasset: вернул невалидный id", false)
-        end
-        if delfile then
-            delfile(path)
-        end
-    else
-        warnEmoji("getcustomasset: writefile не доступен, тест пропущен")
-    end
+	if writefile then
+		writefile(path, "test")
+		local ok_get, assetId = safe_pcall(getcustomasset, path)
+		if check(ok_get and type(assetId) == "string", "getcustomasset: выполняется без ошибок для существующего файла", "getcustomasset: ошибка при выполнении", false) then -- валидация оказывается не только по rbxasset:// была...
+			local valid_prefixes = {
+				"^rbxasset://",
+				"^rbxassetid://",
+				"^rbxthumb://",
+				"^rbxgameasset://"
+			}
+			local valid = false
+			for _, pattern in ipairs(valid_prefixes) do
+				if assetId:lower():find(pattern, 1) then
+					valid = true
+					break
+				end
+			end
+			check(valid, "getcustomasset: возвращает валидный asset id", "getcustomasset: вернул невалидный id", false)
+		end
+		if delfile then
+			delfile(path)
+		end
+	else
+		warnEmoji("getcustomasset: writefile не доступен, тест пропущен")
+	end
 end
 
 
@@ -1131,77 +1149,77 @@ local function test_loadstring()
 end
 
 local function test_getrunningscripts()
-    if not present(getrunningscripts, "getrunningscripts") then return end
+	if not present(getrunningscripts, "getrunningscripts") then return end
 
-    local running_script = script
-    local inactive_script = Instance.new("LocalScript")
-    inactive_script.Source = ""
+	local running_script = script
+	local inactive_script = Instance.new("LocalScript")
+	inactive_script.Source = ""
 
-    local ok_get, list = safe_pcall(getrunningscripts)
-    if not check(ok_get and type(list) == "table", "getrunningscripts: возвращает таблицу", "getrunningscripts: не вернул таблицу", false) then
-        inactive_script:Destroy()
-        return
-    end
+	local ok_get, list = safe_pcall(getrunningscripts)
+	if not check(ok_get and type(list) == "table", "getrunningscripts: возвращает таблицу", "getrunningscripts: не вернул таблицу", false) then
+		inactive_script:Destroy()
+		return
+	end
 
-    local found_self, found_inactive, all_are_scripts = false, false, true
-    for _, s in ipairs(list) do
-        if typeof(s) ~= "Instance" or not s:IsA("BaseScript") then
-            all_are_scripts = false
-        end
-        if s == running_script then
-            found_self = true
-        elseif s == inactive_script then
-            found_inactive = true
-        end
-    end
+	local found_self, found_inactive, all_are_scripts = false, false, true
+	for _, s in ipairs(list) do
+		if typeof(s) ~= "Instance" or not s:IsA("BaseScript") then
+			all_are_scripts = false
+		end
+		if s == running_script then
+			found_self = true
+		elseif s == inactive_script then
+			found_inactive = true
+		end
+	end
 
-    check(all_are_scripts, "getrunningscripts: все элементы списка являются скриптами", "getrunningscripts: список содержит не-скриптовые объекты", false)
-    check(found_self or table.find(list, running_script) ~= nil, "getrunningscripts: находит текущий исполняемый скрипт", "getrunningscripts: не нашел текущий скрипт", false)
-    check(not found_inactive, "getrunningscripts: не включает неактивные скрипты", "getrunningscripts: ошибочно включил неактивный скрипт", false)
+	check(all_are_scripts, "getrunningscripts: все элементы списка являются скриптами", "getrunningscripts: список содержит не-скриптовые объекты", false)
+	check(found_self or table.find(list, running_script) ~= nil, "getrunningscripts: находит текущий исполняемый скрипт", "getrunningscripts: не нашел текущий скрипт", false)
+	check(not found_inactive, "getrunningscripts: не включает неактивные скрипты", "getrunningscripts: ошибочно включил неактивный скрипт", false)
 
-    local unique_set = {}
-    local has_duplicates = false
-    for _, s in ipairs(list) do
-        if unique_set[s] then
-            has_duplicates = true
-            break
-        end
-        unique_set[s] = true
-    end
-    check(not has_duplicates, "getrunningscripts: список не содержит дубликатов", "getrunningscripts: список содержит дубликаты", false)
+	local unique_set = {}
+	local has_duplicates = false
+	for _, s in ipairs(list) do
+		if unique_set[s] then
+			has_duplicates = true
+			break
+		end
+		unique_set[s] = true
+	end
+	check(not has_duplicates, "getrunningscripts: список не содержит дубликатов", "getrunningscripts: список содержит дубликаты", false)
 
-    inactive_script:Destroy()
+	inactive_script:Destroy()
 end
 
 local function test_getscriptbytecode()
-    if not present(getscriptbytecode, "getscriptbytecode") then return end
+	if not present(getscriptbytecode, "getscriptbytecode") then return end
 
-    local dummy_with_code = Instance.new("LocalScript")
-    dummy_with_code.Source = "return 123"
+	local dummy_with_code = Instance.new("LocalScript")
+	dummy_with_code.Source = "return 123"
 
-    local dummy_module = Instance.new("ModuleScript")
-    dummy_module.Source = "return function() return 'ok' end"
+	local dummy_module = Instance.new("ModuleScript")
+	dummy_module.Source = "return function() return 'ok' end"
 
-    local dummy_empty = Instance.new("LocalScript")
+	local dummy_empty = Instance.new("LocalScript")
 
-    local ok_get, bytecode = safe_pcall(getscriptbytecode, dummy_with_code)
-    check(ok_get, "getscriptbytecode: вызов не вызвал ошибок для скрипта с кодом", "getscriptbytecode: вызов вызвал ошибку для скрипта с кодом", false)
-    check(type(bytecode) == "string" and #bytecode > 0, "getscriptbytecode: вернул непустую строку байт-кода для скрипта с кодом", "getscriptbytecode: не вернул корректный байт-код для скрипта с кодом", false)
+	local ok_get, bytecode = safe_pcall(getscriptbytecode, dummy_with_code)
+	check(ok_get, "getscriptbytecode: вызов не вызвал ошибок для скрипта с кодом", "getscriptbytecode: вызов вызвал ошибку для скрипта с кодом", false)
+	check(type(bytecode) == "string" and #bytecode > 0, "getscriptbytecode: вернул непустую строку байт-кода для скрипта с кодом", "getscriptbytecode: не вернул корректный байт-код для скрипта с кодом", false)
 
-    local ok_mod, bytecode_mod = safe_pcall(getscriptbytecode, dummy_module)
-    check(ok_mod, "getscriptbytecode: вызов не вызвал ошибок для ModuleScript", "getscriptbytecode: вызвал ошибку для ModuleScript", false)
-    check(type(bytecode_mod) == "string" and #bytecode_mod > 0, "getscriptbytecode: вернул непустую строку байт-кода для ModuleScript", "getscriptbytecode: не вернул корректный байт-код для ModuleScript", false)
+	local ok_mod, bytecode_mod = safe_pcall(getscriptbytecode, dummy_module)
+	check(ok_mod, "getscriptbytecode: вызов не вызвал ошибок для ModuleScript", "getscriptbytecode: вызвал ошибку для ModuleScript", false)
+	check(type(bytecode_mod) == "string" and #bytecode_mod > 0, "getscriptbytecode: вернул непустую строку байт-кода для ModuleScript", "getscriptbytecode: не вернул корректный байт-код для ModuleScript", false)
 
-    local ok_nil, bc_nil = safe_pcall(getscriptbytecode, dummy_empty)
-    check(ok_nil, "getscriptbytecode: вызов не вызвал ошибок для пустого скрипта", "getscriptbytecode: вызвал ошибку для пустого скрипта", false)
-    check(bc_nil == nil or (type(bc_nil) == "string" and #bc_nil == 0), "getscriptbytecode: вернул nil или пустую строку для скрипта без байт-кода", "getscriptbytecode: вернул некорректное значение для пустого скрипта", false)
+	local ok_nil, bc_nil = safe_pcall(getscriptbytecode, dummy_empty)
+	check(ok_nil, "getscriptbytecode: вызов не вызвал ошибок для пустого скрипта", "getscriptbytecode: вызвал ошибку для пустого скрипта", false)
+	check(bc_nil == nil or (type(bc_nil) == "string" and #bc_nil == 0), "getscriptbytecode: вернул nil или пустую строку для скрипта без байт-кода", "getscriptbytecode: вернул некорректное значение для пустого скрипта", false)
 
-    local ok_non, bc_non = safe_pcall(getscriptbytecode, Instance.new("Part"))
-    check(ok_non and bc_non == nil, "getscriptbytecode: вернул nil для объекта, не являющегося скриптом", "getscriptbytecode: вернул не nil для объекта, не являющегося скриптом", false)
+	local ok_non, bc_non = safe_pcall(getscriptbytecode, Instance.new("Part"))
+	check(ok_non and bc_non == nil, "getscriptbytecode: вернул nil для объекта, не являющегося скриптом", "getscriptbytecode: вернул не nil для объекта, не являющегося скриптом", false)
 
-    dummy_with_code:Destroy()
-    dummy_module:Destroy()
-    dummy_empty:Destroy()
+	dummy_with_code:Destroy()
+	dummy_module:Destroy()
+	dummy_empty:Destroy()
 end
 
 local function test_firesignal()
@@ -1270,129 +1288,129 @@ local function test_file_operations()
 end
 
 local function test_folder_and_load_ops()
-    local fns = {makefolder, isfolder, listfiles, loadfile, writefile}
-    local fns_names = {"makefolder", "isfolder", "listfiles", "loadfile", "writefile"}
-    for i = 1, #fns do
-        if not present(fns[i], fns_names[i]) then return end
-    end
+	local fns = {makefolder, isfolder, listfiles, loadfile, writefile}
+	local fns_names = {"makefolder", "isfolder", "listfiles", "loadfile", "writefile"}
+	for i = 1, #fns do
+		if not present(fns[i], fns_names[i]) then return end
+	end
 
-    local folder = "luau_test_folder"
-    local file_in_root = "luau_test_file.lua"
-    local file_in_folder = folder .. "/" .. "inner_file.txt"
+	local folder = "luau_test_folder"
+	local file_in_root = "luau_test_file.lua"
+	local file_in_folder = folder .. "/" .. "inner_file.txt"
 
-    if present(delfile, "delfile") then
-        safe_pcall(delfile, file_in_root)
-        safe_pcall(delfile, file_in_folder)
-    end
-    if present(delfolder, "delfolder") then
-        safe_pcall(delfolder, folder)
-    end
-    task.wait(0.05)
+	if present(delfile, "delfile") then
+		safe_pcall(delfile, file_in_root)
+		safe_pcall(delfile, file_in_folder)
+	end
+	if present(delfolder, "delfolder") then
+		safe_pcall(delfolder, folder)
+	end
+	task.wait(0.05)
 
-    makefolder(folder)
-    check(isfolder(folder), "isfolder: true для созданной через makefolder папки", "isfolder: false для созданной папки", false)
+	makefolder(folder)
+	check(isfolder(folder), "isfolder: true для созданной через makefolder папки", "isfolder: false для созданной папки", false)
 
-    writefile(file_in_root, "return ...+1")
-    check(not isfolder(file_in_root), "isfolder: false для созданного файла", "isfolder: true для файла", true)
-    writefile(file_in_folder, "test_content")
+	writefile(file_in_root, "return ...+1")
+	check(not isfolder(file_in_root), "isfolder: false для созданного файла", "isfolder: true для файла", true)
+	writefile(file_in_folder, "test_content")
 
-    local ok_list, root_files = safe_pcall(listfiles, "")
-    if check(ok_list and type(root_files) == "table", "listfiles(''): возвращает таблицу", "listfiles(''): не вернул таблицу", false) then
-        local found = false
-        for _, v in ipairs(root_files) do
-            if v:match(folder) then
-                found = true
-                break
-            end
-        end
-        check(found, "listfiles(''): находит созданную папку", "listfiles(''): не нашел папку", false)
-    end
+	local ok_list, root_files = safe_pcall(listfiles, "")
+	if check(ok_list and type(root_files) == "table", "listfiles(''): возвращает таблицу", "listfiles(''): не вернул таблицу", false) then
+		local found = false
+		for _, v in ipairs(root_files) do
+			if v:match(folder) then
+				found = true
+				break
+			end
+		end
+		check(found, "listfiles(''): находит созданную папку", "listfiles(''): не нашел папку", false)
+	end
 
-    local ok_list2, folder_files = safe_pcall(listfiles, folder)
-    if check(ok_list2 and type(folder_files) == "table", "listfiles(folder): возвращает таблицу", "listfiles(folder): не вернул таблицу", false) then
-        local found = false
-        for _, v in ipairs(folder_files) do
-            local name = v:match("[^/\\]+$")
-            if name == "inner_file.txt" then
-                found = true
-                break
-            end
-        end
-        check(found, "listfiles(folder): находит файл внутри папки", "listfiles(folder): не нашел файл", false)
-    end
+	local ok_list2, folder_files = safe_pcall(listfiles, folder)
+	if check(ok_list2 and type(folder_files) == "table", "listfiles(folder): возвращает таблицу", "listfiles(folder): не вернул таблицу", false) then
+		local found = false
+		for _, v in ipairs(folder_files) do
+			local name = v:match("[^/\\]+$")
+			if name == "inner_file.txt" then
+				found = true
+				break
+			end
+		end
+		check(found, "listfiles(folder): находит файл внутри папки", "listfiles(folder): не нашел файл", false)
+	end
 
-    local ok_load, chunk = safe_pcall(loadfile, file_in_root)
-    if check(ok_load and type(chunk) == "function", "loadfile: компилирует файл в функцию", "loadfile: не скомпилировал файл", true) then
-        local ok_exec, res = safe_pcall(chunk, 10)
-        check(ok_exec and res == 11, "loadfile: функция из файла работает корректно", "loadfile: функция не работает", true)
-    end
+	local ok_load, chunk = safe_pcall(loadfile, file_in_root)
+	if check(ok_load and type(chunk) == "function", "loadfile: компилирует файл в функцию", "loadfile: не скомпилировал файл", true) then
+		local ok_exec, res = safe_pcall(chunk, 10)
+		check(ok_exec and res == 11, "loadfile: функция из файла работает корректно", "loadfile: функция не работает", true)
+	end
 
-    writefile(file_in_root, "invalid-syntax")
-    local ok_load_err, chunk_err = safe_pcall(loadfile, file_in_root)
-    local syntax_error_detected = false
-    if not ok_load_err then
-        syntax_error_detected = true
-    elseif type(chunk_err) == "function" then
-        local ok_exec_err = pcall(chunk_err)
-        if not ok_exec_err then
-            syntax_error_detected = true
-        end
-    elseif type(chunk_err) == "string" and chunk_err:lower():find("syntax") then
-        syntax_error_detected = true
-    end
-    check(syntax_error_detected, "loadfile: корректно реагирует на синтаксическую ошибку", "loadfile: не вызвал ошибку на синтаксисе", true)
+	writefile(file_in_root, "invalid-syntax")
+	local ok_load_err, chunk_err = safe_pcall(loadfile, file_in_root)
+	local syntax_error_detected = false
+	if not ok_load_err then
+		syntax_error_detected = true
+	elseif type(chunk_err) == "function" then
+		local ok_exec_err = pcall(chunk_err)
+		if not ok_exec_err then
+			syntax_error_detected = true
+		end
+	elseif type(chunk_err) == "string" and chunk_err:lower():find("syntax") then
+		syntax_error_detected = true
+	end
+	check(syntax_error_detected, "loadfile: корректно реагирует на синтаксическую ошибку", "loadfile: не вызвал ошибку на синтаксисе", true)
 
-    if present(delfolder, "delfolder") then
-        local ok_del = select(1, safe_pcall(delfolder, folder))
-        if check(ok_del, "delfolder: выполнился без ошибок", "delfolder: ошибка при выполнении", false) then
-            check(not isfolder(folder), "delfolder: успешно удаляет папку", "delfolder: папка не удалена", false)
-        end
-    end
+	if present(delfolder, "delfolder") then
+		local ok_del = select(1, safe_pcall(delfolder, folder))
+		if check(ok_del, "delfolder: выполнился без ошибок", "delfolder: ошибка при выполнении", false) then
+			check(not isfolder(folder), "delfolder: успешно удаляет папку", "delfolder: папка не удалена", false)
+		end
+	end
 
-    if present(delfile, "delfile") then
-        delfile(file_in_root)
-    end
+	if present(delfile, "delfile") then
+		delfile(file_in_root)
+	end
 end
 
 local function test_setscriptable()
-    if not present(setscriptable, "setscriptable") then return end
+	if not present(setscriptable, "setscriptable") then return end
 
-    local part = Instance.new("Part")
-    local hidden_props = {
-        "BottomParamA",
-        "TopParamA",
-        "RootPriority"
-    }
+	local part = Instance.new("Part")
+	local hidden_props = {
+		"BottomParamA",
+		"TopParamA",
+		"RootPriority"
+	}
 
-    for _, prop in ipairs(hidden_props) do
-        local before_p = select(1, safe_pcall(function() return part[prop] end))
-        check(not before_p, "setscriptable: свойство '"..prop.."' изначально нескриптуемо", "setscriptable: свойство '"..prop.."' изначально скриптуемо", true)
+	for _, prop in ipairs(hidden_props) do
+		local before_p = select(1, safe_pcall(function() return part[prop] end))
+		check(not before_p, "setscriptable: свойство '"..prop.."' изначально нескриптуемо", "setscriptable: свойство '"..prop.."' изначально скриптуемо", true)
 
-        local ok_set_true = select(1, safe_pcall(setscriptable, part, prop, true))
-        if check(ok_set_true, "setscriptable(true): выполнился без ошибок для '"..prop.."'", "setscriptable(true): ошибка при выполнении для '"..prop.."'", true) then
-            local p, val = safe_pcall(function() return part[prop] end)
-            check(p and val ~= nil, "setscriptable(true): свойство '"..prop.."' стало читаемым", "setscriptable(true): свойство '"..prop.."' не читается", true)
-        end
+		local ok_set_true = select(1, safe_pcall(setscriptable, part, prop, true))
+		if check(ok_set_true, "setscriptable(true): выполнился без ошибок для '"..prop.."'", "setscriptable(true): ошибка при выполнении для '"..prop.."'", true) then
+			local p, val = safe_pcall(function() return part[prop] end)
+			check(p and val ~= nil, "setscriptable(true): свойство '"..prop.."' стало читаемым", "setscriptable(true): свойство '"..prop.."' не читается", true)
+		end
 
-        local ok_set_false = select(1, safe_pcall(setscriptable, part, prop, false))
-        if check(ok_set_false, "setscriptable(false): выполнился без ошибок для '"..prop.."'", "setscriptable(false): ошибка при выполнении для '"..prop.."'", true) then
-            local after_p = select(1, safe_pcall(function() return part[prop] end))
-            check(not after_p, "setscriptable(false): свойство '"..prop.."' снова стало нескриптуемым", "setscriptable(false): свойство '"..prop.."' осталось скриптуемым", true)
-        end
+		local ok_set_false = select(1, safe_pcall(setscriptable, part, prop, false))
+		if check(ok_set_false, "setscriptable(false): выполнился без ошибок для '"..prop.."'", "setscriptable(false): ошибка при выполнении для '"..prop.."'", true) then
+			local after_p = select(1, safe_pcall(function() return part[prop] end))
+			check(not after_p, "setscriptable(false): свойство '"..prop.."' снова стало нескриптуемым", "setscriptable(false): свойство '"..prop.."' осталось скриптуемым", true)
+		end
 
-        local toggle_ok = true
-        for i = 1, 3 do
-            local state = (i % 2 == 0)
-            local ok = select(1, safe_pcall(setscriptable, part, prop, state))
-            if not ok then
-                toggle_ok = false
-                break
-            end
-        end
-        check(toggle_ok, "setscriptable: быстрое переключение состояний прошло успешно для '"..prop.."'", "setscriptable: быстрое переключение состояний вызвало ошибку для '"..prop.."'", true)
-    end
+		local toggle_ok = true
+		for i = 1, 3 do
+			local state = (i % 2 == 0)
+			local ok = select(1, safe_pcall(setscriptable, part, prop, state))
+			if not ok then
+				toggle_ok = false
+				break
+			end
+		end
+		check(toggle_ok, "setscriptable: быстрое переключение состояний прошло успешно для '"..prop.."'", "setscriptable: быстрое переключение состояний вызвало ошибку для '"..prop.."'", true)
+	end
 
-    part:Destroy()
+	part:Destroy()
 end
 
 local function test_debug_setstack()
@@ -1431,51 +1449,51 @@ local function test_debug_setstack()
 end
 
 local function test_replicatesignal()
-    if not present or not present(replicatesignal, "replicatesignal") then
-        return
-    end
+	if not present or not present(replicatesignal, "replicatesignal") then
+		return
+	end
 
-    local Players = cloneref and cloneref(game:GetService("Players")) or game:GetService("Players")
-    local LocalPlayer = cloneref and cloneref(Players.LocalPlayer) or Players.LocalPlayer
-    if not LocalPlayer then
-        warnEmoji("replicatesignal: LocalPlayer не найден, тест прерван")
-        return
-    end
+	local Players = cloneref and cloneref(game:GetService("Players")) or game:GetService("Players")
+	local LocalPlayer = cloneref and cloneref(Players.LocalPlayer) or Players.LocalPlayer
+	if not LocalPlayer then
+		warnEmoji("replicatesignal: LocalPlayer не найден, тест прерван")
+		return
+	end
 
-    if not LocalPlayer:FindFirstChild("PlayerGui") then
-        warnEmoji("replicatesignal: PlayerGui не найден, тест пропущен")
-        return
-    end
+	if not LocalPlayer:FindFirstChild("PlayerGui") then
+		warnEmoji("replicatesignal: PlayerGui не найден, тест пропущен")
+		return
+	end
 
-    local gui = Instance.new("ScreenGui")
-    gui.Name = "ReplicateSignalTestGui"
-    gui.ResetOnSpawn = false
-    gui.Parent = LocalPlayer.PlayerGui
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "ReplicateSignalTestGui"
+	gui.ResetOnSpawn = false
+	gui.Parent = LocalPlayer.PlayerGui
 
-    local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 100, 0, 100)
-    frame.Position = UDim2.new(0.5, -50, 0.5, -50)
-    frame.Parent = gui
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.new(0, 100, 0, 100)
+	frame.Position = UDim2.new(0.5, -50, 0.5, -50)
+	frame.Parent = gui
 
-    local signal = frame.MouseWheelForward
-    task.wait(0.1)
+	local signal = frame.MouseWheelForward
+	task.wait(0.1)
 
-    local ok_good = select(1, safe_pcall(replicatesignal, signal, 121, 214))
-    check(ok_good, "replicatesignal: корректные аргументы выполняются без ошибок", "replicatesignal: ошибка с корректными аргументами", false)
+	local ok_good = select(1, safe_pcall(replicatesignal, signal, 121, 214))
+	check(ok_good, "replicatesignal: корректные аргументы выполняются без ошибок", "replicatesignal: ошибка с корректными аргументами", false)
 
-    task.wait(0.1)
+	task.wait(0.1)
 
-    local ok_bad1 = not select(1, safe_pcall(replicatesignal, signal))
-    check(ok_bad1, "replicatesignal: ошибка при отсутствии аргументов", "replicatesignal: не выдал ошибку при отсутствии аргументов", false)
+	local ok_bad1 = not select(1, safe_pcall(replicatesignal, signal))
+	check(ok_bad1, "replicatesignal: ошибка при отсутствии аргументов", "replicatesignal: не выдал ошибку при отсутствии аргументов", false)
 
-    task.wait(0.1)
+	task.wait(0.1)
 
-    local ok_bad2 = not select(1, safe_pcall(replicatesignal, signal, 121))
-    check(ok_bad2, "replicatesignal: ошибка при неполных аргументах", "replicatesignal: не выдал ошибку при неполных аргументах", false)
+	local ok_bad2 = not select(1, safe_pcall(replicatesignal, signal, 121))
+	check(ok_bad2, "replicatesignal: ошибка при неполных аргументах", "replicatesignal: не выдал ошибку при неполных аргументах", false)
 
-    task.wait(0.1)
+	task.wait(0.1)
 
-    gui:Destroy()
+	gui:Destroy()
 end
 
 local function test_getfunctionhash()
@@ -1500,7 +1518,7 @@ end
 local function test_crypto_ops()
 	if not present(crypt, "crypt") then return end
 	if not present(crypt.base64encode, "crypt.base64encode") or not present(crypt.base64decode, "crypt.base64decode") then return end
-	
+
 	local orig_str = "Test string with special chars\0\1\2\255!"
 	local encoded_known = "RHVtbXlTdHJpbmcAAg=="
 	local decoded_known = "DummyString\0\2"
@@ -1519,25 +1537,25 @@ local function test_crypto_ops()
 end
 
 local function test_drawing()
-    if not present(Drawing, "Drawing") or not present(Drawing.new, "Drawing.new") or not present(isrenderobj, "isrenderobj") then
-        return
-    end
+	if not present(Drawing, "Drawing") or not present(Drawing.new, "Drawing.new") or not present(isrenderobj, "isrenderobj") then
+		return
+	end
 
-    local function safe_new(t)
-        local ok, obj = safe_pcall(function()
-            return Drawing.new(t)
-        end)
-        return ok, obj
-    end
+	local function safe_new(t)
+		local ok, obj = safe_pcall(function()
+			return Drawing.new(t)
+		end)
+		return ok, obj
+	end
 
-    local ok_circle, circle = safe_new("Circle")
-    if ok_circle and isrenderobj(circle) then
-        check(true, "Drawing.new: объект создаётся", "", true)
-        pcall(function() circle:Destroy() end)
-        circle = nil
-    else
-        check(false, "Drawing.new: объект создаётся", "Drawing.new: не смог создать объект", true)
-    end
+	local ok_circle, circle = safe_new("Circle")
+	if ok_circle and isrenderobj(circle) then
+		check(true, "Drawing.new: объект создаётся", "", true)
+		pcall(function() circle:Destroy() end)
+		circle = nil
+	else
+		check(false, "Drawing.new: объект создаётся", "Drawing.new: не смог создать объект", true)
+	end
 end
 
 local function test_getcallingscript()
@@ -1554,148 +1572,148 @@ local function test_getcallingscript()
 end
 
 local function test_getloadedmodules()
-    if not present(getloadedmodules, "getloadedmodules") then return end
+	if not present(getloadedmodules, "getloadedmodules") then return end
 
-    local loaded_mod = nil
-    local list_before = getloadedmodules()
-    if type(list_before) == "table" and #list_before > 0 then
-        loaded_mod = list_before[1]
-    end
-    if not loaded_mod then
-        return check(false, "нет доступных загруженных модулей для теста", "", false)
-    end
+	local loaded_mod = nil
+	local list_before = getloadedmodules()
+	if type(list_before) == "table" and #list_before > 0 then
+		loaded_mod = list_before[1]
+	end
+	if not loaded_mod then
+		return check(false, "нет доступных загруженных модулей для теста", "", false)
+	end
 
-    local not_loaded_mod = Instance.new("ModuleScript")
-    not_loaded_mod.Name = "NotLoaded_" .. tostring(math.random(1, 1e9))
+	local not_loaded_mod = Instance.new("ModuleScript")
+	not_loaded_mod.Name = "NotLoaded_" .. tostring(math.random(1, 1e9))
 
-    local ok_get, modules = safe_pcall(getloadedmodules)
-    if check(ok_get and type(modules) == "table", "getloadedmodules: возвращает таблицу", "getloadedmodules: не вернул таблицу", false) then
-        local found_loaded, found_not_loaded = false, false
-        for _, mod in ipairs(modules) do
-            if mod == loaded_mod then
-                found_loaded = true
-            elseif mod == not_loaded_mod then
-                found_not_loaded = true
-            end
-        end
-        check(found_loaded, "getloadedmodules: находит загруженный модуль", "getloadedmodules: не нашел загруженный модуль", false)
-        check(not found_not_loaded, "getloadedmodules: не включает незагруженные модули", "getloadedmodules: ошибочно включил незагруженный модуль", false)
-    end
+	local ok_get, modules = safe_pcall(getloadedmodules)
+	if check(ok_get and type(modules) == "table", "getloadedmodules: возвращает таблицу", "getloadedmodules: не вернул таблицу", false) then
+		local found_loaded, found_not_loaded = false, false
+		for _, mod in ipairs(modules) do
+			if mod == loaded_mod then
+				found_loaded = true
+			elseif mod == not_loaded_mod then
+				found_not_loaded = true
+			end
+		end
+		check(found_loaded, "getloadedmodules: находит загруженный модуль", "getloadedmodules: не нашел загруженный модуль", false)
+		check(not found_not_loaded, "getloadedmodules: не включает незагруженные модули", "getloadedmodules: ошибочно включил незагруженный модуль", false)
+	end
 
-    not_loaded_mod:Destroy()
+	not_loaded_mod:Destroy()
 end
 
 local function test_getscriptclosure()
-    if not present(getscriptclosure, "getscriptclosure") then return end
+	if not present(getscriptclosure, "getscriptclosure") then return end
 
-    local script_with_code = Instance.new("LocalScript")
-    script_with_code.Source = "return 'hello', 123"
+	local script_with_code = Instance.new("LocalScript")
+	script_with_code.Source = "return 'hello', 123"
 
-    local closure = getscriptclosure(script_with_code)
-    check(
-        type(closure) == "function",
-        "getscriptclosure: возвращает функцию для скрипта с кодом",
-        "getscriptclosure: не вернул функцию",
-        false
-    )
+	local closure = getscriptclosure(script_with_code)
+	check(
+		type(closure) == "function",
+		"getscriptclosure: возвращает функцию для скрипта с кодом",
+		"getscriptclosure: не вернул функцию",
+		false
+	)
 
-    local script_empty = Instance.new("LocalScript")
-    local closure_empty = getscriptclosure(script_empty)
-    check(
-        closure_empty == nil,
-        "getscriptclosure: возвращает nil для скрипта без байткода",
-        "getscriptclosure: не вернул nil",
-        false
-    )
+	local script_empty = Instance.new("LocalScript")
+	local closure_empty = getscriptclosure(script_empty)
+	check(
+		closure_empty == nil,
+		"getscriptclosure: возвращает nil для скрипта без байткода",
+		"getscriptclosure: не вернул nil",
+		false
+	)
 
-    script_with_code:Destroy()
-    script_empty:Destroy()
+	script_with_code:Destroy()
+	script_empty:Destroy()
 end
 
 local function test_getscripthash()
-    if not present(getscripthash, "getscripthash") then
-        return
-    end
+	if not present(getscripthash, "getscripthash") then
+		return
+	end
 
-    local function is_sha384_hex(h)
-        return type(h) == "string"
-            and #h == 96
-            and h:match("^[0-9a-fA-F]+$") ~= nil
-    end
+	local function is_sha384_hex(h)
+		return type(h) == "string"
+			and #h == 96
+			and h:match("^[0-9a-fA-F]+$") ~= nil
+	end
 
-    local function make_script(src)
-        local s = Instance.new("ModuleScript")
-        if src ~= nil then
-            s.Source = src
-        end
-        s.Parent = game:GetService("CoreGui")
-        return s
-    end
+	local function make_script(src)
+		local s = Instance.new("ModuleScript")
+		if src ~= nil then
+			s.Source = src
+		end
+		s.Parent = game:GetService("CoreGui")
+		return s
+	end
 
-    local function safe_hash(obj)
-        local t0 = os.clock()
-        local ok, res
-        repeat
-            ok, res = safe_pcall(getscripthash, obj)
-            if ok and (res == nil or is_sha384_hex(res)) then
-                break
-            end
-            task.wait(0.03)
-        until os.clock() - t0 > 3
-        return ok, res
-    end
+	local function safe_hash(obj)
+		local t0 = os.clock()
+		local ok, res
+		repeat
+			ok, res = safe_pcall(getscripthash, obj)
+			if ok and (res == nil or is_sha384_hex(res)) then
+				break
+			end
+			task.wait(0.03)
+		until os.clock() - t0 > 3
+		return ok, res
+	end
 
-    local s1 = make_script("return 1")
-    local s2 = make_script("return 2")
-    local s3 = make_script("return 1")
-    local s_empty = make_script()
+	local s1 = make_script("return 1")
+	local s2 = make_script("return 2")
+	local s3 = make_script("return 1")
+	local s_empty = make_script()
 
-    local ok_h1, h1 = safe_hash(s1)
-    check(ok_h1 and is_sha384_hex(h1),
-        "getscripthash: возвращает валидный SHA384 хэш",
-        "getscripthash: не вернул корректный хэш", false)
+	local ok_h1, h1 = safe_hash(s1)
+	check(ok_h1 and is_sha384_hex(h1),
+		"getscripthash: возвращает валидный SHA384 хэш",
+		"getscripthash: не вернул корректный хэш", false)
 
-    local ok_h2, h2 = safe_hash(s2)
-    check(ok_h2 and is_sha384_hex(h2) and h1 ~= h2,
-        "getscripthash: хэши разных скриптов различаются",
-        "getscripthash: хэши разных скриптов совпадают", false)
+	local ok_h2, h2 = safe_hash(s2)
+	check(ok_h2 and is_sha384_hex(h2) and h1 ~= h2,
+		"getscripthash: хэши разных скриптов различаются",
+		"getscripthash: хэши разных скриптов совпадают", false)
 
-    local ok_h3, h3 = safe_hash(s3)
-    check(ok_h3 and is_sha384_hex(h3) and h1 == h3,
-        "getscripthash: хэши одинаковых скриптов совпадают",
-        "getscripthash: хэши одинаковых скриптов различаются", false)
+	local ok_h3, h3 = safe_hash(s3)
+	check(ok_h3 and is_sha384_hex(h3) and h1 == h3,
+		"getscripthash: хэши одинаковых скриптов совпадают",
+		"getscripthash: хэши одинаковых скриптов различаются", false)
 
-    local ok_nil, res_nil = safe_hash(s_empty)
-    check(ok_nil and res_nil == nil,
-        "getscripthash: возвращает nil для скрипта без байткода",
-        "getscripthash: не вернул nil для пустого скрипта", false)
+	local ok_nil, res_nil = safe_hash(s_empty)
+	check(ok_nil and res_nil == nil,
+		"getscripthash: возвращает nil для скрипта без байткода",
+		"getscripthash: не вернул nil для пустого скрипта", false)
 
-    local bad_ok = pcall(function() getscripthash({}) end)
-    check(not bad_ok,
-        "getscripthash: выбрасывает ошибку при неверном типе аргумента",
-        "getscripthash: не выбросил ошибку при неверном типе аргумента", false)
+	local bad_ok = pcall(function() getscripthash({}) end)
+	check(not bad_ok,
+		"getscripthash: выбрасывает ошибку при неверном типе аргумента",
+		"getscripthash: не выбросил ошибку при неверном типе аргумента", false)
 
-    local destroyed_script = make_script("return 'x'")
-    destroyed_script:Destroy()
-    local ok_destroyed, res_destroyed = safe_hash(destroyed_script)
-    check(not ok_destroyed or res_destroyed == nil,
-        "getscripthash: корректно обрабатывает уничтоженный скрипт",
-        "getscripthash: некорректно обрабатывает уничтоженный скрипт", false)
+	local destroyed_script = make_script("return 'x'")
+	destroyed_script:Destroy()
+	local ok_destroyed, res_destroyed = safe_hash(destroyed_script)
+	check(not ok_destroyed or res_destroyed == nil,
+		"getscripthash: корректно обрабатывает уничтоженный скрипт",
+		"getscripthash: некорректно обрабатывает уничтоженный скрипт", false)
 
-    s1:Destroy()
-    s2:Destroy()
-    s3:Destroy()
-    s_empty:Destroy()
+	s1:Destroy()
+	s2:Destroy()
+	s3:Destroy()
+	s_empty:Destroy()
 end
 
 local function test_identifyexecutor()
-    if not present(identifyexecutor, "identifyexecutor") then return end
+	if not present(identifyexecutor, "identifyexecutor") then return end
 
-    local ok_get, name, version = safe_pcall(identifyexecutor)
-    if check(ok_get, "identifyexecutor: выполняется без ошибок", "identifyexecutor: ошибка при выполнении", true) then
-        check(type(name) == "string" and #name > 0, "identifyexecutor: возвращает непустое имя (строка) [" .. tostring(name) .. "]", "identifyexecutor: не вернул имя", true)
-        check(type(version) == "string" and #version > 0, "identifyexecutor: возвращает непустую версию (строка) [" .. tostring(version) .. "]", "identifyexecutor: не вернул версию", true)
-    end
+	local ok_get, name, version = safe_pcall(identifyexecutor)
+	if check(ok_get, "identifyexecutor: выполняется без ошибок", "identifyexecutor: ошибка при выполнении", true) then
+		check(type(name) == "string" and #name > 0, "identifyexecutor: возвращает непустое имя (строка) [" .. tostring(name) .. "]", "identifyexecutor: не вернул имя", true)
+		check(type(version) == "string" and #version > 0, "identifyexecutor: возвращает непустую версию (строка) [" .. tostring(version) .. "]", "identifyexecutor: не вернул версию", true)
+	end
 end
 
 local function test_getinstances()
@@ -1726,13 +1744,13 @@ local function test_fireproximityprompt()
 
 	local part = Instance.new("Part", workspace)
 	local prompt = Instance.new("ProximityPrompt", part)
-	
+
 	local triggered_by = nil
 	local conn = prompt.Triggered:Connect(function(player)
 		triggered_by = player
 	end)
 	task.wait(0.1)
-	
+
 	local ok_fire = select(1, safe_pcall(fireproximityprompt, prompt))
 	check(ok_fire, "fireproximityprompt: выполняется без ошибок", "fireproximityprompt: ошибка при выполнении", false)
 	task.wait(0.1)
@@ -1745,70 +1763,70 @@ local function test_fireproximityprompt()
 end
 
 local function test_fireclickdetector() 
-    if not present(fireclickdetector, "fireclickdetector") then return end
+	if not present(fireclickdetector, "fireclickdetector") then return end
 
-    local G = cloneref and cloneref(game) or game
-    local WS = G:GetService("Workspace")
-    local Players = G:GetService("Players")
-    local lp = Players.LocalPlayer
+	local G = cloneref and cloneref(game) or game
+	local WS = G:GetService("Workspace")
+	local Players = G:GetService("Players")
+	local lp = Players.LocalPlayer
 
-    local container = Instance.new("Folder")
-    container.Name = "__cd_sandbox__"
-    container.Archivable = false
-    container.Parent = WS
+	local container = Instance.new("Folder")
+	container.Name = "__cd_sandbox__"
+	container.Archivable = false
+	container.Parent = WS
 
-    local part = Instance.new("Part")
-    part.Name = "Part"
-    part.Anchored = true
-    part.CanCollide = false
-    part.CanTouch = false
-    part.Transparency = 1
-    part.Parent = container
+	local part = Instance.new("Part")
+	part.Name = "Part"
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanTouch = false
+	part.Transparency = 1
+	part.Parent = container
 
-    pcall(function()
-        part.CFrame = CFrame.new(0, 10000, 0)
-    end)
+	pcall(function()
+		part.CFrame = CFrame.new(0, 10000, 0)
+	end)
 
-    local cd = Instance.new("ClickDetector")
-    cd.MaxActivationDistance = 512
-    cd.Parent = part
+	local cd = Instance.new("ClickDetector")
+	cd.MaxActivationDistance = 512
+	cd.Parent = part
 
-    local m1_fired, m2_fired, hover_enter_fired, hover_leave_fired = false, false, false, false
-    cd.MouseClick:Connect(function(player) if player == lp then m1_fired = true end end)
-    cd.RightMouseClick:Connect(function(player) if player == lp then m2_fired = true end end)
-    cd.MouseHoverEnter:Connect(function(player) if player == lp then hover_enter_fired = true end end)
-    cd.MouseHoverLeave:Connect(function(player) if player == lp then hover_leave_fired = true end end)
+	local m1_fired, m2_fired, hover_enter_fired, hover_leave_fired = false, false, false, false
+	cd.MouseClick:Connect(function(player) if player == lp then m1_fired = true end end)
+	cd.RightMouseClick:Connect(function(player) if player == lp then m2_fired = true end end)
+	cd.MouseHoverEnter:Connect(function(player) if player == lp then hover_enter_fired = true end end)
+	cd.MouseHoverLeave:Connect(function(player) if player == lp then hover_leave_fired = true end end)
 
-    local function wait_flag(getter, timeout)
-        local t0 = os.clock()
-        timeout = timeout or 0.3
-        while not getter() and os.clock() - t0 < timeout do
-            task.wait()
-        end
-        return getter()
-    end
+	local function wait_flag(getter, timeout)
+		local t0 = os.clock()
+		timeout = timeout or 0.3
+		while not getter() and os.clock() - t0 < timeout do
+			task.wait()
+		end
+		return getter()
+	end
 
-    local ok_default = pcall(function() fireclickdetector(cd) end)
-    check(ok_default and wait_flag(function() return m1_fired end),
-        "fireclickdetector: вызывает MouseClick по умолчанию",
-        "fireclickdetector: не вызвал MouseClick", false)
+	local ok_default = pcall(function() fireclickdetector(cd) end)
+	check(ok_default and wait_flag(function() return m1_fired end),
+	"fireclickdetector: вызывает MouseClick по умолчанию",
+	"fireclickdetector: не вызвал MouseClick", false)
 
-    local ok_right = pcall(function() fireclickdetector(cd, 0, "RightMouseClick") end)
-    check(ok_right and wait_flag(function() return m2_fired end),
-        "fireclickdetector: вызывает RightMouseClick при указании",
-        "fireclickdetector: не вызвал RightMouseClick", false)
+	local ok_right = pcall(function() fireclickdetector(cd, 0, "RightMouseClick") end)
+	check(ok_right and wait_flag(function() return m2_fired end),
+	"fireclickdetector: вызывает RightMouseClick при указании",
+	"fireclickdetector: не вызвал RightMouseClick", false)
 
-    local ok_hover_enter = pcall(function() fireclickdetector(cd, 0, "MouseHoverEnter") end)
-    check(ok_hover_enter and wait_flag(function() return hover_enter_fired end),
-        "fireclickdetector: вызывает MouseHoverEnter",
-        "fireclickdetector: не вызвал MouseHoverEnter", false)
+	local ok_hover_enter = pcall(function() fireclickdetector(cd, 0, "MouseHoverEnter") end)
+	check(ok_hover_enter and wait_flag(function() return hover_enter_fired end),
+	"fireclickdetector: вызывает MouseHoverEnter",
+	"fireclickdetector: не вызвал MouseHoverEnter", false)
 
-    local ok_hover_leave = pcall(function() fireclickdetector(cd, 0, "MouseHoverLeave") end)
-    check(ok_hover_leave and wait_flag(function() return hover_leave_fired end),
-        "fireclickdetector: вызывает MouseHoverLeave",
-        "fireclickdetector: не вызвал MouseHoverLeave", false)
+	local ok_hover_leave = pcall(function() fireclickdetector(cd, 0, "MouseHoverLeave") end)
+	check(ok_hover_leave and wait_flag(function() return hover_leave_fired end),
+	"fireclickdetector: вызывает MouseHoverLeave",
+	"fireclickdetector: не вызвал MouseHoverLeave", false)
 
-    container:Destroy()
+	container:Destroy()
 end
 
 local function test_fpscap()
@@ -1816,46 +1834,46 @@ local function test_fpscap()
 
 	local ok_get, original_cap = safe_pcall(getfpscap)
 	if not check(ok_get and type(original_cap) == "number", "getfpscap: возвращает число", "getfpscap: не вернул число или ошибка", false) then return end
-	
+
 	local new_cap = 144
 	if original_cap == new_cap then new_cap = 120 end
-	
+
 	local ok_set = select(1, safe_pcall(setfpscap, new_cap))
 	if check(ok_set, "setfpscap: выполнился без ошибок", "setfpscap: ошибка при выполнении", false) then
 		local ok_get_new, current_cap = safe_pcall(getfpscap)
 		check(ok_get_new and current_cap == new_cap, "setfpscap: успешно установил новый FPS cap", "setfpscap: не удалось установить FPS cap", false)
 	end
-	
+
 	setfpscap(original_cap)
 	check(getfpscap() == original_cap, "setfpscap: успешно восстановил исходный FPS cap", "setfpscap: не удалось восстановить FPS cap", false)
 end
 
 local function test_replaceclosure()  -- Блять это пизедц какой - то зачем такие функции создают
-    local harmless_func = function()
-        return "safe"
-    end
+	local harmless_func = function()
+		return "safe"
+	end
 
-    if not present(replaceclosure, "replaceclosure") then return end
+	if not present(replaceclosure, "replaceclosure") then return end
 
-    local upvalue = 1
-    local original_func = function()
-        upvalue = upvalue + 1
-        return "original"
-    end
+	local upvalue = 1
+	local original_func = function()
+		upvalue = upvalue + 1
+		return "original"
+	end
 
-    local new_func = function()
-        return "replaced", upvalue
-    end
+	local new_func = function()
+		return "replaced", upvalue
+	end
 
-    local ok_replace = select(1, safe_pcall(replaceclosure, harmless_func, new_func))
-    if not check(ok_replace, "replaceclosure: выполнился без ошибок", "replaceclosure: ошибка при выполнении", true) then return end
+	local ok_replace = select(1, safe_pcall(replaceclosure, harmless_func, new_func))
+	if not check(ok_replace, "replaceclosure: выполнился без ошибок", "replaceclosure: ошибка при выполнении", true) then return end
 
-    local res_after_replace, upvalue_seen = new_func()
-    check(res_after_replace == "replaced", "replaceclosure: вызов оригинала теперь выполняет новую функцию", "replaceclosure: замена не удалась", true)
-    check(upvalue_seen == 1, "replaceclosure: замененная функция видит upvalue оригинала", "replaceclosure: не имеет доступа к upvalue", true)
+	local res_after_replace, upvalue_seen = new_func()
+	check(res_after_replace == "replaced", "replaceclosure: вызов оригинала теперь выполняет новую функцию", "replaceclosure: замена не удалась", true)
+	check(upvalue_seen == 1, "replaceclosure: замененная функция видит upvalue оригинала", "replaceclosure: не имеет доступа к upvalue", true)
 
-    local ok_err_c = not select(1, safe_pcall(replaceclosure, math.sin, function() end)) -- Я тут страдал от различных багов и приколюх с этой функцией
-    check(ok_err_c, "replaceclosure: ошибка при попытке заменить C-функцию", "replaceclosure: не вызвал ошибку для C-функции", true)
+	local ok_err_c = not select(1, safe_pcall(replaceclosure, math.sin, function() end)) -- Я тут страдал от различных багов и приколюх с этой функцией
+	check(ok_err_c, "replaceclosure: ошибка при попытке заменить C-функцию", "replaceclosure: не вызвал ошибку для C-функции", true)
 end
 
 local function test_isrbxactive()
@@ -1866,50 +1884,50 @@ local function test_isrbxactive()
 end
 
 local function test_isscriptable()
-    if not present(isscriptable, "isscriptable") or not present(setscriptable, "setscriptable") then return end
+	if not present(isscriptable, "isscriptable") or not present(setscriptable, "setscriptable") then return end
 
-    local part = Instance.new("Part")
-    local hidden_props = {
-        "BottomParamA",
-        "TopParamA",
-        "RootPriority"
-    }
+	local part = Instance.new("Part")
+	local hidden_props = {
+		"BottomParamA",
+		"TopParamA",
+		"RootPriority"
+	}
 
-    local tested = false
-    for _, prop in ipairs(hidden_props) do
-        if not isscriptable(part, prop) then
-            tested = true
-            check(not isscriptable(part, prop), "isscriptable: false для нескриптуемого по умолчанию свойства '"..prop.."'", "isscriptable: true для нескриптуемого свойства '"..prop.."'", true)
+	local tested = false
+	for _, prop in ipairs(hidden_props) do
+		if not isscriptable(part, prop) then
+			tested = true
+			check(not isscriptable(part, prop), "isscriptable: false для нескриптуемого по умолчанию свойства '"..prop.."'", "isscriptable: true для нескриптуемого свойства '"..prop.."'", true)
 
-            setscriptable(part, prop, true)
-            check(isscriptable(part, prop), "isscriptable: true после setscriptable(true) для '"..prop.."'", "isscriptable: false после setscriptable(true) для '"..prop.."'", true)
+			setscriptable(part, prop, true)
+			check(isscriptable(part, prop), "isscriptable: true после setscriptable(true) для '"..prop.."'", "isscriptable: false после setscriptable(true) для '"..prop.."'", true)
 
-            setscriptable(part, prop, false)
-            check(not isscriptable(part, prop), "isscriptable: false после setscriptable(false) для '"..prop.."'", "isscriptable: true после setscriptable(false) для '"..prop.."'", true)
-            break
-        end
-    end
+			setscriptable(part, prop, false)
+			check(not isscriptable(part, prop), "isscriptable: false после setscriptable(false) для '"..prop.."'", "isscriptable: true после setscriptable(false) для '"..prop.."'", true)
+			break
+		end
+	end
 
-    if not tested then
-        check(false, "isscriptable: не найдено подходящее скрытое свойство для теста", "isscriptable: все тестовые свойства оказались скриптуемыми", true)
-    end
+	if not tested then
+		check(false, "isscriptable: не найдено подходящее скрытое свойство для теста", "isscriptable: все тестовые свойства оказались скриптуемыми", true)
+	end
 
-    part:Destroy()
+	part:Destroy()
 end
 
 local function test_newlclosure() -- Сука я думал нигде не найду информацию на эту функцию
 	if not present(newlclosure, "newlclosure") then return end
-	
+
 	local up = { count = 0 }
 	local original = function() up.count = up.count + 1 end
-	
+
 	local ok_new, lclosure = safe_pcall(newlclosure, original)
 	if check(ok_new and islclosure(lclosure), "newlclosure: успешно создает lclosure", "newlclosure: не удалось создать lclosure", true) then
 		original()
 		lclosure()
 		check(up.count == 2, "newlclosure: разделяет upvalues с оригиналом", "newlclosure: не разделяет upvalues", true)
 	end
-	
+
 	local ok_err = not select(1, safe_pcall(newlclosure, print)) -- Почему на Lua ебашу [C] проверку? Не знаю
 	check(ok_err, "newlclosure: ошибка при попытке использовать на C-функции", "newlclosure: не вызвал ошибку для C-функции", true)
 end
@@ -1921,314 +1939,326 @@ local function test_debug_setmetatable()
 	local target_table = {}
 	local protected_mt = { __metatable = "LOCKED" }
 	setmetatable(target_table, protected_mt)
-	
+
 	local ok_vanilla = not select(1, safe_pcall(setmetatable, target_table, {}))
 	check(ok_vanilla, "debug.setmetatable: __metatable защита работает как ожидалось", "debug.setmetatable: __metatable защита не сработала", true)
-	
+
 	local new_mt = { __index = function() return "bypassed_by_debug" end }
 	local ok_set, _ = safe_pcall(d_smt, target_table, new_mt)
-	
+
 	if check(ok_set, "debug.setmetatable: выполнился на таблице с защищенной МТ", "debug.setmetatable: выдал ошибку", true) then
 		check(getmetatable(target_table) == new_mt and target_table.xyz == "bypassed_by_debug", "debug.setmetatable: успешно обошел __metatable", "debug.setmetatable: не смог обойти __metatable", true)
 	end
 end
 
 local function test_debug_more()
-    if not present(debug, "debug") then return end
-    
-    if present(debug.setconstant, "debug.setconstant") then
-        local function dummy_func()
-            return "original_string", 123
-        end
+	if not present(debug, "debug") then return end
 
-        local original_string_const_index, number_const_index
-        if present(debug.getconstants, "debug.getconstants") then
-            local consts = debug.getconstants(dummy_func)
-            for i, v in ipairs(consts) do
-                if v == "original_string" then original_string_const_index = i end
-                if v == 123 then number_const_index = i end
-            end
-        end
+	if present(debug.setconstant, "debug.setconstant") then
+		local function dummy_func()
+			return "original_string", 123
+		end
 
-        if original_string_const_index then
-            local ok_set, _ = safe_pcall(debug.setconstant, dummy_func, original_string_const_index, "new_string")
-            if check(ok_set, "debug.setconstant: выполнился без ошибок", "debug.setconstant: вызвал ошибку", true) then
-                local s, n = dummy_func()
-                check(s == "new_string" and n == 123, "debug.setconstant: успешно изменил константу", "debug.setconstant: не изменил константу", true)
-            end
-        else
-            warnEmoji("debug.setconstant: не удалось найти индекс константы, тест неполный")
-        end
-        local ok_err_c = not select(1, safe_pcall(debug.setconstant, print, 1, "test"))
-        check(ok_err_c, "debug.setconstant: ошибка на C-функции", "debug.setconstant: не вызвал ошибку на C-функции", true)
-    end
-    
-    if present(debug.getstack, "debug.getstack") then
-        local var_outer = "outer_val"
-        local function outer_func()
-            local var_inner = {key = "inner_val"}
-            local function most_inner_func()
-                local stack_l2_ok, stack_l2_val = safe_pcall(debug.getstack, 2, 2)
-                check(stack_l2_ok and stack_l2_val == var_inner, "debug.getstack(level, index): получает верную переменную из родительского стека", "debug.getstack(level, index): неверное значение из родителя", true)
-                local stack_l1_ok, stack_l1_table = safe_pcall(debug.getstack, 1)
-                check(stack_l1_ok and type(stack_l1_table) == "table" and #stack_l1_table > 0, "debug.getstack(level): получает таблицу переменных", "debug.getstack(level): не вернул таблицу", true)
-            end
-            most_inner_func()
-        end
-        outer_func()
-        local ok_err_c = not select(1, safe_pcall(debug.getstack, 0))
-        check(ok_err_c, "debug.getstack: ошибка при level=0 (C-функция)", "debug.getstack: не вызвал ошибку на C-фрейме", true)
-    end
-    
-    if present(debug.getprotos, "debug.getprotos") then
-        local function container()
-            local function proto1() end
-            local function proto2() end
-        end
-        local ok_get, protos = safe_pcall(debug.getprotos, container)
-        if check(ok_get and type(protos) == "table" and #protos == 2, "debug.getprotos: возвращает таблицу прототипов", "debug.getprotos: не вернул таблицу", true) then
-            local info1, info2 = debug.getinfo(protos[1], "n"), debug.getinfo(protos[2], "n")
-            local names_ok = (info1.name == "proto1" and info2.name == "proto2") or (info1.name == "proto2" and info2.name == "proto1")
-            check(names_ok, "debug.getprotos: прототипы в таблице корректны", "debug.getprotos: некорректные прототипы", true)
-        end
-        local ok_err_c = not select(1, safe_pcall(debug.getprotos, print))
-        check(ok_err_c, "debug.getprotos: ошибка на C-функции", "debug.getprotos: не вызвал ошибку на C-функции", true)
-    end
+		local original_string_const_index, number_const_index
+		if present(debug.getconstants, "debug.getconstants") then
+			local consts = debug.getconstants(dummy_func)
+			for i, v in ipairs(consts) do
+				if v == "original_string" then original_string_const_index = i end
+				if v == 123 then number_const_index = i end
+			end
+		end
+
+		if original_string_const_index then
+			local ok_set, _ = safe_pcall(debug.setconstant, dummy_func, original_string_const_index, "new_string")
+			if check(ok_set, "debug.setconstant: выполнился без ошибок", "debug.setconstant: вызвал ошибку", true) then
+				local s, n = dummy_func()
+				check(s == "new_string" and n == 123, "debug.setconstant: успешно изменил константу", "debug.setconstant: не изменил константу", true)
+			end
+		else
+			warnEmoji("debug.setconstant: не удалось найти индекс константы, тест неполный")
+		end
+		local ok_err_c = not select(1, safe_pcall(debug.setconstant, print, 1, "test"))
+		check(ok_err_c, "debug.setconstant: ошибка на C-функции", "debug.setconstant: не вызвал ошибку на C-функции", true)
+	end
+
+	if present(debug.getstack, "debug.getstack") then
+		local var_outer = "outer_val"
+		local function outer_func()
+			local var_inner = {key = "inner_val"}
+			local function most_inner_func()
+				local stack_l2_ok, stack_l2_val = safe_pcall(debug.getstack, 2, 2)
+				check(stack_l2_ok and stack_l2_val == var_inner, "debug.getstack(level, index): получает верную переменную из родительского стека", "debug.getstack(level, index): неверное значение из родителя", true)
+				local stack_l1_ok, stack_l1_table = safe_pcall(debug.getstack, 1)
+				check(stack_l1_ok and type(stack_l1_table) == "table" and #stack_l1_table > 0, "debug.getstack(level): получает таблицу переменных", "debug.getstack(level): не вернул таблицу", true)
+			end
+			most_inner_func()
+		end
+		outer_func()
+		local ok_err_c = not select(1, safe_pcall(debug.getstack, 0))
+		check(ok_err_c, "debug.getstack: ошибка при level=0 (C-функция)", "debug.getstack: не вызвал ошибку на C-фрейме", true)
+	end
+
+	if present(debug.getprotos, "debug.getprotos") then
+		local function container()
+			local function proto1() end
+			local function proto2() end
+		end
+		local ok_get, protos = safe_pcall(debug.getprotos, container)
+		if check(ok_get and type(protos) == "table" and #protos == 2, "debug.getprotos: возвращает таблицу прототипов", "debug.getprotos: не вернул таблицу", true) then
+			local info1, info2 = debug.getinfo(protos[1], "n"), debug.getinfo(protos[2], "n")
+			local names_ok = (info1.name == "proto1" and info2.name == "proto2") or (info1.name == "proto2" and info2.name == "proto1")
+			check(names_ok, "debug.getprotos: прототипы в таблице корректны", "debug.getprotos: некорректные прототипы", true)
+		end
+		local ok_err_c = not select(1, safe_pcall(debug.getprotos, print))
+		check(ok_err_c, "debug.getprotos: ошибка на C-функции", "debug.getprotos: не вызвал ошибку на C-функции", true)
+	end
 end
 
 local function test_hui()
-    if not present(gethui, "gethui") then return end
-    
-    local ok_get, hui = safe_pcall(gethui)
-    if not check(ok_get and (typeof(hui) == "Instance" or typeof(hui) == "BasePlayerGui" or typeof(hui) == "Folder"), "gethui: возвращает Instance", "gethui: не вернул Instance", false) then
-        return
-    end
+	if not present(gethui, "gethui") then return end
 
-    local gui = Instance.new("ScreenGui")
-    local gui_name = "HUITEST_" .. tostring(math.random(1e9))
-    gui.Name = gui_name
-    gui.Parent = hui
+	local ok_get, hui = safe_pcall(gethui)
+	if not check(ok_get and (typeof(hui) == "Instance" or typeof(hui) == "BasePlayerGui" or typeof(hui) == "Folder"), "gethui: возвращает Instance", "gethui: не вернул Instance", false) then
+		return
+	end
 
-    task.wait(0.05)
-    
-    check(gui.Parent == hui and hui:FindFirstChild(gui_name) == gui, "gethui: можно использовать как родительский объект для UI", "gethui: не работает как родительский объект", false)
-    gui:Destroy()
+	local gui = Instance.new("ScreenGui")
+	local gui_name = "HUITEST_" .. tostring(math.random(1e9))
+	gui.Name = gui_name
+	gui.Parent = hui
+
+	task.wait(0.05)
+
+	check(gui.Parent == hui and hui:FindFirstChild(gui_name) == gui, "gethui: можно использовать как родительский объект для UI", "gethui: не работает как родительский объект", false)
+	gui:Destroy()
 end
 
 local function test_mouse_emulation()
-    local mouse_funcs = {mouse1click, mouse1press, mouse1release, mouse2click, mouse2press, mouse2release, mousemoveabs, mousemoverel, mousescroll}
-    local mouse_func_names = {"mouse1click", "mouse1press", "mouse1release", "mouse2click", "mouse2press", "mouse2release", "mousemoveabs", "mousemoverel", "mousescroll"}
+	local mouse_funcs = {mouse1click, mouse1press, mouse1release, mouse2click, mouse2press, mouse2release, mousemoveabs, mousemoverel, mousescroll}
+	local mouse_func_names = {"mouse1click", "mouse1press", "mouse1release", "mouse2click", "mouse2press", "mouse2release", "mousemoveabs", "mousemoverel", "mousescroll"}
 
-    local all_present = true
-    for i, f in ipairs(mouse_funcs) do
-        if not present(f, mouse_func_names[i]) then
-            all_present = false
-        end
-    end
-    if not all_present then return end
-    
-    local ok_click = select(1, safe_pcall(mouse1click))
-    check(ok_click, "mouse1click: выполняется без ошибок", "mouse1click: ошибка при вызове", false)
-    
-    local ok_press = select(1, safe_pcall(mouse1press))
-    check(ok_press, "mouse1press: выполняется без ошибок", "mouse1press: ошибка при вызове", false)
+	local all_present = true
+	for i, f in ipairs(mouse_funcs) do
+		if not present(f, mouse_func_names[i]) then
+			all_present = false
+		end
+	end
+	if not all_present then return end
 
-    local ok_release = select(1, safe_pcall(mouse1release))
-    check(ok_release, "mouse1release: выполняется без ошибок", "mouse1release: ошибка при вызове", false)
-    
-    local ok_moveabs = select(1, safe_pcall(mousemoveabs, 100, 100))
-    check(ok_moveabs, "mousemoveabs: выполняется без ошибок с аргументами", "mousemoveabs: ошибка при вызове", false)
-    
-    local ok_moverel = select(1, safe_pcall(mousemoverel, 10, 10))
-    check(ok_moverel, "mousemoverel: выполняется без ошибок с аргументами", "mousemoverel: ошибка при вызове", false)
-    
-    local ok_scroll = select(1, safe_pcall(mousescroll, 0, 10))
-    check(ok_scroll, "mousescroll: выполняется без ошибок с аргументами", "mousescroll: ошибка при вызове", false)
+	local ok_click = select(1, safe_pcall(mouse1click))
+	check(ok_click, "mouse1click: выполняется без ошибок", "mouse1click: ошибка при вызове", false)
+
+	local ok_press = select(1, safe_pcall(mouse1press))
+	check(ok_press, "mouse1press: выполняется без ошибок", "mouse1press: ошибка при вызове", false)
+
+	local ok_release = select(1, safe_pcall(mouse1release))
+	check(ok_release, "mouse1release: выполняется без ошибок", "mouse1release: ошибка при вызове", false)
+
+	local ok_moveabs = select(1, safe_pcall(mousemoveabs, 100, 100))
+	check(ok_moveabs, "mousemoveabs: выполняется без ошибок с аргументами", "mousemoveabs: ошибка при вызове", false)
+
+	local ok_moverel = select(1, safe_pcall(mousemoverel, 10, 10))
+	check(ok_moverel, "mousemoverel: выполняется без ошибок с аргументами", "mousemoverel: ошибка при вызове", false)
+
+	local ok_scroll = select(1, safe_pcall(mousescroll, 0, 10))
+	check(ok_scroll, "mousescroll: выполняется без ошибок с аргументами", "mousescroll: ошибка при вызове", false)
 end
 
 local function test_cache()
-    if not present(cache, "cache") then return end
+	if not present(cache, "cache") then return end
 
-    local funcs = {cache.invalidate, cache.iscached, cache.replace}
-    local names = {"cache.invalidate", "cache.iscached", "cache.replace"}
-    for i = 1, #funcs do
-        if not present(funcs[i], names[i]) then return end
-    end
+	local funcs = {cache.invalidate, cache.iscached, cache.replace}
+	local names = {"cache.invalidate", "cache.iscached", "cache.replace"}
+	for i = 1, #funcs do
+		if not present(funcs[i], names[i]) then return end
+	end
 
-    -- cache.invalidate опора с UNC (Я не владею информацией что это за функции особо, поэтому как - то так👌)
-    do
-        local container = Instance.new("Folder")
-        local part = Instance.new("Part", container)
-        cache.invalidate(container:FindFirstChild("Part"))
-        check(part ~= container:FindFirstChild("Part"),
-            "cache.invalidate: ссылка на объект была сброшена",
-            "cache.invalidate: ссылка на объект не изменилась", false)
-    end
+	-- cache.invalidate опора с UNC (Я не владею информацией что это за функции особо, поэтому как - то так👌)
+	do
+		local container = Instance.new("Folder")
+		local part = Instance.new("Part", container)
+		cache.invalidate(container:FindFirstChild("Part"))
+		check(part ~= container:FindFirstChild("Part"),
+			"cache.invalidate: ссылка на объект была сброшена",
+			"cache.invalidate: ссылка на объект не изменилась", false)
+	end
 
-    -- cache.iscached
-    do
-        local part = Instance.new("Part")
-        check(cache.iscached(part),
-            "cache.iscached: объект в кэше",
-            "cache.iscached: объект не в кэше", false)
-        cache.invalidate(part)
-        check(not cache.iscached(part),
-            "cache.iscached: объект удалён из кэша",
-            "cache.iscached: объект всё ещё в кэше", false)
-    end
+	-- cache.iscached
+	do
+		local part = Instance.new("Part")
+		check(cache.iscached(part),
+			"cache.iscached: объект в кэше",
+			"cache.iscached: объект не в кэше", false)
+		cache.invalidate(part)
+		check(not cache.iscached(part),
+			"cache.iscached: объект удалён из кэша",
+			"cache.iscached: объект всё ещё в кэше", false)
+	end
 
-    -- cache.replace
-    do
-        local part = Instance.new("Part")
-        local fire = Instance.new("Fire")
-        cache.replace(part, fire)
-        check(part ~= fire,
-            "cache.replace: объект успешно заменён",
-            "cache.replace: объект не был заменён", false)
-    end
+	-- cache.replace
+	do
+		local part = Instance.new("Part")
+		local fire = Instance.new("Fire")
+		cache.replace(part, fire)
+		check(part ~= fire,
+			"cache.replace: объект успешно заменён",
+			"cache.replace: объект не был заменён", false)
+	end
 end
 
 local function test_compression()
-    if not present(lz4compress, "lz4compress") or not present(lz4decompress, "lz4decompress") then return end
+	if not present(lz4compress, "lz4compress") or not present(lz4decompress, "lz4decompress") then return end
 
-    local raw = "Hello, world!"
-    local ok_compress, compressed = safe_pcall(lz4compress, raw)
-    if check(ok_compress and type(compressed) == "string", "lz4compress: выполняется и возвращает строку", "lz4compress: ошибка или неверный тип", true) then
-        local ok_decompress, decompressed = safe_pcall(lz4decompress, compressed, #raw)
-        if check(ok_decompress and type(decompressed) == "string", "lz4decompress: выполняется и возвращает строку", "lz4decompress: ошибка или неверный тип", true) then
-            check(decompressed == raw, "lz4: round-trip (сжатие-распаковка) успешен", "lz4: round-trip не удался", true)
-        end
-    end
+	local raw = "Hello, world!"
+	local ok_compress, compressed = safe_pcall(lz4compress, raw)
+	if check(ok_compress and type(compressed) == "string", "lz4compress: выполняется и возвращает строку", "lz4compress: ошибка или неверный тип", true) then
+		local ok_decompress, decompressed = safe_pcall(lz4decompress, compressed, #raw)
+		if check(ok_decompress and type(decompressed) == "string", "lz4decompress: выполняется и возвращает строку", "lz4decompress: ошибка или неверный тип", true) then
+			check(decompressed == raw, "lz4: round-trip (сжатие-распаковка) успешен", "lz4: round-trip не удался", true)
+		end
+	end
 end
 
 
 local function test_crypto_extended()
 	if not present(crypt, "crypt") then return end
-    local funcs = {crypt.encrypt, crypt.decrypt, crypt.generatebytes, crypt.generatekey, crypt.hash}
-    local names = {"crypt.encrypt", "crypt.decrypt", "crypt.generatebytes", "crypt.generatekey", "crypt.hash"}
-    for i=1, #funcs do if not present(funcs[i], names[i]) then return end end
-    
-    local plaintext = "some plaintext data to be encrypted"
-    local ok_key, key = safe_pcall(crypt.generatekey)
-    
-    if check(ok_key and type(key) == "string" and #key > 0, "crypt.generatekey: генерирует непустую строку-ключ", "crypt.generatekey: не сгенерировал ключ", true) then
-        local ok_enc, ciphertext = safe_pcall(crypt.encrypt, plaintext, key, "some_additional_data")
-        if check(ok_enc and type(ciphertext) == "string", "crypt.encrypt: выполняется без ошибок", "crypt.encrypt: ошибка при шифровании", true) then
-            local ok_dec, decrypted = safe_pcall(crypt.decrypt, ciphertext, key, "some_additional_data")
-            check(ok_dec and decrypted == plaintext, "crypt.decrypt: round-trip (шифрование-дешифрование) успешен", "crypt.decrypt: round-trip не удался", true)
+	local funcs = {crypt.encrypt, crypt.decrypt, crypt.generatebytes, crypt.generatekey, crypt.hash}
+	local names = {"crypt.encrypt", "crypt.decrypt", "crypt.generatebytes", "crypt.generatekey", "crypt.hash"}
+	for i=1, #funcs do if not present(funcs[i], names[i]) then return end end
 
-            local wrong_key = crypt.generatekey()
-            local ok_dec_wrong, decrypted_wrong = safe_pcall(crypt.decrypt, ciphertext, wrong_key, "some_additional_data")
-            check(ok_dec_wrong and decrypted_wrong ~= plaintext, "crypt.decrypt: не расшифровывает с неверным ключом", "crypt.decrypt: расшифровал с неверным ключом", true)
-        end
-    end
+	local plaintext = "some plaintext data to be encrypted"
+	local ok_key, key = safe_pcall(crypt.generatekey)
 
-    local ok_bytes, bytes = safe_pcall(crypt.generatebytes, 16)
-    check(ok_bytes and type(bytes) == "string" and #bytes == 16, "crypt.generatebytes: генерирует строку указанной длины", "crypt.generatebytes: не сгенерировал строку", true)
+	if check(ok_key and type(key) == "string" and #key > 0, "crypt.generatekey: генерирует непустую строку-ключ", "crypt.generatekey: не сгенерировал ключ", true) then
+		local ok_enc, ciphertext = safe_pcall(crypt.encrypt, plaintext, key, "some_additional_data")
+		if check(ok_enc and type(ciphertext) == "string", "crypt.encrypt: выполняется без ошибок", "crypt.encrypt: ошибка при шифровании", true) then
+			local ok_dec, decrypted = safe_pcall(crypt.decrypt, ciphertext, key, "some_additional_data")
+			check(ok_dec and decrypted == plaintext, "crypt.decrypt: round-trip (шифрование-дешифрование) успешен", "crypt.decrypt: round-trip не удался", true)
 
-    local data_to_hash = "some_data"
-    local ok_hash, hash1 = safe_pcall(crypt.hash, data_to_hash, "sha384")
-    check(ok_hash and type(hash1) == "string", "crypt.hash: возвращает строку хэша", "crypt.hash: ошибка хэширования", true)
-    local hash2 = crypt.hash(data_to_hash, "sha384")
-    check(hash1 == hash2, "crypt.hash: хэши для одних и тех же данных совпадают", "crypt.hash: хэши не совпадают", true)
+			local wrong_key = crypt.generatekey()
+			local ok_dec_wrong, decrypted_wrong = safe_pcall(crypt.decrypt, ciphertext, wrong_key, "some_additional_data")
+			check(ok_dec_wrong and decrypted_wrong ~= plaintext, "crypt.decrypt: не расшифровывает с неверным ключом", "crypt.decrypt: расшифровал с неверным ключом", true)
+		end
+	end
+
+	local ok_bytes, bytes = safe_pcall(crypt.generatebytes, 16)
+	check(ok_bytes and type(bytes) == "string" and #bytes == 16, "crypt.generatebytes: генерирует строку указанной длины", "crypt.generatebytes: не сгенерировал строку", true)
+
+	local data_to_hash = "some_data"
+	local ok_hash, hash1 = safe_pcall(crypt.hash, data_to_hash, "sha384")
+	check(ok_hash and type(hash1) == "string", "crypt.hash: возвращает строку хэша", "crypt.hash: ошибка хэширования", true)
+	local hash2 = crypt.hash(data_to_hash, "sha384")
+	check(hash1 == hash2, "crypt.hash: хэши для одних и тех же данных совпадают", "crypt.hash: хэши не совпадают", true)
 end
 
 local function test_misc_env() if present(messagebox, "messagebox") then 
-local ok_msg = select(1, safe_pcall(messagebox, "Test", "test", 0)) 
-check(ok_msg, "messagebox: выполняется без ошибок", "messagebox: ошибка при вызове", false) 
+		local ok_msg = select(1, safe_pcall(messagebox, "Test", "test", 0)) 
+		check(ok_msg, "messagebox: выполняется без ошибок", "messagebox: ошибка при вызове", false) 
+	end
+
+	if present(queue_on_teleport, "queue_on_teleport") then
+		local code = "print('teleported!')"
+		local ok_queue = select(1, safe_pcall(queue_on_teleport, code))
+		check(ok_queue, "queue_on_teleport: выполняется без ошибок", "queue_on_teleport: ошибка при вызове", false)
+	end
+
+	if present(setclipboard, "setclipboard") then
+		local text = "clipboard_test"
+		local ok_set = select(1, safe_pcall(setclipboard, text))
+		check(ok_set, "setclipboard: выполняется без ошибок", "setclipboard: ошибка при вызове", false)
+	end
 end
-    
-    if present(queue_on_teleport, "queue_on_teleport") then
-        local code = "print('teleported!')"
-        local ok_queue = select(1, safe_pcall(queue_on_teleport, code))
-        check(ok_queue, "queue_on_teleport: выполняется без ошибок", "queue_on_teleport: ошибка при вызове", false)
-    end
 
-    if present(setclipboard, "setclipboard") then
-        local text = "clipboard_test"
-        local ok_set = select(1, safe_pcall(setclipboard, text))
-        check(ok_set, "setclipboard: выполняется без ошибок", "setclipboard: ошибка при вызове", false)
-    end
+local function run_test_suite(name, func)
+	info(name)
+	local success, err = safe_pcall(func)
+	if not success then
+		fail("!!! КРАШ В ТЕСТЕ '" .. name .. "': " .. tostring(err))
+	end
 end
 
+run_test_suite("--- Основные функции ---", function()
+	test_newcclosure()
+	test_hookfunction()
+	test_restorefunction()
+	test_getrawmetatable()
+	test_setrawmetatable()
+	test_readonly()
+	test_hookmetamethod()
+	test_getgc()
+	test_cloneref()
+	test_firetouchinterest()
+	test_firesignal()
+	test_compareinstances()
+	test_identifyexecutor()
+	test_isrbxactive()
+	test_fpscap()
+	test_hui()
+end)
 
-info("--- Основные функции ---")
-test_newcclosure()
-test_hookfunction()
-test_restorefunction()
-test_getrawmetatable()
-test_setrawmetatable()
-test_readonly()
-test_hookmetamethod()
-test_getgc()
-test_cloneref()
-test_firetouchinterest()
-test_firesignal()
-test_compareinstances()
-test_identifyexecutor()
-test_isrbxactive()
-test_fpscap()
-test_hui()
+run_test_suite("--- Проверки типов Closure ---", function()
+	test_closure_checks()
+	test_replaceclosure()
+	test_newlclosure()
+end)
 
-info("--- Проверки типов Closure ---")
-test_closure_checks()
-test_replaceclosure()
-test_newlclosure()
+run_test_suite("--- Низкоуровневые операции 💀💀💀 ---", function()
+	test_checkcaller()
+	test_getconnections()
+	test_getnilinstances()
+	test_threadidentity()
+	test_getscripts()
+	test_getrunningscripts()
+	test_getscriptbytecode()
+	test_setscriptable()
+	test_isscriptable()
+	test_getgenv()
+	test_getcallbackvalue()
+	test_getcallingscript()
+	test_getloadedmodules()
+	test_getscriptclosure()
+	test_getscripthash()
+	test_getfunctionhash()
+	test_getinstances()
+	test_fireproximityprompt()
+	test_fireclickdetector()
+end)
 
-info("--- Низкоуровневые операции 💀💀💀 ---")
-test_checkcaller()
-test_getconnections()
-test_getnilinstances()
-test_threadidentity()
-test_getscripts()
-test_getrunningscripts()
-test_getscriptbytecode()
-test_setscriptable()
-test_isscriptable()
-test_getgenv()
-test_getcallbackvalue()
-test_getcallingscript()
-test_getloadedmodules()
-test_getscriptclosure()
-test_getscripthash()
-test_getfunctionhash()
-test_getinstances()
-test_fireproximityprompt()
-test_fireclickdetector()
+run_test_suite("--- Файловые операции и сетевые (aka request и тд.) ---", function()
+	test_request()
+	test_file_operations()
+	test_folder_and_load_ops()
+	test_getcustomasset()
+	test_replicatesignal()
+	test_cache()
+	test_misc_env()
+	test_mouse_emulation()
+end)
 
-info("--- Файловые операции и сетевые (aka request и тд.) ---")
-test_request()
-test_file_operations()
-test_folder_and_load_ops()
-test_getcustomasset()
-test_replicatesignal()
-test_cache()
-test_misc_env()
-test_mouse_emulation()
+run_test_suite("--- Криптография ---", function()
+	test_crypto_ops()
+	test_crypto_extended()
+	test_compression()
+end)
 
-info("--- Криптография ---")
-test_crypto_ops()
-test_crypto_extended()
-test_compression()
+run_test_suite("--- 2D Рендеринг ---", test_drawing)
+run_test_suite("--- Ебучий лоадстринг ---", test_loadstring)
 
-info("--- 2D Рендеринг ---")
-test_drawing()
+run_test_suite("--- Тесты для debug ---", function()
+	test_debug_info()
+	test_debug_upvalues()
+	test_debug_constants()
+	test_debug_setstack()
+	test_debug_setmetatable()
+	test_clonefunction()
+	test_debug_protos()
+	test_getreg()
+	test_debug_more()
+end)
 
-info("--- Ебучий лоадстринг ---")
-test_loadstring()
-
-info("--- Тесты для debug ---")
-test_debug_info()
-test_debug_upvalues()
-test_debug_constants()
-test_debug_setstack()
-test_debug_setmetatable()
-test_clonefunction()
-test_debug_protos()
-test_getreg()
-test_debug_more()
-
+info("\n" .. string.rep("-", 20))
 local percent = totalTests > 0 and math.floor((passedTests / totalTests) * 100) or 0
 local skidRate = totalTests > 0 and math.floor((skidCount / totalTests) * 100) or 0
 info("Итого: "..passedTests.."/"..totalTests.." ("..percent.."%)")
 info("Skid Rate: "..skidCount.."/"..totalTests.." ("..skidRate.."%)")
+info(string.rep("-", 20))
