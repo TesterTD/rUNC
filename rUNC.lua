@@ -761,20 +761,83 @@ local function test_getnilinstances()
 end
 
 
-local function test_threadidentity()
-	local gti, sti = getthreadidentity or getidentity, setthreadidentity or setidentity
-	if not present(gti, "getthreadidentity") or not present(sti, "setthreadidentity") then return end
+local function test_threadidentity() -- Такую проверку подделать никак не получится😎
+    local gti, sti = getthreadidentity or getidentity, setthreadidentity or setidentity
+    if not present(gti, "getthreadidentity") or not present(sti, "setthreadidentity") then return end
 
-	local original_identity = gti()
-	check(type(original_identity) == "number", "getthreadidentity: возвращает число", "getthreadidentity: не вернул число", true)
-	local new_id = -1
-	local th = task.spawn(function() sti(5); new_id=gti() end)
-	task.wait()
-	check(new_id == 5, "setthreadidentity: работает в новом потоке (task.spawn)", "setthreadidentity: не сработал в новом потоке", true)
-	check(gti() == original_identity, "setthreadidentity: не влияет на другие потоки", "setthreadidentity: повлиял на другой поток", true)
+    local original_identity = gti()
+    check(type(original_identity) == "number", "getthreadidentity: возвращает число", "getthreadidentity: не вернул число", true)
 
-	sti(original_identity)
+    local stable1 = gti()
+    local stable2 = gti()
+    check(stable1 == stable2, "getthreadidentity: стабилен при повторных вызовах", "getthreadidentity: нестабилен при повторных вызовах", true)
 
+    local spawn_id = -1
+    task.spawn(function()
+        spawn_id = gti()
+    end)
+    task.wait()
+    check(spawn_id == original_identity, "getthreadidentity: одинаков в новом потоке без sti", "getthreadidentity: отличается в новом потоке без sti", true)
+
+    local defer_id = -1 -- Справедливо проверить новый поток даже на отрицательном кол-ве.
+    task.defer(function()
+        defer_id = gti()
+    end)
+    task.wait()
+    check(defer_id == original_identity, "getthreadidentity: одинаков в task.defer без sti", "getthreadidentity: отличается в task.defer без sti", true)
+
+    local pcall_ok, pcall_id = pcall(function()
+        return gti()
+    end)
+    check(pcall_ok and pcall_id == original_identity, "getthreadidentity: одинаков в pcall без sti", "getthreadidentity: отличается в pcall без sti", true)
+
+    check(original_identity >= 0 and original_identity <= 8, "getthreadidentity: значение в допустимом диапазоне", "getthreadidentity: значение вне диапазона", true)
+
+    local new_id = -1
+    task.spawn(function()
+        sti(5)
+        new_id = gti()
+    end)
+    task.wait()
+    check(new_id == 5, "setthreadidentity: работает в новом потоке (task.spawn)", "setthreadidentity: не сработал в новом потоке", true)
+    check(gti() == original_identity, "setthreadidentity: не влияет на другие потоки", "setthreadidentity: повлиял на другой поток", true)
+
+    local defer_set_id = -1
+    task.defer(function()
+        sti(7)
+        defer_set_id = gti()
+    end)
+    task.wait()
+    check(defer_set_id == 7, "setthreadidentity: работает в task.defer", "setthreadidentity: не сработал в task.defer", true)
+    check(gti() == original_identity, "setthreadidentity: task.defer не изменил основной поток", "setthreadidentity: task.defer изменил основной поток", true)
+
+    local pcall_ok2, pcall_set_id = pcall(function()
+        sti(3)
+        return gti()
+    end)
+    check(pcall_ok2 and pcall_set_id == 3, "setthreadidentity: корректно меняет уровень в pcall", "setthreadidentity: не изменил уровень в pcall", true)
+    check(gti() == original_identity, "setthreadidentity: pcall не повлиял на основной поток", "setthreadidentity: pcall повлиял на основной поток", true)
+
+    local prev_id = gti()
+    sti(prev_id)
+    check(gti() == prev_id, "setthreadidentity: установка того же уровня не ломает состояние", "setthreadidentity: установка того же уровня изменила состояние", true)
+
+    local rapid_ids = {}
+    for i = 1, 3 do
+        sti(i)
+        rapid_ids[i] = gti()
+    end
+    sti(original_identity)
+    local seq_ok = true
+    for i = 1, 3 do
+        if rapid_ids[i] ~= i then
+            seq_ok = false
+            break
+        end
+    end
+    check(seq_ok, "setthreadidentity: быстрое переключение уровней корректно", "setthreadidentity: быстрое переключение уровней некорректно", true)
+
+    sti(original_identity)
 end
 
 local function test_debug_info()
