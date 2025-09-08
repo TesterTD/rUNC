@@ -1,6 +1,6 @@
 # rUNC — улучшенный Unified Naming Convention для русскоязычных
 
-![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)
+![License](https://img.shields.io/badge/license-GPLv3-blue?style=for-the-badge)
 ![Language](https://img.shields.io/badge/lang-RU-blue?style=for-the-badge)
 ![Status](https://img.shields.io/badge/status-active-success?style=for-the-badge)
 
