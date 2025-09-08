@@ -45,16 +45,16 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
     <tr>
       <td><b>bunni.lol</b></td>
       <td>🖥 ПК</td>
-      <td><img src="https://img.shields.io/badge/268%2F317-84%25-00ff99"></td>
-      <td><img src="https://img.shields.io/badge/35%2F317-11%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/271%2F317-84%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/33%2F317-10%25-00ff99"></td>
       <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
       <td><img src="https://img.shields.io/badge/Отличный%20executor-00ff99"></td>
     </tr>
     <tr>
       <td><b>Delta</b></td>
       <td>📱 Мобильный</td>
-      <td><img src="https://img.shields.io/badge/239%2F286-83%25-32cd32"></td>
-      <td><img src="https://img.shields.io/badge/39%2F286-13%25-32cd32"></td>
+      <td><img src="https://img.shields.io/badge/266%2F318-83%25-32cd32"></td>
+      <td><img src="https://img.shields.io/badge/40%2F318-12%25-32cd32"></td>
       <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
       <td><img src="https://img.shields.io/badge/Норм%20Executor-32cd32"></td>
     </tr>
@@ -73,4 +73,19 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
       <td><img src="https://img.shields.io/badge/Отвратительные%20метаметод%20хуки%20%F0%9F%98%A1-ff0000"></td>
       <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
       <td><img src="https://img.shields.io/badge/%F0%9F%92%80%20Параша%20Полная-critical"></td>
-    </
+    </tr>
+    <tr>
+      <td><b>Neverfall</b></td>
+      <td>🖥 ПК</td>
+      <td><img src="https://img.shields.io/badge/Ожидаются%20результаты-lightgrey"></td>
+      <td><img src="https://img.shields.io/badge/Ожидаются%20данные-lightgrey"></td>
+      <td><img src="https://img.shields.io/badge/Обновление%20ожидается-lightgrey"></td>
+      <td><img src="https://img.shields.io/badge/Нет%20данных-lightgrey"></td>
+    </tr>
+  </tbody>
+</table>
+
+<div style="margin-top:30px; text-align:center;">
+  <img src="https://img.shields.io/badge/Important-Если%20вы%20проверили%20какой--то%20Executor%2C%20которого%20нету%20в%20списке%2C%20то%20дайте%20мне%20об%20этом%20знать!-ff69b4" style="transform:scale(1.5);">
+</div>
+
