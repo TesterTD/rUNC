@@ -61,4 +61,73 @@ UNC — это стандарт, созданный для унификации 
 loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rUNC.lua"))()
 ```
 
-<table style="font-size:28px; text-align:center;"> <thead> <tr> <th style="background-color:#ffcccc;">Клиент</th> <th style="background-color:#ccffcc;">Тип</th> <th style="background-color:#ccccff;">Итого</th> <th style="background-color:#fff0b3;">Skid Rate</th> <th style="background-color:#e0ccff;">Обновление</th> <th style="background-color:#ffd9b3;">Статус</th> </tr> </thead> <tbody> <tr> <td><b>bunni.lol</b></td> <td>🖥 ПК</td> <td><img src="https://img.shields.io/badge/278%2F330-84%25-00ff99"></td> <td><img src="https://img.shields.io/badge/37%2F330-11%25-00ff99"></td> <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td> <td><img src="https://img.shields.io/badge/Отличный%20executor-00ff99"></td> </tr> <tr> <td><b>Delta</b></td> <td>📱 Мобильный</td> <td><img src="https://img.shields.io/badge/266%2F318-83%25-32cd32"></td> <td><img src="https://img.shields.io/badge/40%2F318-12%25-32cd32"></td> <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td> <td><img src="https://img.shields.io/badge/Норм%20Executor-32cd32"></td> </tr> <tr> <td><b>Xeno</b></td> <td>🖥 ПК</td> <td><img src="https://img.shields.io/badge/162%2F239-67%25-ffd700"></td> <td><img src="https://img.shields.io/badge/52%2F239-21%25-ffa500"></td> <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td> <td><img src="https://img.shields.io/badge/Подделывают%20некоторые%20функции%2C%20но%20неплохо%20для%20Level%203-ffd700"></td> </tr> <tr> <td><b>Velocity</b></td> <td>🖥 ПК</td> <td><img src="https://img.shields.io/badge/246%2F297-82%25-32cd32"></td> <td><img src="https://img.shields.io/badge/34%2F297-11%25-32cd32"></td> <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td> <td><img src="https://img.shields.io/badge/Неплохой%20Executor%2C%20но%20нестабильные%20функции%20(gethiddenproperty%2C%20sethiddenproperty%20крашится)-32cd32"></td> </tr> <tr> <td><b>KRNL</b></td> <td>📱 Мобильный</td> <td><img src="https://img.shields.io/badge/Крашится-ff0000"></td> <td><img src="https://img.shields.io/badge/Нет%20данных-lightgrey"></td> <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td> <td><img src="https://img.shields.io/badge/%D0%9A%D1%80%D0%B0%D1%88%D0%B8%D1%82%D1%81%D1%8F-critical"></td> </tr> <tr> <td><b>JJSploit</b></td> <td>🖥 ПК</td> <td><img src="https://img.shields.io/badge/140%2F208-67%25-ffd700"></td> <td><img src="https://img.shields.io/badge/46%2F208-22%25-ffa500"></td> <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td> <td><img src="https://img.shields.io/badge/%D0%9F%D0%BE%D1%82%D0%BE%D0%BC%D0%BE%D0%BA%20Xeno-ffd700"></td> </tr> <tr> <td><b>Neverfall</b></td> <td>🖥 ПК</td> <td><img src="https://img.shields.io/badge/Ожидаются%20результаты-lightgrey"></td> <td><img src="https://img.shields.io/badge/Ожидаются%20данные-lightgrey"></td> <td><img src="https://img.shields.io/badge/Обновление%20ожидается-lightgrey"></td> <td><img src="https://img.shields.io/badge/Нет%20данных-lightgrey"></td> </tr> </tbody> </table>
+<table style="font-size:28px; text-align:center;">
+  <thead>
+    <tr>
+      <th style="background-color:#ffcccc;">Клиент</th>
+      <th style="background-color:#ccffcc;">Тип</th>
+      <th style="background-color:#ccccff;">Итого</th>
+      <th style="background-color:#fff0b3;">Skid Rate</th>
+      <th style="background-color:#e0ccff;">Обновление</th>
+      <th style="background-color:#ffd9b3;">Статус</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>bunni.lol</b></td>
+      <td>🖥 ПК</td>
+      <td><img src="https://img.shields.io/badge/283%2F326-86%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/38%2F326-11%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/Отличный%20executor-00ff99"></td>
+    </tr>
+    <tr>
+      <td><b>Delta</b></td>
+      <td>📱 Мобильный</td>
+      <td><img src="https://img.shields.io/badge/266%2F318-83%25-32cd32"></td>
+      <td><img src="https://img.shields.io/badge/40%2F318-12%25-32cd32"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/Норм%20Executor-32cd32"></td>
+    </tr>
+    <tr>
+      <td><b>Xeno</b></td>
+      <td>🖥 ПК</td>
+      <td><img src="https://img.shields.io/badge/162%2F239-67%25-ffd700"></td>
+      <td><img src="https://img.shields.io/badge/52%2F239-21%25-ffa500"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/Подделывают%20некоторые%20функции%2C%20но%20неплохо%20для%20Level%203-ffd700"></td>
+    </tr>
+    <tr>
+      <td><b>Velocity</b></td>
+      <td>🖥 ПК</td>
+      <td><img src="https://img.shields.io/badge/251%2F295-85%25-32cd32"></td>
+      <td><img src="https://img.shields.io/badge/34%2F295-11%25-32cd32"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/Неплохой%20Executor%2C%20но%20нестабильные%20функции%20(gethiddenproperty%2C%20sethiddenproperty%20крашится)-32cd32"></td>
+    </tr>
+    <tr>
+      <td><b>KRNL</b></td>
+      <td>📱 Мобильный</td>
+      <td><img src="https://img.shields.io/badge/Крашится-ff0000"></td>
+      <td><img src="https://img.shields.io/badge/Нет%20данных-lightgrey"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/%D0%9A%D1%80%D0%B0%D1%88%D0%B8%D1%82%D1%81%D1%8F-critical"></td>
+    </tr>
+    <tr>
+      <td><b>JJSploit</b></td>
+      <td>🖥 ПК</td>
+      <td><img src="https://img.shields.io/badge/140%2F208-67%25-ffd700"></td>
+      <td><img src="https://img.shields.io/badge/46%2F208-22%25-ffa500"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/%D0%9F%D0%BE%D1%82%D0%BE%D0%BC%D0%BE%D0%BA%20Xeno-ffd700"></td>
+    </tr>
+    <tr>
+      <td><b>Neverfall</b></td>
+      <td>🖥 ПК</td>
+      <td><img src="https://img.shields.io/badge/Ожидаются%20результаты-lightgrey"></td>
+      <td><img src="https://img.shields.io/badge/Ожидаются%20данные-lightgrey"></td>
+      <td><img src="https://img.shields.io/badge/Обновление%20ожидается-lightgrey"></td>
+      <td><img src="https://img.shields.io/badge/Нет%20данных-lightgrey"></td>
+    </tr>
+  </tbody>
+</table>
