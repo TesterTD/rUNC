@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo2.png" alt="rUNC logo" width="320">
+</p>
+
 # rUNC — улучшенный Unified Naming Convention для русскоязычных
 
 ![License](https://img.shields.io/badge/license-GPLv3-blue?style=for-the-badge)
