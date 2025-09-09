@@ -52,6 +52,13 @@ UNC — это стандарт, созданный для унификации 
 
 ---
 
+## 🆕 Глобальное обновление
+
+Вышел **глобальный патч** для **debug‑функций** и различных **closures**.  
+Обновление улучшает стабильность, расширяет диагностику и повышает совместимость с новыми API.
+
+---
+
 ## 🚀 Запуск
 
 📖 **Документация rUNC доступна здесь:**  
@@ -76,9 +83,9 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
     <tr>
       <td><b>bunni.lol</b></td>
       <td>🖥 ПК</td>
-      <td><img src="https://img.shields.io/badge/283%2F326-86%25-00ff99"></td>
-      <td><img src="https://img.shields.io/badge/38%2F326-11%25-00ff99"></td>
-      <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/295%2F317-93%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/16%2F317-5%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-09.09.2025-1e90ff"></td>
       <td><img src="https://img.shields.io/badge/Отличный%20executor-00ff99"></td>
     </tr>
     <tr>
@@ -131,3 +138,4 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
     </tr>
   </tbody>
 </table>
+
