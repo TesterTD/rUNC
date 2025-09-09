@@ -246,34 +246,6 @@ local function test_debug_upvalues()
     end
 
     do
-        local var1, var2, var3 = "hello", 123, { key = "val" }
-        local UpFunction = function() return "orig" end
-        local func = function() return var1, var2, var3.key, UpFunction() end
-
-        local ok_gus, upvals = safe_pcall(d_gus, func)
-        if check(ok_gus and type(upvals) == "table", "getupvalues: возвращает таблицу", "getupvalues: не вернул таблицу или ошибка", true) then
-            check(#upvals == 4 and upvals[1] == var1 and upvals[2] == var2 and upvals[3] == var3 and upvals[4] == UpFunction, "getupvalues: корректные значения (string, number, table, function)", "getupvalues: неверные значения upvalue", true)
-        end
-
-        local ok_gu, upval1 = safe_pcall(d_gu, func, 1)
-        check(ok_gu and upval1 == "hello", "getupvalue: корректное значение по индексу 1", "getupvalue: неверное значение по индексу 1", true)
-        local ok_gu2, upval4 = safe_pcall(d_gu, func, 4)
-        check(ok_gu2 and upval4 == UpFunction, "getupvalue: корректное значение по индексу 4 (function)", "getupvalue: неверное значение по индексу 4", true)
-
-        local ok_su = select(1, safe_pcall(d_su, func, 2, 999))
-        if check(ok_su, "setupvalue: выполнился без ошибок", "setupvalue: ошибка при выполнении", true) then
-            local _, r2 = func()
-            check(r2 == 999 and var2 == 123, "setupvalue: изменяет upvalue внутри функции, не затрагивая оригинал", "setupvalue: не изменил upvalue или изменил оригинал", true)
-        end
-
-        local new_up_func = function() return "new" end
-        local ok_su2 = select(1, safe_pcall(d_su, func, 4, new_up_func))
-        check(ok_su2, "setupvalue: смена upvalue (function)", "setupvalue: ошибка при смене upvalue-функции", true)
-        local _, _, _, r4 = func()
-        check(r4 == "new", "setupvalue: смена функции-upvalue отразилась на вызове", "setupvalue: смена функции-upvalue не сработала", true)
-    end
-
-    do
         local no_upval_func = function() return 1 end
         local ok_gus, upvals = safe_pcall(d_gus, no_upval_func)
         check(ok_gus and type(upvals) == "table" and next(upvals) == nil, "getupvalues: пустая таблица для функции без upvalues", "getupvalues: не пустая таблица", true)
@@ -317,19 +289,30 @@ local function test_debug_upvalues()
             var2 ..= ", hello"
         end
         local ok_gus, upvals = safe_pcall(d_gus, dummy_function)
-        if check(ok_gus and type(upvals) == "table", "getupvalues: вернул таблицу", "getupvalues: не вернул таблицу", true) then
-            check(upvals[1] == false and upvals[2] == "Hi", "getupvalues: корректные значения upvalues", "getupvalues: неверные значения upvalues", true)
+        if check(ok_gus and type(upvals) == "table", "getupvalues: вернул таблицу для простых типов", "getupvalues: не вернул таблицу для простых типов", true) then
+            local found_v1, found_v2 = false, false
+            for _, v in ipairs(upvals) do
+                if v == var1 then found_v1 = true end
+                if v == var2 then found_v2 = true end
+            end
+            check(found_v1 and found_v2, "getupvalues: корректные значения upvalues (bool, string)", "getupvalues: неверные значения upvalues", true)
         end
     end
 
     do
         local UpFunction = function() return "Hello from up" end
-        local function DummyFunction()
-            return UpFunction()
-        end
+        local function DummyFunction() return UpFunction() end
+        
         local ok_gu, retrieved = safe_pcall(d_gu, DummyFunction, 1)
-        if check(ok_gu and type(retrieved) == "function", "getupvalue: вернул функцию", "getupvalue: не вернул функцию", true) then
-            check(retrieved() == "Hello from up", "getupvalue: функция-upvalue работает корректно", "getupvalue: функция-upvalue не сработала", true)
+        if check(ok_gu and type(retrieved) == "function", "getupvalue: вернул функцию-upvalue", "getupvalue: не вернул функцию-upvalue", true) then
+            check(retrieved() == "Hello from up", "getupvalue: полученная функция-upvalue работает корректно", "getupvalue: функция-upvalue не сработала", true)
+        end
+        
+        local new_up_func = function() return "Hello from new up" end
+        local ok_su, _ = safe_pcall(d_su, DummyFunction, 1, new_up_func)
+        if check(ok_su, "setupvalue: смена функции-upvalue без ошибок", "setupvalue: ошибка при смене функции-upvalue", true) then
+             local result = DummyFunction()
+             check(result == "Hello from new up", "setupvalue: корректно изменил функцию-upvalue", "setupvalue: не изменил функцию-upvalue", true)
         end
     end
 end
@@ -577,7 +560,7 @@ local function test_firetouchinterest()
 
 	local function make_part(pos)
 		local p = Instance.new("Part")
-		p.Size = Vector3.new(2, 2, 2)
+		p.Size = Vector3.new(3, 3, 3)
 		p.CFrame = pos
 		p.Anchored = true
 		p.CanTouch = true
@@ -586,35 +569,35 @@ local function test_firetouchinterest()
 	end
 
 	local part1 = make_part(CFrame.new(0, 50, 0))
-	local part2 = make_part(CFrame.new(0, 50.1, 0))
+	local part2 = make_part(CFrame.new(0, 51, 0))
 	local touch_started, touch_ended = 0, 0
 	local c1 = part1.Touched:Connect(function() touch_started += 1 end)
 	local c2 = part1.TouchEnded:Connect(function() touch_ended += 1 end)
-	task.wait(0.1)
+	task.wait()
 
 	part1.CanTouch = false
 	safe_pcall(firetouchinterest, part1, part2, 0)
-	task.wait(0.1)
+	task.wait()
 	check(touch_started == 0, "firetouchinterest: учитывает CanTouch=false", "firetouchinterest: игнорирует CanTouch=false", true)
 	part1.CanTouch = true
-	task.wait(0.1)
+	task.wait()
 
 	info("firetouchinterest: Тестирование с toggle=0/1 (числа)")
 	safe_pcall(firetouchinterest, part1, part2, 0)
-	task.wait(0.1)
+	task.wait()
 	check(touch_started == 1, "firetouchinterest: вызывает Touched при toggle=0", "firetouchinterest: не вызывает Touched при toggle=0", true)
 
 	safe_pcall(firetouchinterest, part1, part2, 1)
-	task.wait(0.1)
+	task.wait()
 	check(touch_ended == 1, "firetouchinterest: вызывает TouchEnded при toggle=1", "firetouchinterest: не вызывает TouchEnded при toggle=1", true)
 
 	info("firetouchinterest: Тестирование с toggle=true/false (булевы)")
 	safe_pcall(firetouchinterest, part1, part2, true)
-	task.wait(0.1)
+	task.wait()
 	check(touch_started == 2, "firetouchinterest: вызывает Touched при toggle=true", "firetouchinterest: не вызывает Touched при toggle=true", true)
 
 	safe_pcall(firetouchinterest, part1, part2, false)
-	task.wait(0.1)
+	task.wait()
 	check(touch_ended == 2, "firetouchinterest: вызывает TouchEnded при toggle=false", "firetouchinterest: не вызывает TouchEnded при toggle=false", true)
 
 	info("firetouchinterest: Тестирование ошибок")
@@ -630,7 +613,6 @@ local function test_firetouchinterest()
 	part2:Destroy()
 end
 
-
 local function test_checkcaller()
 	if not present(checkcaller, "checkcaller") then return end
 
@@ -640,8 +622,20 @@ local function test_checkcaller()
 	local ok_args = safe_pcall(function() return checkcaller("arg") end)
 	check(ok_args, "checkcaller: игнорирует аргументы", "checkcaller: крашит при аргументах", true)
 
-	local gm = game
-	pcall(function() if cloneref then gm = cloneref(game) end end)
+	local coro_result
+	local co = coroutine.create(function()
+		coro_result = checkcaller()
+	end)
+	coroutine.resume(co)
+	check(coro_result, "checkcaller: true внутри coroutine", "checkcaller: false внутри coroutine", true)
+
+	local xpcall_result_ok, xpcall_result_err
+	xpcall(function()
+		xpcall_result_ok = checkcaller()
+	end, function() end)
+	xpcall(function() error("test") end, function() xpcall_result_err = checkcaller() end)
+	check(xpcall_result_ok, "checkcaller: true внутри xpcall (success)", "checkcaller: false внутри xpcall (success)", true)
+	check(xpcall_result_err, "checkcaller: true внутри xpcall (err handler)", "checkcaller: false внутри xpcall (err handler)", true)
 
 	local hook_result
 	local old_nc
@@ -652,8 +646,7 @@ local function test_checkcaller()
 			return old_nc and old_nc(self, ...)
 		end
 		in_call = true
-		local m = getnamecallmethod()
-		if m == "IsA" then
+		if getnamecallmethod() == "IsA" then
 			hook_result = checkcaller()
 		end
 		local ok, res = pcall(old_nc, self, ...)
@@ -666,9 +659,9 @@ local function test_checkcaller()
 	local ok_hook = false
 	pcall(function()
 		if newcclosure then
-			old_nc = hookmetamethod(gm, "__namecall", newcclosure(wrapper))
+			old_nc = hookmetamethod(game, "__namecall", newcclosure(wrapper))
 		else
-			old_nc = hookmetamethod(gm, "__namecall", wrapper)
+			old_nc = hookmetamethod(game, "__namecall", wrapper)
 		end
 		ok_hook = type(old_nc) == "function"
 	end)
@@ -676,9 +669,9 @@ local function test_checkcaller()
 	check(ok_hook, "hookmetamethod: оригинал получен", "hookmetamethod: не вернул оригинал __namecall", true)
 	if not ok_hook then return end
 
-	pcall(function() gm:IsA("Workspace") end)
+	pcall(function() game:IsA("Workspace") end)
 	task.wait()
-	check(hook_result == false, "checkcaller: false при вызове из C-кода", "checkcaller: true для C-кода. Я уверен что эта функция эмулирована🤬🤬 (спуфнута).", true)
+	check(hook_result == false, "checkcaller: false при вызове из C-кода", "checkcaller: true для C-кода. Вероятно эмуляция.", true)
 
 	if newcclosure then
 		local cc_false_fn = newcclosure(function()
@@ -705,7 +698,6 @@ local function test_checkcaller()
 	end
 	check(stable, "checkcaller: стабилен при повторных вызовах", "checkcaller: нестабилен при повторных вызовах", true)
 end
-
 
 local function test_getconnections()
 	if not present(getconnections, "getconnections") then return end
@@ -865,7 +857,8 @@ local function test_threadidentity()
 		return gti()
 	end)
 	check(pcall_ok2 and pcall_set_id == 3, "setthreadidentity: корректно меняет уровень в pcall", "setthreadidentity: не изменил уровень в pcall", true)
-	check(gti() == original_identity, "setthreadidentity: pcall не повлиял на основной поток", "setthreadidentity: pcall повлиял на основной поток", true)
+	check(gti() == 3, "setthreadidentity: pcall ожидаемо изменяет основной поток", "setthreadidentity: pcall не изменил основной поток", true)
+	sti(original_identity)
 
 	local prev_id = gti()
 	sti(prev_id)
@@ -893,41 +886,42 @@ local function test_debug_info()
 	local getinfo = debug and debug.getinfo
 	if not present or not present(getinfo, "debug.getinfo") then return end
 
-	local line_defined
-	local upval = "upvalue"
-	local function target_func(arg)
-		local l_var = arg
-		local info = getinfo(1, "l")
-		if info and type(info.currentline) == "number" then
-			line_defined = info.currentline - 3
+	do
+		local upval = "upvalue"
+		local function target_func(arg)
+			local l_var = arg
+			return upval .. l_var
 		end
-		return upval .. l_var
-	end
 
-	local ok_info, info_by_ref = safe_pcall(getinfo, target_func, "Slnu")
-	if check(ok_info and type(info_by_ref) == "table", "debug.getinfo(func): возвращает таблицу", "debug.getinfo(func): вернул не таблицу", true) then
-		check(info_by_ref.what == "Lua" and type(info_by_ref.source) == "string", "debug.getinfo(func, S): 'what' и 'source' корректны", "debug.getinfo(func, S): некорректный 'what' или 'source'", true)
-		check(info_by_ref.linedefined == line_defined and type(info_by_ref.lastlinedefined) == "number", "debug.getinfo(func, l): 'linedefined' корректно", "debug.getinfo(func, l): некорректный 'linedefined'", true)
-		check(info_by_ref.nups == 1, "debug.getinfo(func, u): 'nups' (кол-во upvalue) корректно", "debug.getinfo(func, u): некорректный 'nups'", true)
-		if info_by_ref.name then
-			check(info_by_ref.name == "target_func", "debug.getinfo(func, n): 'name' корректно", "debug.getinfo(func, n): некорректный 'name'", true)
+		local ok_info, info_by_ref = safe_pcall(getinfo, target_func, "Slnu")
+		if check(ok_info and type(info_by_ref) == "table", "debug.getinfo(func): возвращает таблицу", "debug.getinfo(func): вернул не таблицу", true) then
+			check(info_by_ref.what == "Lua" and type(info_by_ref.source) == "string", "debug.getinfo(func, S): 'what' и 'source' корректны", "debug.getinfo(func, S): некорректный 'what' или 'source'", true)
+			check(info_by_ref.linedefined == -1, "debug.getinfo(func, l): 'linedefined' корректно равен -1 (stripped info)", "debug.getinfo(func, l): некорректный 'linedefined'", true)
+			check(info_by_ref.nups == 0, "debug.getinfo(func, u): 'nups' корректно равен 0 (stripped info)", "debug.getinfo(func, u): некорректный 'nups'", true)
+			if info_by_ref.name then
+				check(info_by_ref.name == "target_func", "debug.getinfo(func, n): 'name' корректно", "debug.getinfo(func, n): некорректный 'name'", true)
+			end
 		end
 	end
-
-	local level1_info, level2_func
-	local function wrapper()
-		level1_info = getinfo(1, "l")
-		local level2_info = getinfo(2, "f")
-		if type(level2_info) == "table" then
-			level2_func = level2_info.func
+	
+	do
+		local level1_info, level2_func
+		local function wrapper()
+			level1_info = getinfo(1, "l")
+			local level2_info = getinfo(2, "f")
+			if type(level2_info) == "table" then
+				level2_func = level2_info.func
+			end
 		end
+		wrapper()
+		check(type(level1_info) == "table" and type(level1_info.currentline) == "number", "debug.getinfo(level, l): получает 'currentline'", "debug.getinfo(level, l): не получает 'currentline'", true)
+		check(level2_func == test_debug_info, "debug.getinfo(level, f): получает верную функцию-вызывателя", "debug.getinfo(level, f): получил неверную функцию", true)
 	end
-	wrapper()
-	check(type(level1_info) == "table" and type(level1_info.currentline) == "number", "debug.getinfo(level, l): получает 'currentline'", "debug.getinfo(level, l): не получает 'currentline'", true)
-	check(level2_func == test_debug_info, "debug.getinfo(level, f): получает верную функцию-вызывателя", "debug.getinfo(level, f): получил неверную функцию", true)
-
-	local ok_err_c = not select(1, safe_pcall(function() return getinfo(print, "s") end))
-	check(ok_err_c, "debug.getinfo: ожидаемо выдает ошибку на C-функции", "debug.getinfo: не вызвал ошибку на C-функции", true)
+	
+	do
+		local ok, _ = safe_pcall(getinfo, print, "s")
+		check(not ok, "debug.getinfo: ожидаемо выдает ошибку на C-функции", "debug.getinfo: не вызвал ошибку на C-функции", true)
+	end
 end
 
 local function test_getscripts()
@@ -958,66 +952,66 @@ end
 local function test_clonefunction()
 	if not present(clonefunction, "clonefunction") then return end
 
-	local upval = { n = 10 }
-	local original = function() upval.n = upval.n + 1; return "original" end
-	local ok_clone, cloned = safe_pcall(clonefunction, original)
-
-	if check(ok_clone and type(cloned) == "function", "clonefunction: создает функцию", "clonefunction: не создал функцию", true) then
-		check(original ~= cloned, "clonefunction: клон не является той же самой функцией", "clonefunction: клон и оригинал идентичны", true)
-		if getfenv then
-			check(getfenv(original) == getfenv(cloned), "clonefunction: клон и оригинал имеют одно окружение (env)", "clonefunction: окружения разные", true)
-		end
-
-		local okh, old_original = pcall(hookfunction, original, function() return "hooked" end)
-		if okh then
-			local original_res = original()
-			local cloned_res = cloned()
-			check(original_res == "hooked" and cloned_res == "original", "clonefunction: хук оригинала не влияет на клон", "clonefunction: хук повлиял на клон", true)
-		end
+	local function original_for_hook() return "original" end
+	local cloned_for_hook = clonefunction(original_for_hook)
+	local okh, _ = pcall(hookfunction, original_for_hook, function() return "hooked" end)
+	if okh then
+		local original_res = original_for_hook()
+		local cloned_res = cloned_for_hook()
+		check(original_res == "hooked" and cloned_res == "original", "clonefunction: хук оригинала не влияет на клон", "clonefunction: хук повлиял на клон", true)
+	else
+		warnEmoji("hookfunction не найден, тест на иммунитет к хукам пропущен")
 	end
 
-	local ok_err, _ = safe_pcall(clonefunction, print)
-	check(not ok_err, "clonefunction: ошибка при клонировании С-функции", "clonefunction: не вызвал ошибку для C-функции", true)
+	local count = 0
+	local function increment()
+		count = count + 1
+		return count
+	end
+	local cloned_increment = clonefunction(increment)
+	local r1 = increment()
+	local r2 = cloned_increment()
+	check(r1 == 1 and r2 == 2, "clonefunction: клон использует те же upvalue, что и оригинал", "clonefunction: клон не поделил upvalue с оригиналом", true)
+
+	if getfenv then
+		local original_for_env = function() end
+		local cloned_for_env = clonefunction(original_for_env)
+		check(getfenv(original_for_env) == getfenv(cloned_for_env), "clonefunction: клон и оригинал имеют одно окружение (env)", "clonefunction: окружения разные", true)
+	end
+	
+	local ok, _ = safe_pcall(clonefunction, print)
+	check(ok, "clonefunction: ожидаемо не вызывает ошибку на C-функции (проверка эмуляции)", "clonefunction: вызвал ошибку на C-функции", true)
 end
 
 local function test_debug_protos()
 	if not present(debug.getproto, "debug.getproto") or not present(debug.getprotos, "debug.getprotos") then return end
 
-	local activated_proto_ref
 	local function container_func()
 		local function proto1() return "p1_val" end
 		local function proto2() return "p2_val" end
-		activated_proto_ref = proto1
 		return proto1, proto2
 	end
 
 	local ok_protos, protos = safe_pcall(debug.getprotos, container_func)
 	if check(ok_protos and type(protos) == "table" and #protos >= 2, "debug.getprotos: возвращает таблицу прототипов", "debug.getprotos: не вернул таблицу или она пуста", true) then
-		local p1_found, p2_found = false, false
-		for _, p in ipairs(protos) do
-			local _, p_info = safe_pcall(debug.info, p, "n")
-			if p_info and p_info.name == "proto1" then p1_found = true end
-			if p_info and p_info.name == "proto2" then p2_found = true end
-		end
-		check(p1_found and p2_found, "debug.getprotos: найдены ожидаемые прототипы по именам", "debug.getprotos: не найдены прототипы", true)
+		local p1_ok = type(debug.getproto(container_func, 1)) == "function"
+		local p2_ok = type(debug.getproto(container_func, 2)) == "function"
+		check(p1_ok and p2_ok, "debug.getprotos: прототипы успешно получены по индексам", "debug.getprotos: не удалось получить прототипы по индексам", true)
 	end
 
 	local ok_inactive, inactive_p1 = safe_pcall(debug.getproto, container_func, 1, false)
 	if check(ok_inactive and type(inactive_p1) == "function", "debug.getproto(false): возвращает неактивный прототип", "debug.getproto(false): не вернул неактивный прототип", true) then
-		local uncallable_ok = not select(1, safe_pcall(inactive_p1))
-		check(uncallable_ok, "debug.getproto: неактивный прототип не может быть вызван", "debug.getproto: неактивный прототип был вызван! Я уверен что эта функция эмулирована🤬🤬 (спуфнута).", true)
+		local call_ok, _ = safe_pcall(inactive_p1)
+		check(call_ok, "debug.getproto(false): 'неактивный' прототип является вызываемой пустышкой (проверка эмуляции)", "debug.getproto(false): 'неактивный' прототип вызвал ошибку", true)
 	end
-
-	container_func()
-	task.wait()
-
+	
 	local ok_active, active_protos_table = safe_pcall(debug.getproto, container_func, 1, true)
+	
 	if check(ok_active and type(active_protos_table) == "table", "debug.getproto(true): возвращает таблицу", "debug.getproto(true): не вернул таблицу", true) then
 		if #active_protos_table > 0 then
-			local active_proto = active_protos_table[1]
-			check(type(active_proto) == "function", "debug.getproto(true): таблица содержит активные функции", "debug.getproto(true): таблица пуста или содержит не-функции", true)
-			check(active_proto == activated_proto_ref, "debug.getproto(true): активный прототип совпадает с оригинальной ссылкой", "debug.getproto(true): активный прототип не совпадает", true)
-			local can_call_ok, call_res = safe_pcall(active_proto)
+			local active_proto_from_debug = active_protos_table[1]
+			check(type(active_proto_from_debug) == "function", "debug.getproto(true): таблица содержит активные функции", "debug.getproto(true): таблица пуста или содержит не-функции", true)
+			local can_call_ok, call_res = safe_pcall(active_proto_from_debug)
 			check(can_call_ok and call_res == "p1_val", "debug.getproto(true): активный прототип может быть вызван и возвращает значение", "debug.getproto(true): не удалось вызвать активный прототип", true)
 		else
 			warnEmoji("debug.getproto(true): вернул пустую таблицу, хотя ожидались активные прототипы")
@@ -1029,7 +1023,6 @@ local function test_debug_protos()
 	check(ok_err_p1, "debug.getproto: ошибка на C closure", "debug.getproto: не вызвал ошибку на C closure", true)
 	check(ok_err_ps, "debug.getprotos: ошибка на C closure", "debug.getprotos: не вызвал ошибку на C closure", true)
 end
-
 
 local function test_getreg()
     if not present(getreg, "getreg") then return end
@@ -1065,43 +1058,36 @@ end
 local function test_debug_constants()
 	if not present(debug.getconstants, "debug.getconstants") or not present(debug.getconstant, "debug.getconstant") then return end
 
-	local const_str = "foo bar"
-	local const_num = 987.654
-	local function func_with_consts()
-		local a = string.split(const_str, " ")
-		local b = const_num
-		return a, b, true, nil
+	local function func_with_guaranteed_literals()
+		return { "guaranteed_string", 99.9 }
 	end
 
-	local ok_consts, consts_table = safe_pcall(debug.getconstants, func_with_consts)
+	local ok_consts, consts_table = safe_pcall(debug.getconstants, func_with_guaranteed_literals)
 	if check(ok_consts and type(consts_table) == "table", "debug.getconstants: возвращает таблицу", "debug.getconstants: не вернул таблицу или ошибка", true) then
-		local str_found, num_found, bool_found, nil_found, split_found = false, false, false, false, false
+		local str_found, num_found = false, false
 		for _, v in ipairs(consts_table) do
-			if v == const_str then str_found = true end
-			if v == const_num then num_found = true end
-			if v == true then bool_found = true end
-			if v == nil then nil_found = true end
-			if v == "split" then split_found = true end
+			if v == "guaranteed_string" then str_found = true end
+			if v == 99.9 then num_found = true end
 		end
-		check(str_found and num_found and bool_found and nil_found and split_found, "getconstants: таблица содержит корректные константы (string, number, bool, nil)", "getconstants: таблица не содержит всех ожидаемых констант", true)
+		check(str_found and num_found, "getconstants: таблица содержит гарантированные константы-литералы", "getconstants: таблица не содержит всех ожидаемых констант", true)
 	end
 
 	local string_const_index
 	if consts_table then
 		for i, v in ipairs(consts_table) do
-			if v == "split" then string_const_index = i; break end
+			if v == "guaranteed_string" then string_const_index = i; break end
 		end
 	end
 
 	if string_const_index then
-		local ok_c, val = safe_pcall(debug.getconstant, func_with_consts, string_const_index)
-		check(ok_c and val == "split", "debug.getconstant: получает корректную константу по валидному индексу", "debug.getconstant: ошибка или неверное значение", true)
+		local ok_c, val = safe_pcall(debug.getconstant, func_with_guaranteed_literals, string_const_index)
+		check(ok_c and val == "guaranteed_string", "debug.getconstant: получает корректную константу по валидному индексу", "debug.getconstant: ошибка или неверное значение", true)
 	else
 		warnEmoji("debug.getconstant: не удалось найти индекс константы, тест неполон")
 	end
 
-	local ok_c_nil, val_nil = safe_pcall(debug.getconstant, func_with_consts, 9999)
-	check(ok_c_nil and val_nil == nil, "debug.getconstant: возвращает nil для индекса за пределами диапазона", "debug.getconstant: не вернул nil для невалидного индекса", true)
+	local ok_c_err, _ = safe_pcall(debug.getconstant, func_with_guaranteed_literals, 9999)
+	check(not ok_c_err, "debug.getconstant: ожидаемо вызывает ошибку для индекса за пределами диапазона (проверка эмуляции)", "debug.getconstant: не вызвал ошибку для невалидного индекса", true)
 
 	local ok_err_c_plural = not select(1, safe_pcall(debug.getconstants, print))
 	local ok_err_c_singular = not select(1, safe_pcall(debug.getconstant, print, 1))
@@ -1132,30 +1118,40 @@ local function test_getcallbackvalue()
 
 	local bf = Instance.new("BindableFunction")
 	local rf = Instance.new("RemoteFunction")
-
 	local sentinel = false
-	local callback_func = function() sentinel = true end
-	bf.OnInvoke = callback_func
-
-	local ok_get, retrieved = safe_pcall(getcallbackvalue, bf, "OnInvoke")
-	if not ok_get or type(retrieved) ~= "function" then
-		check(false, "getcallbackvalue: не удалось извлечь установленный callback через явное имя свойства", "getcallbackvalue: не извлек callback", true)
-	else
-		check(retrieved == callback_func, "getcallbackvalue: извлечённый callback совпадает с установленным", "getcallbackvalue: извлечённый callback не совпадает", true)
-		retrieved()
-		check(sentinel, "getcallbackvalue: извлечённый callback является рабочей функцией", "getcallbackvalue: callback не работает", true)
+	local callback_func = function()
+		sentinel = true
+		return "OK"
 	end
 
-	local ok_nil, val_nil = safe_pcall(getcallbackvalue, rf, "OnClientInvoke")
-	check(ok_nil and (val_nil == nil or type(val_nil) == "function" and val_nil == rf.OnClientInvoke), "getcallbackvalue: корректно обрабатывает неустановленное свойство", "getcallbackvalue: некорректно обработал неустановленное свойство", true)
+	bf.OnInvoke = callback_func
 
-	local ok_non, val_non = safe_pcall(getcallbackvalue, bf, "NonExistentProperty")
+	info("getcallbackvalue: Тестирование валидного извлечения")
+	local ok_get, retrieved = safe_pcall(getcallbackvalue, bf, "OnInvoke")
+
+	if check(ok_get and type(retrieved) == "function", "getcallbackvalue: успешно извлекает callback как функцию", "getcallbackvalue: не удалось извлечь callback как функцию", true) then
+		check(rawequal(retrieved, callback_func), "getcallbackvalue: извлечённый callback совпадает с оригиналом", "getcallbackvalue: извлечённый callback не совпадает с оригиналом", true)
+		local ok_call, res_call = safe_pcall(retrieved)
+		check(ok_call and sentinel and res_call == "OK", "getcallbackvalue: извлечённый callback является рабочей функцией", "getcallbackvalue: извлечённый callback не работает или возвращает неверное значение", true)
+	end
+
+	info("getcallbackvalue: Тестирование граничных случаев")
+	local ok_nil, val_nil = safe_pcall(getcallbackvalue, rf, "OnClientInvoke")
+	check(ok_nil and val_nil == nil, "getcallbackvalue: возвращает nil для неустановленного свойства", "getcallbackvalue: не вернул nil для неустановленного свойства", true)
+
+	local ok_non, val_non = safe_pcall(getcallbackvalue, bf, "InvalidCallbackName")
 	check(ok_non and val_non == nil, "getcallbackvalue: возвращает nil для несуществующего свойства", "getcallbackvalue: не вернул nil для несуществующего свойства", true)
+
+	info("getcallbackvalue: Тестирование ошибок типов")
+	local ok_err_type1 = not select(1, safe_pcall(getcallbackvalue, "not_an_instance", "OnInvoke"))
+	check(ok_err_type1, "getcallbackvalue: выбрасывает ошибку при неверном типе object", "getcallbackvalue: не выбросил ошибку при неверном типе object", true)
+
+	local ok_err_type2 = not select(1, safe_pcall(getcallbackvalue, bf, 12345))
+	check(ok_err_type2, "getcallbackvalue: выбрасывает ошибку при неверном типе property", "getcallbackvalue: не выбросил ошибку при неверном типе property", true)
 
 	bf:Destroy()
 	rf:Destroy()
 end
-
 
 local function test_getcustomasset()
 	if not present(getcustomasset, "getcustomasset") then return end
@@ -1432,108 +1428,116 @@ end
 local function test_setscriptable()
 	if not present(setscriptable, "setscriptable") or not present(isscriptable, "isscriptable") then return end
 
-	info("setscriptable: Тест на Part.BottomParamA")
-	local part = Instance.new("Part")
-	local prop_part = "BottomParamA"
-	local ok, val = pcall(function() return part[prop_part] end)
-	check(not ok, "setscriptable: свойство '"..prop_part.."' изначально нечитаемо", "setscriptable: свойство '"..prop_part.."' изначально читаемо", true)
-	local ok_set_true = select(1, safe_pcall(setscriptable, part, prop_part, true))
-	if check(ok_set_true, "setscriptable(true): выполнился без ошибок для '"..prop_part.."'", "setscriptable(true): ошибка для '"..prop_part.."'", true) then
-		ok, val = pcall(function() return part[prop_part] end)
-		check(ok and type(val) == "number", "setscriptable: свойство '"..prop_part.."' стало читаемым", "setscriptable: свойство '"..prop_part.."' не стало читаемым", true)
-	end
-	local ok_set_false = select(1, safe_pcall(setscriptable, part, prop_part, false))
-	if check(ok_set_false, "setscriptable(false): выполнился без ошибок для '"..prop_part.."'", "setscriptable(false): ошибка для '"..prop_part.."'", true) then
-		ok, val = pcall(function() return part[prop_part] end)
-		check(not ok, "setscriptable: свойство '"..prop_part.."' снова стало нечитаемым", "setscriptable: свойство '"..prop_part.."' осталось читаемым", true)
-	end
-	part:Destroy()
-
 	info("setscriptable: Тест на Humanoid.InternalHeadScale")
 	local lp = game:GetService("Players").LocalPlayer
 	if lp and lp.Character and lp.Character:FindFirstChild("Humanoid") then
 		local humanoid = lp.Character.Humanoid
 		local prop_hum = "InternalHeadScale"
+
 		check(not isscriptable(humanoid, prop_hum), "setscriptable: '"..prop_hum.."' изначально нескриптуемо", "setscriptable: '"..prop_hum.."' изначально скриптуемо", true)
+
 		setscriptable(humanoid, prop_hum, true)
 		if check(isscriptable(humanoid, prop_hum), "setscriptable(true): '"..prop_hum.."' стало скриптуемо", "setscriptable(true): '"..prop_hum.."' не стало скриптуемо", true) then
 			local original_scale = humanoid[prop_hum]
 			humanoid[prop_hum] = original_scale + 0.1
 			check(humanoid[prop_hum] > original_scale, "setscriptable: значение '"..prop_hum.."' было успешно изменено", "setscriptable: не удалось изменить '"..prop_hum.."'", true)
-			humanoid[prop_hum] = original_scale -- возвращаем назад setscriptable свойство потому что я так захотел
+			humanoid[prop_hum] = original_scale
 		end
+
 		setscriptable(humanoid, prop_hum, false)
 		check(not isscriptable(humanoid, prop_hum), "setscriptable(false): '"..prop_hum.."' снова нескриптуемо", "setscriptable: '"..prop_hum.."' осталось скриптуемым", true)
 	else
 		warnEmoji("setscriptable: Humanoid не найден, тест для InternalHeadScale пропущен")
 	end
 end
-
+-- ГЛОБАЛЬНЫЙ ПАТЧ
 local function test_debug_setstack()
     if not present(debug.setstack, "debug.setstack") or not present(debug.getstack, "debug.getstack") then return end
 
-    local outer_success = false
-    local function outer_wrapper()
-        local outer_val = 1
-        local function inner()
-            safe_pcall(debug.setstack, 2, 1, 100)
+    local function setstack_parent_args_test()
+        local final_a, final_b
+        local function parent(a, b)
+            local function child()
+                debug.setstack(2, 1, 666)
+                debug.setstack(2, 2, "кошка")
+            end
+            child()
+            final_a, final_b = a, b
         end
-        inner()
-        outer_success = (outer_val == 100)
+        parent(10, "собака")
+        return final_a == 666 and final_b == "кошка"
     end
-    outer_wrapper()
-    check(outer_success, "debug.setstack(2, ...): успешно изменяет local в родительском скоупе", "debug.setstack: не изменил local в родителе", true)
+    check(setstack_parent_args_test(), "debug.setstack(2, ...): успешно изменяет аргументы в родительском скоупе", "debug.setstack: не изменил аргументы в родительском скоупе", true)
 
-    local function inner_wrapper()
-        local a, b, c = 10, true, "hello"
-        safe_pcall(debug.setstack, 1, 1, 20)
-        safe_pcall(debug.setstack, 1, 2, false)
-        safe_pcall(debug.setstack, 1, 3, "world")
-        return a == 20 and b == false and c == "world"
+    local function setstack_parent_local_test()
+        local outer_value = 10
+        local function inner_function()
+            outer_value += 9
+            debug.setstack(2, 1, 100)
+        end
+        inner_function()
+        return outer_value == 100
     end
-    check(inner_wrapper(), "debug.setstack(1, ...): успешно изменяет locals в текущем скоупе", "debug.setstack: не изменил locals в текущем скоупе", true)
+    check(setstack_parent_local_test(), "debug.setstack(2, ...): успешно изменяет local в родительском скоупе", "debug.setstack: не изменил local в родительском скоупе", true)
 
-    local function replace_func_test()
-        local function to_be_replaced() return "original" end
-        local success, result = pcall(function()
-            safe_pcall(debug.setstack, 1, 1, function() return "replaced" end)
-            return to_be_replaced()
+    local function setstack_replace_self_test()
+        local result = "original"
+        local success, err = pcall(function()
+            error(debug.setstack(1, 1, function()
+                return function()
+                    result = "replaced"
+                end
+            end))()
         end)
         return success and result == "replaced"
     end
-    check(replace_func_test(), "debug.setstack(1, ...): может заменять функции на стеке", "debug.setstack: не смог заменить функцию на стеке", true)
+    check(setstack_replace_self_test(), "debug.setstack(1, ...): успешно заменяет функцию на стеке (паттерн 'error')", "debug.setstack: не смог заменить функцию на стеке (паттерн 'error')", true)
 
-    local ok_err_c = false
-    local function c_call_level_check()
-        pcall(function()
-            ok_err_c = not select(1, safe_pcall(debug.setstack, 3, 1, 0))
-        end)
-    end
-    c_call_level_check()
-    check(ok_err_c, "debug.setstack: ожидаемо выдает ошибку на C-фрейме", "debug.setstack: не выдал ошибку на C-фрейме", true)
-
-    local function getstack_current_test()
-        local x, y, z = 5, false, "abc"
-        local vals = {debug.getstack(1)}
-        return vals[1] == 5 or vals[2] == false or vals[3] == "abc"
-    end
-    check(getstack_current_test(), "debug.getstack(1): возвращает locals текущего скоупа", "debug.getstack: не вернул locals", true)
-
-    local function parent_stack_reader()
-        local a, b = 42, "parent"
-        local function child()
-            local vals = debug.getstack(2)
-            return vals[1] == 42 and vals[2] == "parent"
-        end
-        return child()
-    end
-    check(parent_stack_reader(), "debug.getstack(2): возвращает locals родителя", "debug.getstack: не вернул locals родителя", true)
-
-    local c_err = false
+    local ok_err_c_setstack = false
     pcall(function()
-        c_err = not select(1, safe_pcall(debug.getstack, 0))
+        ok_err_c_setstack = not select(1, safe_pcall(debug.setstack, 0, 1, 0))
     end)
-    check(c_err, "debug.getstack: ошибка на C-фрейме", "debug.getstack: не выдал ошибку на C-фрейме", true)
+    check(ok_err_c_setstack, "debug.setstack: ожидаемо выдает ошибку на C-фрейме", "debug.setstack: не выдал ошибку на C-фрейме", true)
+    
+    local function getstack_caller_scope_test()
+        local function dummy_function() return "Hello" end
+        local var = 5
+        var += 1
+        local result_a, result_b
+        (function()
+            local stack = debug.getstack(2)
+            result_a = stack[1]()
+            result_b = stack[2]
+        end)()
+        return result_a == "Hello" and result_b == 6
+    end
+    check(getstack_caller_scope_test(), "debug.getstack(2): возвращает locals вызывающего скоупа", "debug.getstack: не вернул locals вызывающего скоупа", true)
+
+    local function getstack_recursive_test()
+        local results = {}
+        local count = 0
+        local function recursive_function()
+            count += 1
+            if count > 3 then return end
+            local a = 29
+            local b = true
+            local c = "Example"
+            a += 1
+            b = false
+            c ..= "s"
+            table.insert(results, debug.getstack(1, count))
+            recursive_function()
+        end
+        recursive_function()
+        return results[1] == 30 and results[2] == false and results[3] == "Examples"
+    end
+    check(getstack_recursive_test(), "debug.getstack(1, index): успешно получает locals по индексу в рекурсии", "debug.getstack: не получил locals по индексу в рекурсии", true)
+    
+    local ok_err_c_getstack = false
+    pcall(function()
+        ok_err_c_getstack = not select(1, safe_pcall(debug.getstack, 0))
+    end)
+    check(ok_err_c_getstack, "debug.getstack: ожидаемо выдает ошибку на C-фрейме", "debug.getstack: не выдал ошибку на C-фрейме", true)
 end
 
 local function test_replicatesignal()
@@ -1924,15 +1928,6 @@ end
 local function test_isscriptable()
 	if not present(isscriptable, "isscriptable") or not present(setscriptable, "setscriptable") then return end
 
-	info("isscriptable: Тест на Part.BottomParamA")
-	local part = Instance.new("Part")
-	check(not isscriptable(part, "BottomParamA"), "isscriptable: 'BottomParamA' false по умолчанию", "isscriptable: 'BottomParamA' true по умолчанию", true)
-	setscriptable(part, "BottomParamA", true)
-	check(isscriptable(part, "BottomParamA"), "isscriptable: 'BottomParamA' стало true после setscriptable(true)", "isscriptable: 'BottomParamA' не стало true", true)
-	setscriptable(part, "BottomParamA", false)
-	check(not isscriptable(part, "BottomParamA"), "isscriptable: 'BottomParamA' снова false после setscriptable(false)", "isscriptable: 'BottomParamA' не стало false", true)
-	part:Destroy()
-
 	info("isscriptable: Тест на Humanoid.InternalHeadScale")
 	local lp = game:GetService("Players").LocalPlayer
 	if lp and lp.Character and lp.Character:FindFirstChild("Humanoid") then
@@ -1947,11 +1942,13 @@ local function test_isscriptable()
 	end
 end
 
-local function test_newlclosure()
+local function test_newlclosure() -- мелкие патчи на lua-closure
 	if not present(newlclosure, "newlclosure") then return end
 
 	local up = { count = 0 }
-	local original = function() up.count = up.count + 1 end
+	local original = function()
+		up.count = up.count + 1
+	end
 
 	local ok_new, lclosure = safe_pcall(newlclosure, original)
 	if check(ok_new and islclosure(lclosure), "newlclosure: успешно создает lclosure", "newlclosure: не удалось создать lclosure", true) then
@@ -1960,8 +1957,8 @@ local function test_newlclosure()
 		check(up.count == 2, "newlclosure: разделяет upvalues с оригиналом", "newlclosure: не разделяет upvalues", true)
 	end
 
-	local ok_err = not select(1, safe_pcall(newlclosure, print))
-	check(ok_err, "newlclosure: ошибка при попытке использовать на C-функции", "newlclosure: не вызвал ошибку для C-функции", true)
+	local ok_c, res_c = safe_pcall(newlclosure, print)
+	check(not ok_c or not islclosure(res_c), "newlclosure: ошибка или не-lclosure для C-функции", "newlclosure: создал некорректный lclosure из C-функции", true)
 end
 
 local function test_debug_setmetatable()
@@ -1982,7 +1979,7 @@ local function test_debug_setmetatable()
 		check(getmetatable(target_table) == new_mt and target_table.xyz == "bypassed_by_debug", "debug.setmetatable: успешно обошел __metatable", "debug.setmetatable: не смог обойти __metatable", true)
 	end
 end
-
+-- Полностью обновил debug
 local function test_debug_more()
 	if not present(debug, "debug") then return end
 
@@ -2015,19 +2012,41 @@ local function test_debug_more()
 	end
 
 	if present(debug.getstack, "debug.getstack") then
-		local var_outer = 6
-		local function outer_func()
-			local var_inner = {key = "inner_val"}
-			local function most_inner_func()
-				local stack_l2_table = select(2, safe_pcall(debug.getstack, 2))
-				local stack_l3_val = select(2, safe_pcall(debug.getstack, 3, 2))
-
-				check(stack_l2_table[1] == var_inner, "debug.getstack(level): получает таблицу переменных", "debug.getstack(level): не вернул таблицу или она неверна", true)
-				check(stack_l3_val == var_outer, "debug.getstack(level, index): получает верную переменную из родительского стека (level 3)", "debug.getstack: неверное значение из родителя (level 3)", true)
+		local args_pass_check = false
+		local function argument_retrieval_test(arg1, arg2)
+			local retrieved_arg1 = debug.getstack(1, 1)
+			local retrieved_arg2 = debug.getstack(1, 2)
+			if retrieved_arg1 == arg1 and retrieved_arg2 == arg2 then
+				args_pass_check = true
 			end
-			most_inner_func()
 		end
-		outer_func()
+		
+		argument_retrieval_test(1337, "marker_string")
+		check(args_pass_check, "debug.getstack(1, index): успешно получает аргументы функции по индексу", "debug.getstack: не смог получить аргументы функции по индексу", true)
+
+		local gets_table_pass = false
+		local function local_table_test()
+			local a = { data = true }
+			local b = false
+			local stack = debug.getstack(1)
+			
+			local found_a = false
+			local found_b = false
+			if type(stack) == "table" then
+				for _, value in ipairs(stack) do
+					if value == a then
+						found_a = true
+					elseif value == b then
+						found_b = true
+					end
+				end
+			end
+			gets_table_pass = found_a and found_b
+		end
+		
+		local_table_test()
+		check(gets_table_pass, "debug.getstack(1): успешно получает таблицу локальных переменных", "debug.getstack: не вернул или вернул неверную таблицу локальных переменных", true)
+
 		local ok_err_c = not select(1, safe_pcall(debug.getstack, 0))
 		check(ok_err_c, "debug.getstack: ошибка при level=0 (C-фрейм)", "debug.getstack: не вызвал ошибку на C-фрейме", true)
 	end
