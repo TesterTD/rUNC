@@ -131,10 +131,10 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
     <tr>
       <td><b>Seliware</b></td>
       <td>🖥 ПК</td>
-      <td><img src="https://img.shields.io/badge/Крашится-ff0000"></td>
-      <td><img src="https://img.shields.io/badge/Нет%20данных-lightgrey"></td>
+      <td><img src="https://img.shields.io/badge/286%2F311-91%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/21%2F311-6%25-00ff99"></td>
       <td><img src="https://img.shields.io/badge/Обновлено-12.09.2025-1e90ff"></td>
-      <td><img src="https://img.shields.io/badge/Не%20ожидал%20такого%20позора🤬🤬🤬-critical"></td>
+      <td><img src="https://img.shields.io/badge/getscripthash%20возвращает%20некорректные%20синтаксические%20параметры%2C%20что%20приводит%20к%20крашу%2C%20без%20него%20хороший%20итоговый%20результат-32cd32"></td>
     </tr>
     <tr>
       <td><b>Sirhurt</b></td>
@@ -154,4 +154,3 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
     </tr>
   </tbody>
 </table>
-
