@@ -133,7 +133,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
       <td>🖥 ПК</td>
       <td><img src="https://img.shields.io/badge/Крашится-ff0000"></td>
       <td><img src="https://img.shields.io/badge/Нет%20данных-lightgrey"></td>
-      <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-12.09.2025-1e90ff"></td>
       <td><img src="https://img.shields.io/badge/Не%20ожидал%20такого%20позора🤬🤬🤬-critical"></td>
     </tr>
     <tr>
@@ -141,7 +141,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
       <td>🖥 ПК</td>
       <td><img src="https://img.shields.io/badge/Крашится-ff0000"></td>
       <td><img src="https://img.shields.io/badge/Нет%20данных-lightgrey"></td>
-      <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-11.09.2025-1e90ff"></td>
       <td><img src="https://img.shields.io/badge/Крашится-critical"></td>
     </tr>
     <tr>
