@@ -118,7 +118,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
       <td><img src="https://img.shields.io/badge/Крашится-ff0000"></td>
       <td><img src="https://img.shields.io/badge/Нет%20данных-lightgrey"></td>
       <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
-      <td><img src="https://img.shields.io/badge/%D0%9A%D1%80%D0%B0%D1%88%D0%B8%D1%82%D1%81%D1%8F-critical"></td>
+      <td><img src="https://img.shields.io/badge/Крашится-critical"></td>
     </tr>
     <tr>
       <td><b>JJSploit</b></td>
@@ -126,14 +126,30 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
       <td><img src="https://img.shields.io/badge/140%2F208-67%25-ffd700"></td>
       <td><img src="https://img.shields.io/badge/46%2F208-22%25-ffa500"></td>
       <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
-      <td><img src="https://img.shields.io/badge/%D0%9F%D0%BE%D1%82%D0%BE%D0%BC%D0%BE%D0%BA%20Xeno-ffd700"></td>
+      <td><img src="https://img.shields.io/badge/Потомок%20Xeno-ffd700"></td>
+    </tr>
+    <tr>
+      <td><b>Seliware</b></td>
+      <td>🖥 ПК</td>
+      <td><img src="https://img.shields.io/badge/Крашится-ff0000"></td>
+      <td><img src="https://img.shields.io/badge/Нет%20данных-lightgrey"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/Не%20ожидал%20такого%20позора🤬🤬🤬-critical"></td>
+    </tr>
+    <tr>
+      <td><b>Sirhurt</b></td>
+      <td>🖥 ПК</td>
+      <td><img src="https://img.shields.io/badge/Крашится-ff0000"></td>
+      <td><img src="https://img.shields.io/badge/Нет%20данных-lightgrey"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/Крашится-critical"></td>
     </tr>
     <tr>
       <td><b>Neverfall</b></td>
       <td>🖥 ПК</td>
       <td><img src="https://img.shields.io/badge/Ожидаются%20результаты-lightgrey"></td>
       <td><img src="https://img.shields.io/badge/Ожидаются%20данные-lightgrey"></td>
-      <td><img src="https://img.shields.io/badge/Обновление%20ожидается-lightgrey"></td>
+      <td><img src="https://img.shields.io/badge/Заебали%20когда%20обновление-lightgrey"></td>
       <td><img src="https://img.shields.io/badge/Нет%20данных-lightgrey"></td>
     </tr>
   </tbody>
