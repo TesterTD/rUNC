@@ -152,5 +152,13 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
       <td><img src="https://img.shields.io/badge/Заебали%20когда%20обновление-lightgrey"></td>
       <td><img src="https://img.shields.io/badge/Нет%20данных-lightgrey"></td>
     </tr>
+    <tr>
+      <td><b>Nucleus</b></td>
+      <td>🖥 ПК</td>
+      <td><img src="https://img.shields.io/badge/264%2F291-90%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/21%2F291-7%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-13.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/Отличный%20Executor%2C%20рекомендуется%2C%20но%20обнаружается%20ROBLOX-32cd32"></td>
+    </tr>
   </tbody>
 </table>
