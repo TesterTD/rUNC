@@ -99,18 +99,18 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
     <tr>
       <td><b>Xeno</b></td>
       <td>🖥 ПК</td>
-      <td><img src="https://img.shields.io/badge/162%2F239-67%25-ffd700"></td>
-      <td><img src="https://img.shields.io/badge/52%2F239-21%25-ffa500"></td>
-      <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/162%2F235-68%25-ffd700"></td>
+      <td><img src="https://img.shields.io/badge/52%2F235-22%25-ffa500"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-14.09.2025-1e90ff"></td>
       <td><img src="https://img.shields.io/badge/Подделывают%20некоторые%20функции%2C%20но%20неплохо%20для%20Level%203-ffd700"></td>
     </tr>
     <tr>
       <td><b>Velocity</b></td>
       <td>🖥 ПК</td>
-      <td><img src="https://img.shields.io/badge/251%2F295-85%25-32cd32"></td>
-      <td><img src="https://img.shields.io/badge/34%2F295-11%25-32cd32"></td>
+      <td><img src="https://img.shields.io/badge/Крашится-ff0000"></td>
+      <td><img src="https://img.shields.io/badge/Нет%20данных-lightgrey"></td>
       <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
-      <td><img src="https://img.shields.io/badge/Неплохой%20Executor%2C%20но%20нестабильные%20функции%20(gethiddenproperty%2C%20sethiddenproperty%20крашится)-32cd32"></td>
+      <td><img src="https://img.shields.io/badge/Парашный%20инжектор%20боже%20%F0%9F%A4%AC%F0%9F%A4%AC%F0%9F%A4%AC%F0%9F%A4%AC-ff0000"></td>
     </tr>
     <tr>
       <td><b>KRNL</b></td>
