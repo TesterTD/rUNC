@@ -1,3 +1,9 @@
+local idd = identifyexecutor()
+
+if idd == "NeverFall" or idd == "GORSHOK" then
+    print("іба чотко 😎😎")
+end
+
 local totalTests = 0
 local passedTests = 0
 local skidCount = 0
@@ -746,26 +752,57 @@ local function test_request()
 	local req, name = pick_request_func()
 	if not present(req, "request/http_request") then return end
 
-	local post_ok, res_post = safe_pcall(req, {Url="https://httpbin.org/post", Method="POST", Body="test", Headers={["Content-Type"]="text/plain"}})
-	check(post_ok and type(res_post)=="table" and res_post.Success and res_post.Body:find("test"), name..": успешный POST запрос", name..": ошибка POST запроса", false)
+	local post_ok, res_post = safe_pcall(req, {
+		Url="https://httpbin.org/post",
+		Method="POST",
+		Body="test",
+		Headers={["Content-Type"]="text/plain"}
+	})
+	check(post_ok and type(res_post)=="table" and res_post.Success and res_post.Body:find("test"),
+		name..": успешный POST запрос", name..": ошибка POST запроса", false)
 
 	local get_ok, res_get = safe_pcall(req, { Url = "https://httpbin.org/get", Method = "GET" })
-	if check(get_ok and res_get and res_get.Success and res_get.StatusCode == 200, name..": успешный GET запрос", name..": ошибка GET запроса", false) then
-		local p, decoded = safe_pcall(game:GetService("HttpService").JSONDecode, game:GetService("HttpService"), res_get.Body)
-		if check(p and type(decoded) == "table" and type(decoded.headers) == "table", name..": тело ответа GET - валидный JSON", name..": тело ответа GET - не JSON", false) then
-			local has_ua = decoded.headers["User-Agent"] and decoded.headers["User-Agent"] ~= ""
-			local has_fp = false
-			for k in pairs(decoded.headers) do
-				if k:lower():find("fingerprint") then has_fp = true; break end
+	if check(get_ok and res_get and res_get.Success and res_get.StatusCode == 200,
+		name..": успешный GET запрос", name..": ошибка GET запроса", false) then
+
+		local p, decoded = safe_pcall(game:GetService("HttpService").JSONDecode,
+			game:GetService("HttpService"), res_get.Body)
+
+		if check(p and type(decoded) == "table" and type(decoded.headers) == "table",
+			name..": тело ответа GET - валидный JSON", name..": тело ответа GET - не JSON", false) then
+
+			local ua = decoded.headers["User-Agent"]
+			local fp
+			for k,v in pairs(decoded.headers) do
+				if k:lower():find("fingerprint") then
+					fp = v
+					break
+				end
 			end
-			check(has_ua, name..": запрос содержит заголовок User-Agent", name..": отсутствует User-Agent", false)
-			check(has_fp, name..": запрос содержит заголовок Fingerprint", name..": отсутствует Fingerprint", false)
+
+			if ua and ua ~= "" then
+				check(true, name..": User-Agent найден ["..ua.."]", name..": отсутствует User-Agent", false)
+			else
+				check(false, "", name..": отсутствует User-Agent", false)
+			end
+
+			if fp and fp ~= "" then
+				check(true, name..": Fingerprint найден ["..fp.."]", name..": отсутствует Fingerprint", false)
+			else
+				check(false, "", name..": отсутствует Fingerprint", false)
+			end
 		end
 	end
 
-	local ok_err, _ = safe_pcall(req, {Url="invalid-url", Method="GET"})
-	check(not select(1, safe_pcall(req, {Url = "https://invalid.421414aofas. nonexiggstent/", Method = "GET"})), name..": ошибка при невалидном URL", name..": не вызвал ошибку для невалидного URL", false)
+	local notfound_ok, res_404 = safe_pcall(req, { Url = "https://neverfall.one/gorshok", Method = "GET" })
+		check(res_404.StatusCode == 404, name..": корректно обрабатывает 404 (StatusCode=404)", name..": неверный StatusCode для 404", true)
+	end
+
+	check(not select(1, safe_pcall(req, {Url = "https://invalid.421414aofas. nonexiggstent/", Method = "GET"})),
+		name..": ошибка при невалидном URL", name..": не вызвал ошибку для невалидного URL", false)
 end
+
+
 
 local function test_getnilinstances()
 	if not present(getnilinstances, "getnilinstances") then return end
@@ -1337,8 +1374,19 @@ local function test_file_operations()
 	writefile(path, "overwrite")
 	check(readfile(path) == "overwrite", "writefile: корректно перезаписывает файл", "writefile: файл не был перезаписан", false)
 
+	local escape_path = "../escape_test.txt"
+	local ok_escape = select(1, safe_pcall(writefile, escape_path, "escape!"))
+	local escaped = ok_escape and isfile and isfile(escape_path)
+
+	check(not escaped, "writefile: не позволяет выйти из рабочей директории", "writefile: возможно выйти за рабочую директорию через ../", true)
+
+	if escaped and delfile then
+		delfile(escape_path)
+	end
+
 	if present(delfile, "delfile") then delfile(path) end
 end
+
 
 local function test_folder_and_load_ops()
 	local fns = {makefolder, isfolder, listfiles, loadfile, writefile}
@@ -1871,23 +1919,38 @@ local function test_fireclickdetector()
 	container:Destroy()
 end
 
+local function measure_fps(duration)
+    local RunService = game:GetService("RunService")
+    local frames, start = 0, tick()
+    while tick() - start < duration do
+        RunService.RenderStepped:Wait()
+        frames += 1
+    end
+    return math.floor(frames / duration + 0.5)
+end
+
 local function test_fpscap()
-	if not present(getfpscap, "getfpscap") or not present(setfpscap, "setfpscap") then return end
+    if not present(getfpscap, "getfpscap") or not present(setfpscap, "setfpscap") then return end
 
-	local ok_get, original_cap = safe_pcall(getfpscap)
-	if not check(ok_get and type(original_cap) == "number", "getfpscap: возвращает число", "getfpscap: не вернул число или ошибка", false) then return end
+    local ok_get, original_cap = safe_pcall(getfpscap)
+    if not check(ok_get and type(original_cap) == "number", "getfpscap: возвращает число", "getfpscap: не вернул число или ошибка", false) then return end
 
-	local new_cap = 144
-	if original_cap == new_cap then new_cap = 120 end
+    local real_before = measure_fps(2)
+    check(math.abs(real_before - original_cap) <= 5, "getfpscap: значение совпадает с реальным FPS", "getfpscap: значение не совпадает с реальным FPS", false)
 
-	local ok_set = select(1, safe_pcall(setfpscap, new_cap))
-	if check(ok_set, "setfpscap: выполнился без ошибок", "setfpscap: ошибка при выполнении", false) then
-		local ok_get_new, current_cap = safe_pcall(getfpscap)
-		check(ok_get_new and current_cap == new_cap, "setfpscap: успешно установил новый FPS cap", "setfpscap: не удалось установить FPS cap", false)
-	end
+    local new_cap = (original_cap == 144) and 120 or 144
+    local ok_set = select(1, safe_pcall(setfpscap, new_cap))
+    if check(ok_set, "setfpscap: выполнился без ошибок", "setfpscap: ошибка при выполнении", false) then
+        task.wait(1)
+        local real_after = measure_fps(2)
+        check(math.abs(real_after - new_cap) <= 5, "setfpscap: реально изменил FPS cap (реальный FPS ~ "..real_after..")", "setfpscap: не изменил FPS cap", false)
 
-	setfpscap(original_cap)
-	check(getfpscap() == original_cap, "setfpscap: успешно восстановил исходный FPS cap", "setfpscap: не удалось восстановить FPS cap", false)
+        local ok_get_new, current_cap = safe_pcall(getfpscap)
+        check(ok_get_new and current_cap == new_cap, "getfpscap: возвращает установленный лимит", "getfpscap: не возвращает установленный лимит", false)
+    end
+
+    setfpscap(original_cap)
+    check(getfpscap() == original_cap, "setfpscap: успешно восстановил исходный FPS cap", "setfpscap: не удалось восстановить FPS cap", false)
 end
 
 local function test_replaceclosure()
@@ -2072,34 +2135,97 @@ local function test_hui()
 end
 
 local function test_mouse_emulation()
-	local mouse_funcs = {mouse1click, mouse1press, mouse1release, mouse2click, mouse2press, mouse2release, mousemoveabs, mousemoverel, mousescroll}
-	local mouse_func_names = {"mouse1click", "mouse1press", "mouse1release", "mouse2click", "mouse2press", "mouse2release", "mousemoveabs", "mousemoverel", "mousescroll"}
+    local req = {
+        {"mouse1click", mouse1click},
+        {"mouse1press", mouse1press},
+        {"mouse1release", mouse1release},
+        {"mouse2click", mouse2click},
+        {"mouse2press", mouse2press},
+        {"mouse2release", mouse2release},
+        {"mousemoveabs", mousemoveabs},
+        {"mousemoverel", mousemoverel},
+        {"mousescroll", mousescroll},
+    }
+    for _, p in ipairs(req) do if not present(p[2], p[1]) then return end end
 
-	local all_present = true
-	for i, f in ipairs(mouse_funcs) do
-		if not present(f, mouse_func_names[i]) then
-			all_present = false
-		end
-	end
-	if not all_present then return end
+    local CoreGui = game:GetService("CoreGui")
+    local UIS = game:GetService("UserInputService")
 
-	local ok_click = select(1, safe_pcall(mouse1click))
-	check(ok_click, "mouse1click: выполняется без ошибок", "mouse1click: ошибка при вызове", false)
+    local function makeAtCursor(text, w, h)
+        local sg = Instance.new("ScreenGui")
+        sg.IgnoreGuiInset = true
+        sg.ResetOnSpawn = false
+        sg.Parent = CoreGui
 
-	local ok_press = select(1, safe_pcall(mouse1press))
-	check(ok_press, "mouse1press: выполняется без ошибок", "mouse1press: ошибка при вызове", false)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.fromOffset(w or 200, h or 60)
+        local m = UIS:GetMouseLocation()
+        btn.Position = UDim2.fromOffset(m.X - btn.Size.X.Offset/2, m.Y - btn.Size.Y.Offset/2)
+        btn.Text = text
+        btn.Parent = sg
+        return sg, btn
+    end
 
-	local ok_release = select(1, safe_pcall(mouse1release))
-	check(ok_release, "mouse1release: выполняется без ошибок", "mouse1release: ошибка при вызове", false)
+    do
+        local sg, btn = makeAtCursor("LClick")
+        local clicked = false
+        btn.MouseButton1Click:Connect(function() clicked = true end)
+        select(1, safe_pcall(mouse1click))
+        task.wait(0.3)
+        check(clicked, "mouse1click: реально кликнул по GUI", "mouse1click: не сработал по GUI", false)
+        sg:Destroy()
+    end
 
-	local ok_moveabs = select(1, safe_pcall(mousemoveabs, 100, 100))
-	check(ok_moveabs, "mousemoveabs: выполняется без ошибок с аргументами", "mousemoveabs: ошибка при вызове", false)
+    do
+        local sg, btn = makeAtCursor("LPress/Release")
+        local down, up = false, false
+        btn.MouseButton1Down:Connect(function() down = true end)
+        btn.MouseButton1Up:Connect(function() up = true end)
+        select(1, safe_pcall(mouse1press))
+        task.wait(0.15)
+        select(1, safe_pcall(mouse1release))
+        task.wait(0.3)
+        check(down and up, "mouse1press/release: реально сработали", "mouse1press/release: не сработали", false)
+        sg:Destroy()
+    end
 
-	local ok_moverel = select(1, safe_pcall(mousemoverel, 10, 10))
-	check(ok_moverel, "moverel: выполняется без ошибок с аргументами", "moverel: ошибка при вызове", false)
+    do
+        local sg, btn = makeAtCursor("RClick")
+        local clicked = false
+        btn.MouseButton2Click:Connect(function() clicked = true end)
+        select(1, safe_pcall(mouse2click))
+        task.wait(0.3)
+        check(clicked, "mouse2click: реально кликнул по GUI", "mouse2click: не сработал по GUI", false)
+        sg:Destroy()
+    end
 
-	local ok_scroll = select(1, safe_pcall(mousescroll, 0, 10))
-	check(ok_scroll, "mousescroll: выполняется без ошибок с аргументами", "mousescroll: ошибка при вызове", false)
+    do
+        local sg, btn = makeAtCursor("RPress/Release")
+        local down, up = false, false
+        btn.MouseButton2Down:Connect(function() down = true end)
+        btn.MouseButton2Up:Connect(function() up = true end)
+        select(1, safe_pcall(mouse2press))
+        task.wait(0.15)
+        select(1, safe_pcall(mouse2release))
+        task.wait(0.3)
+        check(down and up, "mouse2press/release: реально сработали", "mouse2press/release: не сработали", false)
+        sg:Destroy()
+    end
+
+    do
+        local ok = select(1, safe_pcall(mousescroll, 0, 6))
+        check(ok, "mousescroll: выполняется без ошибок", "mousescroll: ошибка при вызове", false)
+    end
+
+    do
+        local ok = select(1, safe_pcall(mousemoveabs, 200, 200))
+        check(ok, "mousemoveabs: выполняется без ошибок", "mousemoveabs: ошибка при вызове", false)
+    end
+
+    do
+        local ok = select(1, safe_pcall(mousemoverel, 50, 50))
+        check(ok, "mousemoverel: выполняется без ошибок", "mousemoverel: ошибка при вызове", false)
+    end
 end
 
 local function test_cache()
@@ -2186,23 +2312,38 @@ local function test_crypto_extended()
 	check(hash1 == hash2, "crypt.hash: хэши для одних и тех же данных совпадают", "crypt.hash: хэши не совпадают", true)
 end
 
-local function test_misc_env() if present(messagebox, "messagebox") then 
-		local ok_msg = select(1, safe_pcall(messagebox, "Test", "test", 0)) 
-		check(ok_msg, "messagebox: выполняется без ошибок", "messagebox: ошибка при вызове", false) 
-	end
+local function test_misc_env() 
+    if present(messagebox, "messagebox") then
+        local start = tick()
+        local ok_msg = select(1, safe_pcall(messagebox, "Test", "test", 0))
+        local dt = tick() - start
 
-	if present(queue_on_teleport, "queue_on_teleport") then
-		local code = "print('teleported!')"
-		local ok_queue = select(1, safe_pcall(queue_on_teleport, code))
-		check(ok_queue, "queue_on_teleport: выполняется без ошибок", "queue_on_teleport: ошибка при вызове", false)
-	end
+        if check(ok_msg, "messagebox: выполняется без ошибок", "messagebox: ошибка при вызове", false) then
+            if dt > 0.5 then
+                check(false, "messagebox: синхронный вызов (окно блокировало поток)", "messagebox: не синхронный вызов", true)
+            else
+                check(true, "messagebox: асинхронный вызов (не блокировал поток)", "messagebox: не асинхронный вызов", true)
+            end
+        end
+    end
 
-	if present(setclipboard, "setclipboard") then
-		local text = "clipboard_test"
+    if present(queue_on_teleport, "queue_on_teleport") then
+        local code = "print('teleported!')"
+        local ok_queue = select(1, safe_pcall(queue_on_teleport, code))
+        check(ok_queue, "queue_on_teleport: выполняется без ошибок", "queue_on_teleport: ошибка при вызове", false)
+    end
+
+	if present(setclipboard, "setclipboard") and present(getclipboard, "getclipboard") then
+		local text = tostring(math.random(1000,9999))
 		local ok_set = select(1, safe_pcall(setclipboard, text))
-		check(ok_set, "setclipboard: выполняется без ошибок", "setclipboard: ошибка при вызове", false)
-	end
+		if check(ok_set, "setclipboard: вызвался без ошибок", "setclipboard: ошибка при вызове", false) then
+			local ok_get, clip = safe_pcall(getclipboard)
+			check(ok_get and clip == text, "setclipboard/getclipboard: реально записывает в буфер ["..text.."]",
+				  "setclipboard/getclipboard: не совпадает содержимое", false)
+		end
+	end	
 end
+
 
 local function test_hidden_properties()
 	if not present(gethiddenproperty, "gethiddenproperty") or not present(sethiddenproperty, "sethiddenproperty") then return end
@@ -2341,8 +2482,8 @@ run_test_suite("--- Файловые операции и сетевые (aka req
 	run_test_suite("Файловые операции и сетевые", "test_getcustomasset", test_getcustomasset)
 	run_test_suite("Файловые операции и сетевые", "test_replicatesignal", test_replicatesignal)
 	run_test_suite("Файловые операции и сетевые", "test_cache", test_cache)
-	run_test_suite("Файловые операции и сетевые", "test_misc_env", test_misc_env)
 	run_test_suite("Файловые операции и сетевые", "test_mouse_emulation", test_mouse_emulation)
+	run_test_suite("Файловые операции и сетевые", "test_misc_env", test_misc_env)
 end)
 
 run_test_suite("--- Криптография ---", function()
