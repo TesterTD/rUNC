@@ -1,311 +1,313 @@
 <!DOCTYPE html>
 <html lang="ru">
-<link rel="icon" type="image/png" href="logo2.png" />   
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>rUNC — Документация Тестера</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-<style>
-:root {
---bg-deep-space: #0A0F1A;
---bg-space: #121826;
---bg-panel: #1A2233;
---bg-interactive: #242E45;
---border-primary: #2C3A56;
---border-accent: #639BFF;
---text-primary: #E6EDFF;
---text-secondary: #8294B8;
---text-accent: #639BFF;
---accent-glow: rgba(99, 155, 255, 0.2);
---font-body: 'Inter', sans-serif;
---font-code: 'JetBrains Mono', monospace;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rUNC — Документация Тестера</title>
+   <link rel="icon" type="image/png" href="logo2.png" />   
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" id="hljs-theme-dark">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css" id="hljs-theme-light" disabled>
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
+    <style>
+        :root {
+            --ease-in-out-cubic: cubic-bezier(0.65, 0, 0.35, 1);
+            --transition-speed-fast: 0.2s;
+            --transition-speed-med: 0.3s;
+        }
 
-html {
-    scroll-behavior: smooth;
-}
+        :root, :root.dark-theme {
+            --primary-color: #529dff;
+            --background-color: #0d1117;
+            --bg-level-1: #161b22;
+            --bg-level-2: #21262d;
+            --bg-level-3: #2a3038;
+            --text-color: #c9d1d9;
+            --text-secondary-color: #8b949e;
+            --glow-color: rgba(82, 157, 255, 0.2);
+            --border-color: #30363d;
+            --border-color-hover: #8b949e;
+            --border-radius-sm: 8px;
+            --border-radius-md: 12px;
+            --font-body: 'Manrope', sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+            --scrollbar-thumb-color: #2a3038;
+            --scrollbar-thumb-color-hover: #3e444c;
+            --code-inline-color: #79c0ff;
+        }
 
-body {
-    font-family: var(--font-body);
-    background-color: var(--bg-deep-space);
-    color: var(--text-primary);
-    display: flex;
-    height: 100vh;
-    overflow: hidden;
-}
+        :root.light-theme {
+            --primary-color: #2563eb;
+            --background-color: #f6f8fa;
+            --bg-level-1: #ffffff;
+            --bg-level-2: #f0f3f8;
+            --bg-level-3: #e8ecf2;
+            --text-color: #1f2328;
+            --text-secondary-color: #57606a;
+            --glow-color: rgba(37, 99, 235, 0.15);
+            --border-color: #d0d7de;
+            --border-color-hover: #2563eb;
+            --scrollbar-thumb-color: #c1c8d4;
+            --scrollbar-thumb-color-hover: #a8b1c2;
+            --code-inline-color: #2563eb;
+        }
 
-#background-animation {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: 
-        radial-gradient(600px circle at 15% 30%, var(--accent-glow), transparent 60%),
-        radial-gradient(500px circle at 80% 70%, rgba(66, 211, 146, 0.1), transparent 60%);
-    animation: subtle-pulse 15s cubic-bezier(0.4, 0, 0.6, 1) infinite alternate;
-    z-index: -1;
-}
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
 
-@keyframes subtle-pulse {
-    from {
-        opacity: 0.7;
-        transform: scale(1.0);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1.15);
-    }
-}
+        body {
+            font-family: var(--font-body);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color var(--transition-speed-med) var(--ease-in-out-cubic), color var(--transition-speed-med) var(--ease-in-out-cubic);
+        }
+        
+        #preloader {
+            position: fixed;
+            inset: 0;
+            background-color: var(--background-color);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s var(--ease-in-out-cubic), visibility 0.5s;
+            gap: 20px;
+            visibility: visible;
+        }
+        #preloader.loaded {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .loader-logo {
+            font-family: var(--font-body);
+            font-weight: 800;
+            font-size: 32px;
+            color: var(--primary-color);
+            animation: pulse-logo 1.5s ease-in-out infinite alternate;
+        }
+        @keyframes pulse-logo {
+            from { opacity: 0.7; transform: scale(1); }
+            to { opacity: 1; transform: scale(1.05); }
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-.main-layout {
-    display: grid;
-    grid-template-columns: 290px 1fr;
-    width: 100%;
-    height: 100%;
-}
+        .ripple {
+            position: fixed;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            animation: ripple-effect 0.75s var(--ease-in-out-cubic);
+            z-index: 9990;
+        }
+        @keyframes ripple-effect {
+            from { width: 0; height: 0; opacity: 0.4; }
+            to { width: 100px; height: 100px; opacity: 0; }
+        }
 
-.sidebar {
-    background-color: var(--bg-space);
-    border-right: 1px solid var(--border-primary);
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-}
+        #background-glow {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(800px circle at 10% 20%, var(--glow-color), transparent 70%),
+                        radial-gradient(600px circle at 90% 85%, rgba(66, 153, 225, 0.1), transparent 70%);
+            animation: subtle-glow-move 25s ease-in-out infinite alternate;
+            z-index: -1;
+            will-change: opacity, transform;
+            transition: opacity var(--transition-speed-med);
+        }
+        
+        .light-theme #background-glow { opacity: 0.6; }
 
-.sidebar-header {
-    padding: 24px 28px;
-    border-bottom: 1px solid var(--border-primary);
-    flex-shrink: 0;
-}
+        @keyframes subtle-glow-move {
+            0% { transform: translate(-5%, -10%) scale(1); opacity: 0.8; }
+            100% { transform: translate(5%, 10%) scale(1.2); opacity: 1; }
+        }
 
-.sidebar-header h1 {
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: 0.5px;
-}
+        .main-layout { display: grid; grid-template-columns: 290px 1fr; width: 100%; height: 100%; }
 
-.search-container {
-    position: relative;
-    margin-top: 20px;
-}
+        .sidebar {
+            background-color: var(--bg-level-1);
+            border-right: 1px solid var(--border-color);
+            display: flex; flex-direction: column;
+            height: 100vh;
+            transition: background-color var(--transition-speed-med), border-color var(--transition-speed-med);
+        }
 
-.search-icon {
-    position: absolute;
-    top: 50%;
-    left: 14px;
-    transform: translateY(-50%);
-    color: var(--text-secondary);
-    pointer-events: none;
-    transition: color 0.2s;
-}
+        .sidebar-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+            display: flex; flex-direction: column; gap: 20px;
+        }
 
-.search-bar {
-    width: 100%;
-    background-color: var(--bg-deep-space);
-    border: 1px solid var(--border-primary);
-    border-radius: 8px;
-    color: var(--text-primary);
-    font-family: var(--font-body);
-    font-size: 15px;
-    padding: 10px 16px 10px 42px;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    box-sizing: border-box; /* Fix for overflow */
-}
+        .logo-area { display: flex; align-items: center; justify-content: space-between; }
+        .logo-area h1 { font-size: 26px; font-weight: 800; color: var(--text-color); letter-spacing: -0.5px; }
 
-.search-bar:focus {
-    outline: none;
-    border-color: var(--border-accent);
-    box-shadow: 0 0 0 3px var(--accent-glow);
-}
-.search-bar:focus + .search-icon {
-    color: var(--text-accent);
-}
+        .search-container { position: relative; }
+        .search-icon { position: absolute; top: 50%; left: 14px; transform: translateY(-50%); color: var(--text-secondary-color); pointer-events: none; transition: color var(--transition-speed-fast); }
+        .search-bar {
+            width: 100%;
+            background-color: var(--bg-level-2);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            color: var(--text-color);
+            font-family: var(--font-body);
+            font-size: 15px;
+            padding: 10px 16px 10px 42px;
+            transition: border-color var(--transition-speed-fast), box-shadow var(--transition-speed-fast);
+        }
+        .search-bar::placeholder { color: var(--text-secondary-color); opacity: 0.7; }
+        .search-bar:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--glow-color); }
+        .search-bar:focus + .search-icon { color: var(--primary-color); }
 
-.sidebar nav {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 16px 20px 16px 28px;
-}
-.sidebar nav::-webkit-scrollbar { width: 10px; }
-.sidebar nav::-webkit-scrollbar-track { background: transparent; }
-.sidebar nav::-webkit-scrollbar-thumb {
-    background-color: var(--bg-interactive);
-    border-radius: 5px;
-    border: 2px solid var(--bg-space);
-}
-.sidebar nav::-webkit-scrollbar-thumb:hover { background-color: var(--border-primary); }
+        .sidebar nav { flex-grow: 1; overflow-y: auto; padding: 16px; }
+        .sidebar nav::-webkit-scrollbar { width: 10px; }
+        .sidebar nav::-webkit-scrollbar-track { background: transparent; }
+        .sidebar nav::-webkit-scrollbar-thumb { background-color: var(--scrollbar-thumb-color); border-radius: 5px; border: 3px solid var(--bg-level-1); }
+        .sidebar nav::-webkit-scrollbar-thumb:hover { background-color: var(--scrollbar-thumb-color-hover); }
 
-.sidebar ul { list-style-type: none; }
-.sidebar-group-title {
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-    margin: 28px 0 10px 4px;
-    letter-spacing: 0.8px;
-}
+        .sidebar ul { list-style-type: none; }
+        .sidebar-group-title {
+            font-size: 13px; font-weight: 700; text-transform: uppercase;
+            color: var(--text-secondary-color); margin: 24px 0 10px 12px;
+            letter-spacing: 0.8px;
+        }
 
-.sidebar li a {
-    display: flex;
-    align-items: center;
-    color: var(--text-secondary);
-    text-decoration: none;
-    padding: 9px 12px;
-    margin: 4px 0;
-    border-radius: 6px;
-    font-size: 15px;
-    transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
-    position: relative;
-}
+        .sidebar li a {
+            display: flex; align-items: center; color: var(--text-secondary-color);
+            text-decoration: none; padding: 9px 12px; margin: 4px 0;
+            border-radius: var(--border-radius-sm); font-size: 15px; font-weight: 500;
+            transition: background-color var(--transition-speed-fast) ease, color var(--transition-speed-fast) ease, transform var(--transition-speed-fast) ease;
+        }
+        .sidebar li a:hover { background-color: var(--bg-level-2); color: var(--text-color); transform: translateX(4px); }
+        .sidebar li a.active { color: var(--primary-color); background-color: var(--bg-level-3); }
 
-.sidebar li a:hover {
-    background-color: var(--bg-interactive);
-    color: var(--text-primary);
-    transform: translateX(4px);
-}
+        .theme-toggle-btn {
+            background: none; border: 1px solid var(--border-color); color: var(--text-secondary-color);
+            width: 36px; height: 36px; border-radius: var(--border-radius-sm);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: all var(--transition-speed-fast);
+        }
+        .theme-toggle-btn:hover { border-color: var(--border-color-hover); color: var(--primary-color); transform: scale(1.05); }
+        .theme-toggle-btn svg { width: 18px; height: 18px; }
+        .theme-toggle-btn .icon-sun { display: none; }
+        .light-theme .theme-toggle-btn .icon-moon { display: none; }
+        .light-theme .theme-toggle-btn .icon-sun { display: block; }
+        
+        .main-content { overflow-y: auto; scroll-padding-top: 32px; }
+        .container { max-width: 960px; margin: 0 auto; padding: 48px 40px; }
+        section { padding-top: 32px; margin-bottom: 56px; }
 
-.sidebar li a.active {
-    background-color: var(--bg-panel);
-    color: var(--text-primary);
-    font-weight: 500;
-}
-.sidebar li a.active::before {
-    content: '';
-    position: absolute;
-    left: -28px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 22px;
-    background-color: var(--text-accent);
-    border-radius: 0 3px 3px 0;
-    transition: all 0.2s ease;
-}
+        h2 {
+            font-size: clamp(2rem, 5vw, 2.25rem); font-weight: 800;
+            color: var(--text-color); border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px; margin-bottom: 24px;
+            letter-spacing: -1px;
+        }
+        h3 { font-size: 22px; font-weight: 700; margin-top: 40px; margin-bottom: 20px; }
 
-.main-content { overflow-y: auto; scroll-padding-top: 32px; }
-.container { max-width: 960px; margin: 0 auto; padding: 48px 40px; }
+        p, li { font-size: 16px; line-height: 1.8; color: var(--text-secondary-color); margin-bottom: 16px; }
+        a { color: var(--primary-color); text-decoration: none; transition: opacity var(--transition-speed-fast); font-weight: 500;}
+        a:hover { text-decoration: underline; opacity: 0.8; }
+        
+        ul { padding-left: 20px; }
 
-section { padding-top: 32px; margin-bottom: 56px; }
+        code:not(pre > code) {
+            font-family: var(--font-code); background-color: var(--bg-level-2);
+            color: var(--code-inline-color); padding: 3px 6px;
+            border-radius: 6px; font-size: 0.9em;
+            border: 1px solid var(--border-color);
+        }
 
-h2 {
-    font-size: 32px;
-    font-weight: 700;
-    color: var(--text-primary);
-    border-bottom: 1px solid var(--border-primary);
-    padding-bottom: 12px;
-    margin-bottom: 24px;
-}
-h3 {
-    font-size: 22px;
-    font-weight: 600;
-    margin-top: 40px;
-    margin-bottom: 20px;
-}
+        pre code { padding: 0; border: none; background: transparent; color: inherit; }
+        .code-block-wrapper {
+            position: relative; margin: 24px 0; border-radius: var(--border-radius-md);
+            overflow: hidden; border: 1px solid var(--border-color);
+        }
+        .code-block-header {
+            background-color: var(--bg-level-1); padding: 12px 18px;
+            color: var(--text-secondary-color); font-size: 14px; font-family: var(--font-code);
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .copy-button {
+            background: none; border: none; color: var(--text-secondary-color); padding: 6px 10px;
+            border-radius: var(--border-radius-sm); cursor: pointer; font-family: var(--font-body);
+            font-size: 13px; font-weight: 500;
+            transition: background-color var(--transition-speed-fast), color var(--transition-speed-fast);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .copy-button:hover { background-color: var(--bg-level-3); color: var(--text-color); }
+        .copy-button svg { width: 16px; height: 16px; }
 
-p, li {
-    font-size: 16px;
-    line-height: 1.7;
-    color: var(--text-secondary);
-    margin-bottom: 16px;
-}
+        pre {
+            margin: 0; background-color: var(--bg-level-2);
+            padding: 20px; overflow-x: auto;
+            line-height: 1.7; font-size: 14px;
+        }
+        .light-theme pre { background-color: #f6f8fa; }
 
-ul {
-    padding-left: 20px;
-}
+        .note {
+            background-color: var(--bg-level-2);
+            border-left: 3px solid var(--primary-color);
+            padding: 20px; margin-top: 24px;
+            border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+            border: 1px solid var(--border-color); border-left-width: 3px;
+        }
+        .note p { color: var(--text-color); margin: 0; }
 
-code {
-    font-family: var(--font-code);
-    background-color: var(--bg-panel);
-    color: #92B5F9;
-    padding: 3px 6px;
-    border-radius: 5px;
-    font-size: 0.9em;
-    border: 1px solid var(--border-primary);
-}
-
-pre code { padding: 0; border: none; background: transparent; }
-.code-block-wrapper {
-    position: relative;
-    margin: 24px 0;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid var(--border-primary);
-}
-.code-block-header {
-    background-color: var(--bg-panel);
-    padding: 10px 16px;
-    color: var(--text-secondary);
-    font-size: 14px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.copy-button {
-    background: none; border: none;
-    color: var(--text-secondary);
-    padding: 6px 8px;
-    border-radius: 6px; cursor: pointer;
-    font-family: var(--font-body); font-size: 13px;
-    transition: background-color 0.2s, color 0.2s;
-    display: flex; align-items: center; gap: 6px;
-}
-.copy-button:hover { background-color: var(--bg-interactive); color: var(--text-primary); }
-
-pre {
-    margin: 0;
-    background-color: var(--bg-space);
-    padding: 16px;
-    overflow-x: auto;
-    line-height: 1.6;
-    font-size: 14px;
-}
-
-.note {
-    background-color: rgba(99, 155, 255, 0.1);
-    border-left: 3px solid var(--text-accent);
-    padding: 20px;
-    margin-top: 24px;
-    border-radius: 0 6px 6px 0;
-}
-.note p { color: var(--text-primary); margin: 0; }
-
-.syntax-block {
-    background-color: var(--bg-panel);
-    padding: 16px;
-    border-radius: 8px; margin: 20px 0;
-    font-size: 14px; font-family: var(--font-code);
-    border: 1px solid var(--border-primary);
-    color: var(--text-secondary);
-}
-.syntax-block .kw { color: #C678DD; }
-.syntax-block .fn { color: #61AFEF; }
-.syntax-block .ty { color: #E5C07B; }
-.syntax-block .op { color: #c678dd; }
-</style>
+        .syntax-block {
+            background-color: var(--bg-level-2); padding: 16px 20px;
+            border-radius: var(--border-radius-md); margin: 20px 0; font-size: 14px;
+            font-family: var(--font-code); border: 1px solid var(--border-color); color: var(--text-color);
+            overflow-x: auto; white-space: pre;
+        }
+        .syntax-block .kw { color: #ff7b72; } /* Словосочетания: Функции(я) */
+        .syntax-block .fn { color: #a29bff; } /* Имена функций */
+        .syntax-block .ty { color: #79c0ff; } /* Виды: строки, функции */
+        .syntax-block .op { color: #ff7b72; } /* Операторы */
+        .light-theme .syntax-block .kw { color: #d73a49; }
+        .light-theme .syntax-block .fn { color: #6f42c1; }
+        .light-theme .syntax-block .ty { color: #005cc5; }
+        .light-theme .syntax-block .op { color: #d73a49; }
+    </style>
 </head>
+
 <body>
-<div id="background-animation"></div>
+<div id="preloader">
+    <div class="loader-logo">rUNC</div>
+    <div class="spinner"></div>
+</div>
+<div id="background-glow"></div>
 <div class="main-layout">
 <aside class="sidebar">
 <div class="sidebar-header">
-<h1>rUNC</h1>
-<div class="search-container">
-<input type="text" id="searchBar" class="search-bar" placeholder="Поиск функций...">
-<span class="search-icon">
-<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path><path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-</span>
-</div>
+    <div class="logo-area">
+        <h1>rUNC</h1>
+        <button id="themeToggle" class="theme-toggle-btn" title="Переключить тему">
+            <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        </button>
+    </div>
+    <div class="search-container">
+        <input type="text" id="searchBar" class="search-bar" placeholder="Поиск функций...">
+        <span class="search-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path><path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+    </div>
 </div>
 <nav id="sidebar-nav">
 <ul>
@@ -327,6 +329,8 @@ pre {
 
 <li class="sidebar-group-title">Типы и Замыкания</li>
 <li><a href="#closure-checks">is(l/c/executor)closure</a></li>
+<li><a href="#isnewcclosure">isnewcclosure</a></li>
+<li><a href="#isfunctionhooked">isfunctionhooked</a></li>
 <li><a href="#replaceclosure">replaceclosure</a></li>
 <li><a href="#clonefunction">clonefunction</a></li>
 <li><a href="#newlclosure">newlclosure</a></li>
@@ -363,23 +367,32 @@ pre {
 <li><a href="#readonly-checks">set/isreadonly</a></li>
 <li><a href="#scriptable-checks">set/isscriptable</a></li>
 <li><a href="#hidden-properties">get/sethiddenproperty</a></li>
+<li><a href="#simulation-radius">get/setsimulationradius</a></li>
 <li><a href="#firetouchinterest">firetouchinterest</a></li>
 <li><a href="#fireclickdetector">fireclickdetector</a></li>
 <li><a href="#fireproximityprompt">fireproximityprompt</a></li>
+<li><a href="#replicatesignal">replicatesignal</a></li>
 
 <li class="sidebar-group-title">Взаимодействие с Клиентом</li>
 <li><a href="#fpscap">get/setfpscap</a></li>
 <li><a href="#messagebox">messagebox</a></li>
-<li><a href="#setclipboard">setclipboard</a></li>
+<li><a href="#clipboard">get/setclipboard</a></li>
 <li><a href="#mouse-emulation">Эмуляция мыши</a></li>
+
+<li class="sidebar-group-title">Параллелизм и Акторы</li>
+<li><a href="#actors-library">Actors API</a></li>
+
+<li class="sidebar-group-title">2D Рендеринг</li>
+<li><a href="#drawing">Drawing</a></li>
 
 <li class="sidebar-group-title">Отладка (Debug)</li>
 <li><a href="#debug-upvalues">debug.(get/set)upvalue(s)</a></li>
 <li><a href="#debug-constants">debug.(get/set)constant(s)</a></li>
 <li><a href="#debug-stack">debug.(get/set)stack</a></li>
-<li><a href="#debug-protos">debug.(get/set)proto(s)</a></li>
+<li><a href="#debug-protos">debug.getproto(s)</a></li>
 <li><a href="#debug-metatable">debug.setmetatable</a></li>
 <li><a href="#debug-getinfo">debug.getinfo</a></li>
+<li><a href="#debug-more">Другие debug-функции</a></li>
 
 <li class="sidebar-group-title">Криптография и Сжатие</li>
 <li><a href="#crypto-base64">crypt.base64*</a></li>
@@ -390,17 +403,14 @@ pre {
 
 <li class="sidebar-group-title">Файловая Система и Сеть</li>
 <li><a href="#request">request / http_request</a></li>
-<li><a href="#replicatesignal">replicatesignal</a></li>
 <li><a href="#file-ops">Файловые операции</a></li>
 <li><a href="#folder-ops">Операции с папками</a></li>
 <li><a href="#loadfile">loadfile</a></li>
 <li><a href="#getcustomasset">getcustomasset</a></li>
-<li><a href="#drawing">Drawing</a></li>
 <li><a href="#websocket">WebSocket</a></li>
 </ul>
 </nav>
 </aside>
-
 <main class="main-content">
 <div class="container">
 
@@ -420,19 +430,18 @@ pre {
 <section id="faq">
 <h2>FAQ</h2>
 <h3>Что такое rUNC?</h3>
-<p><p><strong>rUNC</strong> — инструмент для комплексного тестирования окружения, который проверяет наличие и корректную работу десятков ключевых функций: от базовых (например, <code>newcclosure</code>) до продвинутых, связанных с отладкой, метатаблицами и взаимодействием с движком Roblox.</p> <p>В отличие от оригинального <a href="https://github.com/unified-naming-convention/NamingStandard/tree/main" target="_blank" rel="noopener noreferrer">UNC</a>, созданного как единый стандарт именования и API для унификации работы скриптов между разными исполнителями (и не предназначенного для глубокого тестирования), <strong>rUNC</strong> имитирует реальные сценарии использования функций, чтобы убедиться, что они действительно работают так, как должны.</p> <p>Я не называю UNC «отвратительным» или «некомпетентным инструментом тестирования» — он по-прежнему полезен как ориентир совместимости, но исполнительно он уже неактуален т. к. различные Executors научились подделывать проверки. Для более актуальных и тестов которые могут быть подделаны лучше использовать <strong>rUNC</strong>, поскольку он проверяет не только наличие функций, но и их фактическую работоспособность в условиях, приближённых к реальным (aka проверки sUNC, но обладает структурно разными и более индивидуальными проверками).
-
-Ссылка на sUNC Docs: <a href="https://docs.sunc.su/" target="_blank" rel="noopener noreferrer">sUNC</a>
-</p></p>
+<p><strong>rUNC</strong> — инструмент для комплексного тестирования окружения, который проверяет наличие и корректную работу десятков ключевых функций: от базовых (например, <code>newcclosure</code>) до продвинутых, связанных с отладкой, метатаблицами и взаимодействием с движком Roblox.</p> 
+<p>В отличие от оригинального <a href="https://github.com/unified-naming-convention/NamingStandard/tree/main" target="_blank" rel="noopener noreferrer">UNC</a>, созданного как единый стандарт именования и API, <strong>rUNC</strong> имитирует реальные сценарии использования функций, чтобы убедиться, что они действительно работают так, как должны, а не просто существуют для прохождения базовых проверок.</p>
 <h3>Что означает "Skid Rate"?</h3>
-<p>Это условный показатель, который отражает процент неудачных тестов для критически важных или базовых функций. Высокий Skid Rate может указывать на низкое качество или неполную реализацию среды исполнения.</p>
+<p>Это условный показатель, который отражает процент неудачных тестов для критически важных или базовых функций. Высокий Skid Rate может указывать на низкое качество, эмуляцию или неполную реализацию среды исполнения.</p>
 <h3>В чем цель этого проекта?</h3>
-<p>Тест был создан, чтобы доказать, что надежная проверка среды исполнения может и должна быть с открытым исходным кодом. Он служит альтернативой закрытым системам, которые анализируют среду анонимно, не позволяя пользователям изучить сам механизм проверки. Я верю в прозрачность и совместную работу.</p>
+<p>Тест был создан, чтобы доказать, что надежная проверка среды исполнения может и должна быть с открытым исходным кодом. Он служит альтернативой закрытым системам, которые анализируют среду анонимно, не позволяя пользователям изучить сам механизм проверки.</p>
 <h3>Почему нет тестов для WebSocket?</h3>
 <p>Тесты для <code>WebSocket</code> намеренно исключены, так как его реализация часто приводит к нестабильной работе или вылетам в различных средах исполнения. Вместо этого предоставляется общая документация по его API.</p>
+<h3>Где большинство примеров?</h3>
+<p>Остаточные примеры можно посмотреть в самом открытом коде для проверки функций. Я не вижу смысла оставлять их везде, к тому же на разных инжекторах они реагируют по‑разному, хоть и проходят тест они одинаково хорошо или плохо.</p>
 </section>
 
-<!-- DYNAMIC CONTENT START -->
 
 <section id="newcclosure">
 <h2>newcclosure</h2>
@@ -478,56 +487,24 @@ print(success, message) --> false, This is a custom error</code></pre>
 <h3>Примеры</h3>
 <div class="code-block-wrapper">
 <div class="code-block-header"><span>1. Логирование вызовов `warn`</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local oldWarn
--- Сохраняем оригинальную функцию warn в локальную переменную
-local original_warn
+<pre><code class="language-lua">local original_warn
 original_warn = hookfunction(warn, function(...)
-    -- Выводим префикс и все аргументы, переданные в warn
     print("[WARN CALLED]:", ...)
-    -- Вызываем оригинальную warn, чтобы сохранить стандартное поведение
     return original_warn(...)
 end)
 
--- Тестовый вызов, который сначала выведет строку с префиксом, затем обычный warn
-warn("Test message")
+warn("Test message")</code></pre>
 </div>
 <div class="code-block-wrapper">
-<div class="code-block-header"><span>2. Блокировка Instance:Destroy() как обёртку</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local part = Instance.new("Part")
-part.Parent = workspace
-
--- Делаем Lua-обёртку
-local function destroyWrapper(self, ...)
-    return self:Destroy(...)
-end
-
--- Хукаем обёртку, а не сам C‑метод
-local oldDestroyWrapper
-oldDestroyWrapper = hookfunction(destroyWrapper, function(self, ...)
-    print("Destroy() was blocked for", self)
-    -- Не вызываем оригинал — объект останется
-end)
-
--- Вызываем через обёртку
-destroyWrapper(part)
-
-print(part.Parent) -- Workspace, т.к. мы не удалили объект
-</code></pre>
-</div>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>3. Модификация аргументов</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">-- Сохраняем оригинальную функцию print
-local old_print = print
-
--- Хукаем print
+<div class="code-block-header"><span>2. Модификация аргументов `print`</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
+<pre><code class="language-lua">local old_print
 old_print = hookfunction(print, function(...)
     local args = {...}
     table.insert(args, 1, "[HOOKED]")
     return old_print(table.unpack(args))
 end)
 
--- Проверка
-print("Hello", "world") -- [HOOKED] Hello world
+print("Hello", "world") -- Выведет: [HOOKED] Hello world
 </code></pre>
 </div>
 <h3>Как проверяется в rUNC</h3>
@@ -538,7 +515,7 @@ print("Hello", "world") -- [HOOKED] Hello world
     <li><b>Обработка ошибок:</b> Тестирует, что ошибки в оригинальной функции могут быть перехвачены и обработаны внутри хука.</li>
     <li><b>Работа с C-функциями:</b> Убеждается, что можно перехватывать глобальные C-функции, такие как <code>warn</code>.</li>
     <li><b>Восстановление:</b> Проверяет, что хук можно снять, вызвав <code>hookfunction</code> повторно с оригинальной функцией.</li>
-    <li><b>Совместимость с `newcclosure`:</b> Тест запускается дважды: с обычной Luau-функцией и с C-замыканием в качестве хука, чтобы проверить совместимость.</li>
+    <li><b>Совместимость с `newcclosure`:</b> Тест запускается дважды: с обычной Luau-функцией и с C-замыканием в качестве хука.</li>
 </ul>
 </section>
 
@@ -557,25 +534,21 @@ restorefunction(print)
 print("This will appear now") --> This will appear now</code></pre>
 </div>
 <div class="code-block-wrapper">
-<div class="code-block-header"><span>2. Восстановление `xpcall` после хука</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">-- Блокируем xpcall
-hookfunction(xpcall, function(...)
-    return -- ничего не делаем
-end)
+<div class="code-block-header"><span>2. Снятие нескольких хуков</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
+<pre><code class="language-lua">local function my_func() return "original" end
 
--- Этот вызов не выполнится
-xpcall(function() print("Это не появится") end, function() end) --> Текста с этим сообщением не будет
+local old1 = hookfunction(my_func, function() return "hooked 1" end)
+local old2 = hookfunction(my_func, function() return "hooked 2" end)
 
--- Восстанавливаем xpcall
-restorefunction(xpcall)
+print(my_func()) --> "hooked 2"
 
--- Теперь снова работает
-xpcall(function() print("Это появится теперь") end, function() end) --> Это появится теперь - Сообщение появилось
+restorefunction(my_func)
+print(my_func()) --> "original"
 </code></pre>
 </div>
 <h3>Как проверяется в rUNC</h3>
 <ul>
-    <li><b>Ошибка на не-хукнутой функции:</b> Убеждается, что вызов <code>restorefunction</code> на обычной функции вызывает ошибку, как и ожидается.</li>
+    <li><b>Ошибка на не-хукнутой функции:</b> Убеждается, что вызов <code>restorefunction</code> на обычной функции вызывает ошибку.</li>
     <li><b>Полное восстановление:</b> После установки нескольких хуков на одну функцию, проверяет, что <code>restorefunction</code> возвращает её к самому первому, оригинальному состоянию.</li>
     <li><b>Изоляция:</b> Проверяет, что восстановление одной функции не затрагивает хуки, установленные на другие функции.</li>
     <li><b>Повторное восстановление:</b> Убеждается, что повторный вызов <code>restorefunction</code> на уже восстановленной функции вызывает ошибку.</li>
@@ -584,7 +557,7 @@ xpcall(function() print("Это появится теперь") end, function() 
 
 <section id="cloneref">
 <h2>cloneref</h2>
-<p>Создает "легкую" копию (ссылку) на <code>Instance</code>. Клон и оригинал указывают на один и тот же объект в памяти. Это означает, что изменение свойства у клона изменит его и у оригинала. Уничтожение оригинала делает клон невалидным.</p>
+<p>Создает "легкую" копию (ссылку) на <code>Instance</code>. Клон и оригинал указывают на один и тот же объект в памяти. Это означает, что изменение свойства у клона изменит его и у оригинала. Уничтожение оригинала делает клон невалидным. Защищает от __mode атак, то есть детекты с помощью weak tables.</p>
 <h3>Синтаксис</h3>
 <div class="syntax-block"><span class="kw">function</span> <span class="fn">cloneref</span>(target: <span class="ty">Instance</span>): <span class="ty">Instance</span></div>
 <h3>Примеры</h3>
@@ -615,7 +588,7 @@ print(success, result) --> true nil</code></pre>
 <h3>Как проверяется в rUNC</h3>
 <ul>
     <li><b>Создание и неравенство:</b> Убеждается, что клон успешно создается, но при этом <code>original ~= clone</code> возвращает <code>true</code>.</li>
-    <li><b>Общие сигналы:</b> Проверяет, что подключение к сигналу на клоне влияет на оригинал (<code>getconnections</code> возвращает больше соединений).</li>
+    <li><b>Общие сигналы:</b> Проверяет, что подключение к сигналу на клоне влияет на оригинал.</li>
     <li><b>Совместное уничтожение:</b> После вызова <code>:Destroy()</code> на оригинале, тест проверяет, что и оригинал, и клон удалены из игрового дерева.</li>
     <li><b>Невалидность:</b> Убеждается, что после уничтожения оригинала, доступ к свойствам или методам клона вызывает ошибку или возвращает `nil`.</li>
 </ul>
@@ -647,8 +620,7 @@ print(compareinstances(part1, part1)) --> true</code></pre>
 <ul>
     <li><b>Идентичность:</b> Проверяет, что <code>compareinstances(inst, inst)</code> возвращает `true`.</li>
     <li><b>Сравнение с клоном:</b> Убеждается, что <code>compareinstances(inst, cloneref(inst))</code> возвращает `true`.</li>
-    <li><b>Различие:</b> Проверяет, что <code>compareinstances(inst1, inst2)</code>, где `inst1` и `inst2` - разные объекты, возвращает `false`.</li>
-    <li><b>Поведение `==`:</b> Подтверждает, что стандартное сравнение <code>original == cloneref(original)</code> возвращает `false`, подчеркивая необходимость `compareinstances`.</li>
+    <li><b>Различие:</b> Проверяет, что <code>compareinstances(inst1, inst2)</code> для разных объектов возвращает `false`.</li>
 </ul>
 </section>
 
@@ -660,13 +632,12 @@ print(compareinstances(part1, part1)) --> true</code></pre>
 <h3>Примеры</h3>
 <div class="code-block-wrapper">
 <div class="code-block-header"><span>1. Динамическое выполнение кода</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local code = "return a + b"
+<pre><code class="language-lua">local code = "getgenv().a = 10; return a + 5"
 local func, err = loadstring(code)
 
 if func then
-    getfenv(func).a = 10
-    getfenv(func).b = 5
     print("Result:", func()) --> Result: 15
+    print("Global var:", getgenv().a) --> Global var: 10
 else
     warn("Failed to compile code:", err)
 end</code></pre>
@@ -677,16 +648,15 @@ end</code></pre>
 local func, err = loadstring(invalid_code, "MyChunk")
 
 if not func then
-    print("Error:", err) --> Error: [MyChunk]:1: Expected identifier when parsing expression, got '=='
+    print("Error:", err) --> Error: [MyChunk]:1: Expected identifier...
 end</code></pre>
 </div>
 <h3>Как проверяется в rUNC</h3>
 <ul>
-    <li><b>Компиляция валидного кода:</b> Проверяет, что `loadstring` для корректного кода возвращает функцию.</li>
-    <li><b>Исполнение и результат:</b> Запускает скомпилированную функцию и проверяет, что она возвращает правильное значение.</li>
-    <li><b>Доступ к окружению:</b> Убеждается, что код, выполненный через `loadstring`, может изменять глобальное окружение (<code>getgenv</code>).</li>
-    <li><b>Обработка невалидного кода:</b> Проверяет, что для кода с синтаксической ошибкой `loadstring` возвращает `nil` и строку с сообщением об ошибке.</li>
-    <li><b>Имя чанка:</b> Удостоверяется, что опциональное имя чанка (`chunkName`) появляется в сообщении об ошибке.</li>
+    <li><b>Компиляция и исполнение:</b> Проверяет, что `loadstring` для корректного кода возвращает функцию, которая выполняется и возвращает правильное значение.</li>
+    <li><b>Доступ к окружению:</b> Убеждается, что код может изменять глобальное окружение (<code>getgenv</code>).</li>
+    <li><b>Обработка невалидного кода:</b> Проверяет, что для кода с ошибкой `loadstring` возвращает `nil` и строку с сообщением об ошибке.</li>
+    <li><b>Имя чанка:</b> Удостоверяется, что имя чанка (`chunkName`) появляется в сообщении об ошибке.</li>
 </ul>
 </section>
 
@@ -717,8 +687,7 @@ firesignal(bindable.Event, player, 100)</code></pre>
 </div>
 <h3>Как проверяется в rUNC</h3>
 <ul>
-    <li><b>Вызов с аргументами:</b> Проверяет, что вызов `firesignal(signal, "arg1")` корректно активирует подключенную функцию и передает ей `arg1`.</li>
-    <li><b>Вызов без аргументов:</b> Убеждается, что вызов без аргументов также работает, и обработчик получает `nil`.</li>
+    <li><b>Вызов с аргументами и без:</b> Проверяет, что вызовы `firesignal` корректно активируют подключенную функцию и передают ей аргументы (или `nil`).</li>
     <li><b>Отключенные соединения:</b> Проверяет, что `firesignal` не вызывает соединения, которые были отключены через `:Disconnect()`.</li>
 </ul>
 </section>
@@ -734,15 +703,6 @@ firesignal(bindable.Event, player, 100)</code></pre>
 <pre><code class="language-lua">local name, version = identifyexecutor()
 print(`Executor: {name} v{version}`)</code></pre>
 </div>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>2. Создание UI с информацией</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local name, version = identifyexecutor()
-local screenGui = Instance.new("ScreenGui", game.CoreGui)
-local textLabel = Instance.new("TextLabel", screenGui)
-textLabel.Text = "Using: " .. name .. " - " .. version
-textLabel.Size = UDim2.new(0, 300, 0, 50)
-</code></pre>
-</div>
 <h3>Как проверяется в rUNC</h3>
 <ul>
     <li><b>Успешное выполнение:</b> Проверяет, что функция выполняется без ошибок.</li>
@@ -757,15 +717,7 @@ textLabel.Size = UDim2.new(0, 300, 0, 50)
 <div class="syntax-block"><span class="kw">function</span> <span class="fn">isrbxactive</span>(): <span class="ty">boolean</span></div>
 <h3>Примеры</h3>
 <div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Простая проверка</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">if isrbxactive() then
-    print("Roblox window is focused.")
-else
-    print("Roblox window is not focused.")
-end</code></pre>
-</div>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>2. Пауза цикла, когда игра неактивна</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
+<div class="code-block-header"><span>1. Пауза цикла, когда игра неактивна</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
 <pre><code class="language-lua">task.spawn(function()
     while true do
         if isrbxactive() then
@@ -784,7 +736,7 @@ end)</code></pre>
 
 <section id="gethui">
 <h2>gethui</h2>
-<p>gethui() — возвращает скрытый контейнер интерфейса (Instance), предназначенный для безопасного размещения UI‑элементов и снижения риска их обнаружения или удаления античитом. Как правило родитель CoreGui.</p>
+<p>Возвращает скрытый контейнер интерфейса (`Instance`), предназначенный для безопасного размещения UI-элементов. Объекты в `gethui` Если так подумать, это CoreGui parent на максималках, cloneref с CoreGui будет в разы лучше.</p>
 <h3>Синтаксис</h3>
 <div class="syntax-block"><span class="kw">function</span> <span class="fn">gethui</span>(): <span class="ty">Instance</span></div>
 <h3>Примеры</h3>
@@ -794,21 +746,10 @@ end)</code></pre>
 permanentGui.ResetOnSpawn = false
 permanentGui.Parent = gethui()</code></pre>
 </div>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>2. Поиск ранее созданного GUI</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local hui = gethui()
-local myMenu = hui:FindFirstChild("MyMenuGui")
-
-if not myMenu then
-    -- ...создаем меню...
-    print("Menu created.")
-end
-</code></pre>
-</div>
 <h3>Как проверяется в rUNC</h3>
 <ul>
     <li><b>Тип объекта:</b> Проверяет, что `gethui` возвращает объект типа `Instance`.</li>
-    <li><b>Функциональность родителя:</b> Убеждается, что в возвращенный объект можно помещать другие `Instance` (например, `ScreenGui`), и они корректно становятся его дочерними элементами.</li>
+    <li><b>Функциональность родителя:</b> Убеждается, что в возвращенный объект можно помещать другие `Instance` (например, `ScreenGui`).</li>
 </ul>
 </section>
 
@@ -817,8 +758,8 @@ end
 <p>Эти функции проверяют тип замыкания (closure). Они используются для определения, является ли функция обычной Luau-функцией, C-функцией или специфичной для эксплойта.</p>
 <ul>
     <li><code>islclosure(func)</code>: Возвращает `true`, если `func` — это стандартная функция, написанная на Luau.</li>
-    <li><code>iscclosure(func)</code>: Возвращает `true`, если `func` — это C-функция. Сюда входят встроенные функции (например, <code>print</code>) и функции, созданные через <code>newcclosure</code>.</li>
-    <li><code>isexecutorclosure(func)</code>: Возвращает `true`, если функция принадлежит среде исполнения эксплойта, а не является стандартной функцией Roblox.</li>
+    <li><code>iscclosure(func)</code>: Возвращает `true`, если `func` — это C-функция, включая <code>newcclosure</code>.</li>
+    <li><code>isexecutorclosure(func)</code>: Возвращает `true`, если функция принадлежит среде исполнения.</li>
 </ul>
 <h3>Примеры</h3>
 <div class="code-block-wrapper">
@@ -828,26 +769,59 @@ local c_func_wrapped = newcclosure(lua_func)
 local c_func_native = print
 local exploit_func = getgenv
 
-print("lua_func:", islclosure(lua_func), iscclosure(lua_func)) --> true, false
-print("wrapped_c:", islclosure(c_func_wrapped), iscclosure(c_func_wrapped)) --> false, true
-print("native_c:", islclosure(c_func_native), iscclosure(c_func_native)) --> false, true
-print("exploit_func:", isexecutorclosure(exploit_func)) --> true, отвратительные executors имеют не [C], а [Lua]
+print("lua_func is lclosure:", islclosure(lua_func))             --> true
+print("c_func_native is cclosure:", iscclosure(c_func_native)) --> true
+print("exploit_func is executorclosure:", isexecutorclosure(exploit_func)) --> true
 </code></pre>
 </div>
 <h3>Как проверяется в rUNC</h3>
-<p>Тест проверяет все три функции на разных типах целей:</p>
-<ul>
-    <li><b>Обычная Luau-функция:</b> Ожидается `islclosure` -> `true`, остальные -> `false`.</li>
-    <li><b>Стандартная C-функция (print):</b> Ожидается `iscclosure` -> `true`, остальные -> `false`.</li>
-    <li><b>Функция, созданная `newcclosure`:</b> Ожидается `iscclosure` -> `true`, остальные -> `false`.</li>
-    <li><b>Функция эксплойта (getgenv):</b> Проверяется, что <code>isexecutorclosure</code> возвращает `true`.</li>
-</ul>
+<p>Тест проверяет все три функции на разных типах целей: Luau-функция, стандартная C-функция (`print`), обернутая C-функция (`newcclosure`) и функция среды исполнения (`getgenv`).</p>
+</section>
+
+<section id="isnewcclosure">
+<h2>isnewcclosure</h2>
+<p>Определяет, была ли C-функция создана с помощью <code>newcclosure</code>. Это позволяет отличить "настоящие" встроенные C-функции от Luau-функций, замаскированных под C.</p>
+<h3>Синтаксис</h3>
+<div class="syntax-block"><span class="kw">function</span> <span class="fn">isnewcclosure</span>(func: <span class="ty">function</span>): <span class="ty">boolean</span></div>
+<h3>Примеры</h3>
+<div class="code-block-wrapper">
+<div class="code-block-header"><span>1. Отличие обертки от нативной функции</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
+<pre><code class="language-lua">local wrapped = newcclosure(function() end)
+
+print("For wrapped function:", isnewcclosure(wrapped)) --> true
+print("For native 'print':", isnewcclosure(print))   --> false
+</code></pre>
+</div>
+<h3>Как проверяется в rUNC</h3>
+<p>Тест проверяет, что функция возвращает <code>true</code> для результата <code>newcclosure</code> и <code>false</code> для обычной Luau-функции.</p>
+</section>
+
+<section id="isfunctionhooked">
+<h2>isfunctionhooked</h2>
+<p>Проверяет, была ли функция перехвачена (захукана) с помощью <code>hookfunction</code>.</p>
+<h3>Синтаксис</h3>
+<div class="syntax-block"><span class="kw">function</span> <span class="fn">isfunctionhooked</span>(func: <span class="ty">function</span>): <span class="ty">boolean</span></div>
+<h3>Примеры</h3>
+<div class="code-block-wrapper">
+<div class="code-block-header"><span>1. Проверка состояния хука</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
+<pre><code class="language-lua">local function my_func() end
+print("Before hook:", isfunctionhooked(my_func)) -- false
+
+local old = hookfunction(my_func, function() end)
+print("After hook:", isfunctionhooked(my_func)) -- true
+
+hookfunction(my_func, old) -- restore original
+print("After restore:", isfunctionhooked(my_func)) -- false (Но, скорее будет true, на что можно надеяться, когда ты восстанавливаешь функцию не через restorefunction💀)
+</code></pre>
+</div>
+<h3>Как проверяется в rUNC</h3>
+<p>Тест проверяет, что функция возвращает <code>false</code> для обычной функции, <code>true</code> после применения `hookfunction`, и снова <code>false</code> после восстановления.</p>
 </section>
 
 <section id="replaceclosure">
 <h2>replaceclosure</h2>
-<p>Заменяет код одной Luau-функции кодом другой. При этом новая функция получает доступ к upvalue'ам (внешним локальным переменным) оригинальной функции. Это очень мощная, но опасная функция.</p>
-<div class="note"><p><b>Внимание:</b> Эта функция может легко привести к сбою, если новая функция неправильно работает с upvalue'ами старой. Тестер rUNC использует "безвредную" функцию для теста.</p></div>
+<p>Заменяет код одной Luau-функции кодом другой. При этом новая функция получает доступ к upvalue'ам (внешним локальным переменным) оригинальной функции.</p>
+<div class="note"><p><b>Внимание:</b> Эта функция может легко привести к сбою, если новая функция неправильно работает с upvalue'ами старой.</p></div>
 <h3>Синтаксис</h3>
 <div class="syntax-block"><span class="kw">function</span> <span class="fn">replaceclosure</span>(target: <span class="ty">function</span>, new: <span class="ty">function</span>)</div>
 <h3>Примеры</h3>
@@ -869,10 +843,9 @@ print(original()) --> Replacement was called, counter is: 10
 </div>
 <h3>Как проверяется в rUNC</h3>
 <ul>
-    <li><b>Успешное выполнение:</b> Проверяет, что вызов `replaceclosure` на Luau-функциях проходит без ошибок.</li>
     <li><b>Подмена:</b> Убеждается, что после замены вызов оригинальной функции теперь выполняет код новой.</li>
-    <li><b>Доступ к upvalue:</b> Проверяет, что замененная функция может корректно читать upvalue'ы оригинальной функции.</li>
-    <li><b>Защита C-функций:</b> Удостоверяется, что попытка заменить C-функцию (например, <code>math.sin</code>) вызывает ошибку.</li>
+    <li><b>Доступ к upvalue:</b> Проверяет, что замененная функция может корректно читать upvalue'ы оригинала.</li>
+    <li><b>Защита C-функций:</b> Удостоверяется, что попытка заменить C-функцию вызывает ошибку.</li>
 </ul>
 </section>
 
@@ -895,25 +868,11 @@ hookfunction(original, function() print("Hooked!") end)
 original() --> Hooked!
 cloned()   --> Original function</code></pre>
 </div>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>2. Разделяемые upvalues</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local count = 0
-local function increment()
-    count = count + 1
-    print(count)
-end
-
-local cloned_increment = clonefunction(increment)
-increment()        --> 1
-cloned_increment() --> 2 (upvalue 'count' общий)
-</code></pre>
-</div>
 <h3>Как проверяется в rUNC</h3>
 <ul>
-    <li><b>Создание и уникальность:</b> Проверяет, что функция успешно создает клон и что <code>original ~= cloned</code>.</li>
     <li><b>Общее окружение:</b> Убеждается, что `getfenv(original)` и `getfenv(cloned)` совпадают.</li>
-    <li><b>Изоляция от `hookfunction`:</b> После клонирования хукает оригинальную функцию и проверяет, что клон остался неизменным и вызывает исходный код.</li>
-    <li><b>Ошибка на C-функциях:</b> Удостоверяется, что попытка клонировать C-функцию (например, <code>print</code>) приводит к ошибке.</li>
+    <li><b>Изоляция от `hookfunction`:</b> После клонирования хукает оригинал и проверяет, что клон остался неизменным.</li>
+    <li><b>Работа с C-функциями:</b> Убеждается, что попытка клонировать C-функцию не вызывает ошибку (проверка эмуляции).</li>
 </ul>
 </section>
 
@@ -923,96 +882,65 @@ cloned_increment() --> 2 (upvalue 'count' общий)
 <h3>Синтаксис</h3>
 <div class="syntax-block"><span class="kw">function</span> <span class="fn">newlclosure</span>(target: <span class="ty">function</span>): <span class="ty">function</span></div>
 <h3>Примеры</h3>
-
 <div class="code-block-wrapper">
 <div class="code-block-header"><span>1. Создание нового Luau замыкания</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
 <pre><code class="language-lua">local count = 0
 local function increment()
     count = count + 1
-    print(count)
+    return count
 end
 
 local lclosure_copy = newlclosure(increment)
 
-increment()       --> 1
-lclosure_copy()   --> 2
+print(increment())       --> 1
+print(lclosure_copy())   --> 2
 print(islclosure(lclosure_copy)) --> true
 </code></pre>
 </div>
-
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>2. Создание нового Luau-замыкания напрямую из анонимной функции</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local c_func = newlclosure(function()
-    print("test")
-end)
-
-print(c_func) -- должен быть userdata: function 0x..
-print(iscclosure(c_func)) -- false, если это реальная Lua-closure
-</code></pre>
-</div>
-
 <h3>Как проверяется в rUNC</h3>
 <ul>
-    <li><b>Успешное создание:</b> Проверяет, что функция успешно создает новое замыкание и что <code>islclosure</code> на результате возвращает <code>true</code>.</li>
+    <li><b>Успешное создание:</b> Проверяет, что функция создает новое замыкание и что <code>islclosure</code> возвращает <code>true</code>.</li>
     <li><b>Общие upvalues:</b> Убеждается, что вызов оригинала и нового замыкания влияет на один и тот же upvalue.</li>
-    <li><b>Ошибка на C-функциях:</b> Проверяет, что попытка использовать <code>newlclosure</code> на C-функции (например, <code>print</code>) вызывает ошибку.</li>
+    <li><b>Ошибка на C-функциях:</b> Проверяет, что попытка использовать на C-функции вызывает ошибку.</li>
 </ul>
 </section>
 
 
 <section id="checkcaller">
 <h2>checkcaller</h2>
-<p>Проверяет контекст вызова. Возвращает `true`, если вызов происходит из Luau-потока (т.е. обычного скрипта). Возвращает `false`, если вызов инициирован из C-кода (например, изнутри события движка или `newcclosure`).</p>
+<p>Проверяет контекст вызова. Возвращает `true`, если вызов происходит из Luau-потока. Возвращает `false`, если вызов инициирован из C-кода (например, изнутри события движка или `newcclosure`).</p>
 <h3>Синтаксис</h3>
 <div class="syntax-block"><span class="kw">function</span> <span class="fn">checkcaller</span>(): <span class="ty">boolean</span></div>
 <h3>Примеры</h3>
 <div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Определение контекста</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">print(checkcaller()) --> true (вызвано из Luau)
+<div class="code-block-header"><span>1. Защита от вызовов `Kick` с подробнейшим объяснением и проверкой кому принадлежит kick</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
+<pre><code class="language-lua">local Players = cloneref(game:GetService("Players")) --> Получаем сервис Players через cloneref (Зачем? Прочти мой документационный пост про cloneref :D)
+local lp = Players.LocalPlayer                      
 
-local c_func = newcclosure(function()
-    print(checkcaller()) --> true (вызвано из C-замыкания, теоретически должен быть false, но при замыкании будет всё равно true)
-end)
-
-c_func()
-</code></pre>
-</div>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>2. Защита от вызовов kick с проверкой чей вызов</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local Players = cloneref and cloneref(game:GetService("Players")) or game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
-    local method = getnamecallmethod()
-    if self == LocalPlayer and type(method) == "string" and method:lower() == "kick" then
-        local fromScript = checkcaller()
-        print("→ Kick перехвачен | checkcaller():", fromScript) -- ← доказательство источника
-        if fromScript then
-            print("→ Вызов из executor, блокируем") -- ← подтверждение
-            return nil
+local old --> Переменная для хранения оригинальной функции __namecall
+old = hookmetamethod(game, "__namecall", newcclosure(function(self, ...)
+    local method = getnamecallmethod()  --> Получаем имя вызываемого метода ("Kick")
+    if self == lp and method and method:lower() == "kick" then --> Проверяем, что метод вызывается на LocalPlayer и это Kick
+        if checkcaller() then   --> Если вызов из кода Executor, значит...
+            warn("Попытка кика со стороны Executor была заблокирована!!! Нахуя себя кикать?") --> Логируем, что кик был от executor и посылаем нахер
+            return --> Блокируем выполнение
+        else  --> Если вызов из игры (Клиент попытался кикнуть)
+            warn("хахаахахахаха лошок ебаный захотел кикнуть со стороны клиента") --> Логируем, что кик был от клиента, а не от Executor
+            return --> Блокируем выполнение
         end
     end
-    return oldNamecall(self, ...)
+    return old(self, ...) --> Если условия не совпали — вызываем оригинальный __namecall
 end))
 
--- ↓ Проверка
-LocalPlayer:Kick("Test") 
--- Консоль:
--- → Kick перехвачен | checkcaller(): true
--- → Вызов из executor, блокируем
--- → Если kick будет от самой игры то напишет: Kick перехвачен | checkcaller(): false, но кикнет всё равно🤡
+task.delay(2, function() --> Ждём 2 секунды, чтобы хук успел установиться (На всякий, вдруг твой инжектор Velocity :D)
+    warn(">>> TEST: вызываем Kick от инжектора")
+    lp:Kick("Если ты видишь это сообщение то это значит одно: A - твой инжектор не обладает hookmetamethod или функция крайне плохо сделана...") --> Этот вызов должен быть перехвачен хуком и заблокирован
+end)
 
 </code></pre>
 </div>
 <h3>Как проверяется в rUNC</h3>
-<p>Тест проводит множество проверок:</p>
-<ul>
-    <li><b>Базовый вызов:</b> Проверяет, что простой вызов `checkcaller()` из скрипта возвращает `true`.</li>
-    <li><b>Вызов из C-кода:</b> Хукает `__namecall` и вызывает метод, как <code>game:IsA()</code>. Внутри хука `checkcaller()` должен вернуть `false`, так как вызов инициирован C-кодом Roblox.</li>
-    <li><b>Вызов из `newcclosure`:</b> Убеждается, что `checkcaller()` внутри `newcclosure` возвращает `false`, но если эту C-функцию вызвать из обычной Luau-функции, `checkcaller()` вернет `true`, так как контекст вызова изменился.</li>
-    <li><b>Стабильность:</b> Вызывает `checkcaller()` несколько раз с задержкой, чтобы убедиться в стабильности результата.</li>
-</ul>
+<p>Тест проводит множество проверок: базовый вызов, вызов из C-кода через `__namecall`, вызов из `newcclosure` и стабильность.</p>
 </section>
 
 <section id="getrawmetatable">
@@ -1030,24 +958,13 @@ setmetatable(t, mt)
 print(getmetatable(t)) --> LOCKED
 print(getrawmetatable(t) == mt) --> true</code></pre>
 </div>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>2. Получение метатаблицы сервиса</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local players_mt = getrawmetatable(game:GetService("Players"))
--- Теперь можно исследовать или хукать __index, __namecall и т.д.
-print(players_mt.__index) --> function: 0x...
-</code></pre>
-</div>
 <h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Обычная таблица:</b> Проверяет, что для обычной таблицы возвращается правильная метатаблица.</li>
-    <li><b>Объекты Userdata:</b> Убеждается, что функция работает для `Instance` и сервисов (`game`).</li>
-    <li><b>Обход защиты:</b> Специально создает таблицу с защищенной через <code>__metatable</code> метатаблицей и проверяет, что `getrawmetatable` успешно ее получает.</li>
-</ul>
+<p>Проверяет работу с обычной таблицей, `Instance` и сервисами. Создает таблицу с защитой `__metatable` и проверяет, что `getrawmetatable` успешно ее получает.</p>
 </section>
 
 <section id="setrawmetatable">
 <h2>setrawmetatable</h2>
-<p>Устанавливает метатаблицу для объекта, обходя защиту `__metatable`. Это позволяет изменять поведение защищенных объектов.</p>
+<p>Устанавливает метатаблицу для объекта, обходя защиту `__metatable`.</p>
 <h3>Синтаксис</h3>
 <div class="syntax-block"><span class="kw">function</span> <span class="fn">setrawmetatable</span>(obj: <span class="ty">table</span> <span class="op">|</span> <span class="ty">userdata</span>, mt: <span class="ty">table</span> <span class="op">|</span> <span class="ty">nil</span>): <span class="ty">boolean</span></div>
 <h3>Примеры</h3>
@@ -1057,22 +974,17 @@ print(players_mt.__index) --> function: 0x...
 setmetatable(t, { __metatable = "LOCKED" })
 
 local new_mt = { __index = function() return "bypassed!" end }
-
-local success = setrawmetatable(t, new_mt)
-print(success, t.anything) --> table: 0x... bypassed!</code></pre>
+setrawmetatable(t, new_mt)
+print(t.anything) --> bypassed!
+</code></pre>
 </div>
 <h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Работа защиты:</b> Сначала убеждается, что стандартная `setmetatable` не может изменить защищенную метатаблицу.</li>
-    <li><b>Обход:</b> Проверяет, что `setrawmetatable` успешно устанавливает новую метатаблицу на защищенный объект.</li>
-    <li><b>Проверка эффекта:</b> Удостоверяется, что новая метатаблица действительно работает (например, `__index` срабатывает).</li>
-    <li><b>Установка nil:</b> Тестирует, что можно полностью удалить метатаблицу, установив ее в `nil`.</li>
-</ul>
+<p>Проверяет, что `setrawmetatable` успешно устанавливает новую метатаблицу на защищенный объект и что она действительно работает.</p>
 </section>
 
 <section id="hookmetamethod">
 <h2>hookmetamethod</h2>
-<p>Перехватывает вызовы метаметодов (`__index`, `__namecall`, `__newindex` и др.) для заданного объекта. Это один из самых мощных способов изменения поведения Roblox API.</p>
+<p>Перехватывает вызовы метаметодов (`__index`, `__namecall`, и др.) для заданного объекта. Это один из самых мощных способов изменения поведения Roblox API.</p>
 <h3>Синтаксис</h3>
 <div class="syntax-block"><span class="kw">function</span> <span class="fn">hookmetamethod</span>(obj: <span class="ty">userdata</span>, method: <span class="ty">string</span>, hook: <span class="ty">function</span>): <span class="ty">function</span> <span class="op">-- Возвращает оригинал</span></div>
 <h3>Примеры</h3>
@@ -1081,1915 +993,461 @@ print(success, t.anything) --> table: 0x... bypassed!</code></pre>
 <pre><code class="language-lua">local old_namecall
 old_namecall = hookmetamethod(game, "__namecall", function(self, ...)
     if getnamecallmethod():lower() == "getservice" then
-        local args = {...}
-        print("GetService called for:", args[1])
+        print("GetService called for:", ...)
     end
-    return old_namecall(self, ...) -- Важно вызывать оригинал
+    return old_namecall(self, ...)
 end)
 
-game:GetService("Players") --> GetService called for: Players</code></pre>
-</div>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>2. Блокировка изменения имени</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local part = Instance.new("Part")
-part.Name = "Original"
-
-local old_newindex
-old_newindex = hookmetamethod(game, "__newindex", function(self, key, value)
-    if self == part and key == "Name" then
-        print("Changing name is forbidden!")
-        return -- Прерываем установку свойства
-    end
-    return old_newindex(self, key, value)
-end)
-
-part.Name = "New Name"
-print(part.Name) --> Original</code></pre>
+game:GetService("Players")
+</code></pre>
 </div>
 <h3>Как проверяется в rUNC</h3>
-<p>Тест проверяет хуки на несколько ключевых метаметодов:</p>
-<ul>
-    <li><b>__newindex:</b> Устанавливает хук и пытается изменить свойство `Name` у объекта. Проверяет, что хук сработал и изменение было заблокировано.</li>
-    <li><b>__tostring:</b> Хукает `tostring` и проверяет, что при вызове `tostring(object)` возвращается кастомная строка из хука.</li>
-    <li><b>__index:</b> Перехватывает доступ к несуществующему свойству у `game` и проверяет, что хук возвращает поддельное значение.</li>
-    <li><b>__namecall:</b> Перехватывает вызов `game:GetService` и проверяет, что хук срабатывает и возвращает кастомное значение.</li>
-    <li><b>Восстановление:</b> Для каждого теста проверяется, что метаметод можно восстановить, повторно вызвав `hookmetamethod` с оригинальной функцией.</li>
-</ul>
+<p>Тест проверяет хуки на несколько ключевых метаметодов: <code>__newindex</code>, <code>__tostring</code>, <code>__index</code>, и <code>__namecall</code>, а также возможность их восстановления.</p>
 </section>
 
 <section id="environments">
 <h2>getgenv / getrenv / getsenv</h2>
-<p>Эти функции предоставляют доступ к различным таблицам окружения.</p>
+<p>Предоставляют доступ к различным таблицам окружения.</p>
 <ul>
-    <li><code>getgenv()</code>: Возвращает глобальное окружение, общее для всех скриптов эксплойта. Изменения, внесенные в эту таблицу, видны из любого другого скрипта. Это стандартный способ обмена данными.</li>
-    <li><code>getrenv()</code>: Возвращает глобальное окружение Roblox (окружение Core-скриптов). Модификация этой таблицы может повлиять на работу самой игры.</li>
-    <li><code>getsenv(script)</code>: Возвращает локальное окружение конкретного скрипта (`LocalScript` или `ModuleScript`). Это позволяет читать или изменять локальные переменные запущенного скрипта.</li>
+    <li><code>getgenv()</code>: Глобальное окружение Executor среды.</li>
+    <li><code>getrenv()</code>: Глобальное окружение Roblox, врата getrenv() к getfenv()... Осторожно с работой getrenv(), изменения легко обнаружаются с разных углов детектирования.</li>
+    <li><code>getsenv(script)</code>: Локальное окружение конкретного скрипта.</li>
 </ul>
 <h3>Примеры</h3>
 <div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Использование `getgenv`</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">-- Script A
-getgenv().shared_data = { score = 100 }
-
--- Script B
-task.wait(1)
-print(getgenv().shared_data.score) --> 100
-</code></pre>
-</div>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>2. Чтение окружения `getsenv`</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local animate = game.Players.LocalPlayer.Character:FindFirstChild("Animate")
-
-local env = getsenv(animate)
-
-print(typeof(env.onSwimming)) -- Вывод: function
+<div class="code-block-header"><span>1. Чтение окружения `getsenv`</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
+<pre><code class="language-lua">-- 'Animate' - стандартный скрипт в персонаже
+local animate = game.Players.LocalPlayer.Character:FindFirstChild("Animate")
+if animate then
+    local env = getsenv(animate)
+    -- В окружении скрипта Animate есть функция onSwimming
+    print(typeof(env.onSwimming)) --> function
+end
 </code></pre>
 </div>
 <h3>Как проверяется в rUNC</h3>
 <ul>
-    <li><b>getgenv:</b> Проверяет, возвращается ли таблица и сохраняются ли в ней изменения при повторных вызовах. Также проверяется, что она изолирована от `getfenv`.</li>
-    <li><b>getrenv:</b> Аналогично `getgenv`, проверяет возврат таблицы и персистентность изменений.</li>
-    <li><b>getsenv:</b>
-        <ul>
-            <li>Проверяет, что для активного `LocalScript` возвращается корректная таблица окружения, содержащая переменные, установленные самим скриптом.</li>
-            <li>Убеждается, что для неактивного (незапущенного) скрипта `getsenv` вызывает ошибку.</li>
-            <li>Проверяет, что для `ModuleScript` функция возвращает `nil`.</li>
-            <li>Тестирует возможность получить окружение для текущего исполняемого скрипта (`getsenv(script)`).</li>
-        </ul>
-    </li>
+    <li><b>getgenv / getrenv:</b> Проверяет, возвращается ли таблица и сохраняются ли в ней изменения.</li>
+    <li><b>getsenv:</b> Проверяет получение окружения для активного `LocalScript`, ошибку на неактивном и `nil` для `ModuleScript`.</li>
 </ul>
 </section>
 
 <section id="threadidentity">
 <h2>getthreadidentity / setthreadidentity</h2>
-<p>Функции для управления уровнем "идентичности" (контекста безопасности) текущего потока. Уровень идентичности — это число от 0 до 8. Некоторые функции Roblox могут работать по-разному или быть недоступны в зависимости от текущего уровня.</p>
-<ul>
-    <li><code>getthreadidentity()</code>: Возвращает текущий уровень идентичности.</li>
-    <li><code>setthreadidentity(level)</code>: Устанавливает уровень идентичности для текущего потока. Изменение влияет только на текущий поток и не затрагивает другие.</li>
-</ul>
+<p>Функции для управления уровнем "идентичности" (контекста безопасности) текущего потока. Уровень идентичности — это число от 0 до 8.</p>
 <h3>Примеры</h3>
 <div class="code-block-wrapper">
 <div class="code-block-header"><span>1. Изменение идентичности в новом потоке</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">print("Main thread identity:", getthreadidentity())
+<pre><code class="language-lua">print("Уровень потока сейчас:", getthreadidentity())
 
 task.spawn(function()
-    print("New thread (before):", getthreadidentity())
-    setthreadidentity(7)
-    print("New thread (after):", getthreadidentity()) --> 7
+    print("Новый поток (Уровень на данный момент):", getthreadidentity())
+    setthreadidentity(6)
+    print("Новый поток (После изменения):", getthreadidentity()) --> 6
 end)
 
 task.wait(0.1)
-print("Main thread identity is unchanged:", getthreadidentity())
-</code></pre>
-</div>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>2. Временное повышение прав</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local old_identity = getthreadidentity()
-setthreadidentity(2) -- Понижаем уровень до работы обычного локального или серверного скрипта
-
-local success, err = pcall(function()
-    game.CoreGui.RobloxGui:Destroy() -- Пример операции, требующей высоких прав
-end)
-
-if not success then
-    print("→ Ошибка:", err)
-else
-    print("→ Удаление прошло без ошибок")
-end
-
-setthreadidentity(old_identity) -- Возвращаем исходный уровень
+print("Основной поток уровня не был нарушен:", getthreadidentity())
 </code></pre>
 </div>
 <h3>Как проверяется в rUNC</h3>
-<p>Тест проводит исчерпывающую проверку:</p>
-<ul>
-    <li><b>Стабильность и диапазон:</b> Проверяет, что <code>getthreadidentity</code> возвращает стабильное число в диапазоне 0-8.</li>
-    <li><b>Изоляция потоков:</b> Запускает новые потоки через `task.spawn` и `task.defer`, изменяет в них идентичность и убеждается, что это не влияет на основной поток.</li>
-    <li><b>Работа в `pcall`:</b> Проверяет, что `setthreadidentity` работает внутри защищенного вызова.</li>
-    <li><b>Быстрое переключение:</b> Быстро меняет уровни несколько раз подряд, чтобы проверить стабильность.</li>
-</ul>
+<p>Тест проводит исчерпывающую проверку: стабильность, диапазон, изоляцию потоков, работу в `pcall` и быстрое переключение.</p>
 </section>
 
 <section id="getscripts">
 <h2>getscripts</h2>
 <p>Возвращает таблицу всех существующих в игре скриптовых объектов (`LocalScript`, `Script`, `ModuleScript`), независимо от того, запущены они или нет.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">getscripts</span>(): <span class="ty">table</span></div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Поиск всех скриптов по имени</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local scripts_list = getscripts()
-print("Всего скриптов:", #scripts_list)
-
-local foundAnimate = false
-for _, script_obj in ipairs(scripts_list) do
-    if typeof(script_obj) == "Instance" and script_obj:IsA("LocalScript") and script_obj.Name:find("Animate") then
-        print("Нашёл Animate script:", script_obj:GetFullName())
-        foundAnimate = true
-    end
-end
-
-local player = game.Players.LocalPlayer
-local charAnimate = player.Character and player.Character:FindFirstChild("Animate")
-
-if not charAnimate or not charAnimate:IsA("LocalScript") then
-    warn("Эмуляция getscripts: Animate не найден в персонаже")
-else
-    local matchInList = false
-    for _, script_obj in ipairs(scripts_list) do
-        if script_obj == charAnimate then
-            matchInList = true
-            break
-        end
-    end
-    if not matchInList then
-        warn("Фальшивый getscripts: Animate есть в персонаже, но отсутствует в списке getscripts")
-    else
-        print("Animate найден и в персонаже, и в списке getscripts")
-    end
-end
-</code></pre>
-</div>
 <h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Возврат таблицы:</b> Проверяет, что функция возвращает таблицу.</li>
-    <li><b>Поиск нового скрипта:</b> Создает новый `LocalScript` в `workspace` и затем проверяет, что `getscripts` находит этот свежесозданный скрипт в возвращенном списке.</li>
-</ul>
+<p>Создает новый `LocalScript` и затем проверяет, что `getscripts` находит этот свежесозданный скрипт в возвращенном списке.</p>
 </section>
 
 <section id="getrunningscripts">
 <h2>getrunningscripts</h2>
-<p>Возвращает таблицу всех скриптов, которые в данный момент исполняются. В отличие от `getscripts`, эта функция не включает скрипты, которые отключены (`Disabled = true`) или еще не были запущены.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">getrunningscripts</span>(): <span class="ty">table</span></div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Мониторинг активных скриптов</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local running_scripts = getrunningscripts()
-print("Всего запущенных скриптов:", #running_scripts)
-
-for _, s in ipairs(running_scripts) do
-    print("- " .. s:GetFullName())
-end
-
-local player = game.Players.LocalPlayer
-local vehicleCameraPath = player:FindFirstChild("PlayerScripts")
-    and player.PlayerScripts:FindFirstChild("PlayerModule")
-    and player.PlayerScripts.PlayerModule:FindFirstChild("CameraModule")
-    and player.PlayerScripts.PlayerModule.CameraModule:FindFirstChild("VehicleCamera")
-
-if not vehicleCameraPath or not vehicleCameraPath:IsA("ModuleScript") then
-    warn("Тупорылая эмуляция getrunningscripts: VehicleCamera не найден")
-else
-    print("VehicleCamera найден:", vehicleCameraPath:GetFullName())
-end
-</code></pre>
-</div>
+<p>Возвращает таблицу всех скриптов, которые в данный момент исполняются.</p>
 <h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Находит себя:</b> Проверяет, что текущий исполняемый скрипт (<code>script</code>) присутствует в возвращаемом списке.</li>
-    <li><b>Игнорирует неактивные:</b> Создает новый, неактивный `LocalScript` и убеждается, что он <i>не</i> появляется в списке.</li>
-    <li><b>Содержимое списка:</b> Удостоверяется, что все элементы в списке действительно являются скриптами и что в списке нет дубликатов.</li>
-</ul>
+<p>Находит известный работающий скрипт (Animate), проверяет, что не включает неактивные скрипты, и что общее число скриптов больше нуля.</p>
 </section>
 
 <section id="getloadedmodules">
 <h2>getloadedmodules</h2>
 <p>Возвращает таблицу всех `ModuleScript`, которые были загружены хотя бы раз через `require()`.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">getloadedmodules</span>(): <span class="ty">table</span></div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Поиск существующего модуля и require к нему</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local ok, modules = pcall(getloadedmodules)
-if not ok or type(modules) ~= "table" then
-    warn("getloadedmodules отсутствует или эмулирован")
-    return
-end
-
-local count = 0
-print("=== Список загруженных ModuleScript ===")
-for _, module in ipairs(modules) do
-    if typeof(module) == "Instance" and module:IsA("ModuleScript") then
-        count += 1
-        print(count .. ".", module.Name, "→", module:GetFullName())
-    end
-end
-print("Всего загруженных модулей:", count)
-
-local player = game.Players.LocalPlayer
-local cameraUIPath = player:FindFirstChild("PlayerScripts")
-    and player.PlayerScripts:FindFirstChild("PlayerModule")
-    and player.PlayerScripts.PlayerModule:FindFirstChild("CameraModule")
-    and player.PlayerScripts.PlayerModule.CameraModule:FindFirstChild("CameraUI")
-
-if not cameraUIPath or not cameraUIPath:IsA("ModuleScript") then
-    warn("Примитивная эмуляция getloadedmodules: CameraUI не найден")
-else
-    local okReq, result = pcall(require, cameraUIPath)
-    if not okReq then
-        warn("Примитивная эмуляция getloadedmodules: require(CameraUI) не сработал")
-    else
-        print("CameraUI найден и успешно загружен через require")
-    end
-end
-</code></pre>
-</div>
 <h3>Как проверяется в rUNC</h3>
-<p>Тест находит уже загруженный игрой модуль (чтобы не вмешиваться в работу игры, загружая что-то новое) и создает новый, который точно не загружен.</p>
-<ul>
-    <li><b>Находит загруженные:</b> Убеждается, что известный загруженный модуль присутствует в списке.</li>
-    <li><b>Игнорирует незагруженные:</b> Проверяет, что свежесозданный, незагруженный `ModuleScript` <i>не</i> включен в список.</li>
-</ul>
+<p>Проверяет, что известный загруженный модуль присутствует в списке, а свежесозданный, незагруженный — отсутствует.</p>
 </section>
 
 <section id="getscriptbytecode">
 <h2>getscriptbytecode</h2>
-<p>Возвращает скомпилированный байт-код скрипта в виде строки. Это позволяет сохранять, анализировать или модифицировать байт-код программно.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">getscriptbytecode</span>(script: <span class="ty">BaseScript</span>): <span class="ty">string</span><span class="op">?</span></div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Чтение байт-кода</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local Players = game:GetService("Players")
-local lp = Players.LocalPlayer
-
--- Естественно Animate всегда будет
-local char = lp.Character or lp.CharacterAdded:Wait()
-local animate = char:WaitForChild("Animate")
-
-local bytecode = getscriptbytecode(animate)
-if bytecode then
-    print("Bytecode length:", #bytecode) -- 12365
-else
-    warn("Не удалось получить байткод Animate")
-end
-
-</code></pre>
-</div>
+<p>Возвращает скомпилированный байт-код скрипта в виде строки.</p>
 <h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Для скрипта с кодом:</b> Убеждается, что для `LocalScript` со свойством `Source` возвращается непустая строка байт-кода.</li>
-    <li><b>Для ModuleScript:</b> Аналогично проверяет `ModuleScript`.</li>
-    <li><b>Для пустого скрипта:</b> Проверяет, что для скрипта без кода (или без байт-кода) возвращается `nil` или пустая строка.</li>
-    <li><b>Для не-скрипта:</b> Удостоверяется, что при передаче объекта, не являющегося скриптом (например, `Part`), возвращается `nil`.</li>
-</ul>
+<p>Убеждается, что для скрипта с кодом (Animate) возвращается непустая строка, а для скрипта без байт-кода — `nil` или пустая строка.</p>
 </section>
 
 <section id="getscriptclosure">
 <h2>getscriptclosure</h2>
 <p>Возвращает главное замыкание (функцию) скрипта. По сути, это "скомпилированный" результат, который можно выполнить.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">getscriptclosure</span>(script: <span class="ty">BaseScript</span>): <span class="ty">function</span><span class="op">?</span></div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Выполнение скрипта "Animate" на существование Closure</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local animate = game.Players.LocalPlayer.Character:WaitForChild("Animate")
-local func = getscriptclosure(animate)
-print("Closure доступен:", func ~= nil) -- true
-</code></pre>
-</div>
 <h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Для скрипта с кодом:</b> Проверяет, что для скрипта, у которого есть код, возвращается объект типа `function`.</li>
-    <li><b>Для пустого скрипта:</b> Убеждается, что для скрипта без байт-кода возвращается `nil`.</li>
-</ul>
+<p>Проверяет, что для скрипта с кодом (Animate) возвращается `function`, а для пустого — `nil`.</p>
 </section>
 
 <section id="getscripthash">
 <h2>getscripthash</h2>
-<p>Возвращает хэш (SHA-384) байт-кода скрипта. Это надежный способ проверить, был ли скрипт изменен, или сравнить два скрипта на идентичность.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">getscripthash</span>(script: <span class="ty">BaseScript</span>): <span class="ty">string</span><span class="op">?</span></div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Проверка на получение и изменение хеша</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local Players = game:GetService("Players")
-local lp = Players.LocalPlayer
-local char = lp.Character or lp.CharacterAdded:Wait()
-local animate = char:WaitForChild("Animate")
-
-local current_hash = getscripthash(animate)
-print("→ Текущий хэш Animate:", current_hash)
-
--- Если хочешь сразу проверку — подставь сюда свой сохранённый хэш
-local known_hash = current_hash -- при первом запуске запоминаем
-if current_hash ~= known_hash then
-    warn("Animate script изменил хеш!!")
-else
-    print("Animate script hash имеет один и тот же хеш, всё нормально.") -- 
-end
-</code></pre>
-</div>
+<p>Возвращает хэш (SHA-384) байт-кода скрипта. Это надежный способ проверить, был ли скрипт изменен.</p>
 <h3>Как проверяется в rUNC</h3>
-<p>Тест выполняет несколько сравнений:</p>
-<ul>
-    <li><b>Валидность хэша:</b> Проверяет, что возвращаемое значение является валидной строкой хэша SHA-384 (96 hex-символов).</li>
-    <li><b>Разные хэши:</b> Убеждается, что два скрипта с разным кодом имеют разные хэши.</li>
-    <li><b>Одинаковые хэши:</b> Проверяет, что два скрипта с идентичным кодом имеют одинаковые хэши.</li>
-    <li><b>Пустой скрипт:</b> Тестирует, что для скрипта без байт-кода возвращается `nil`.</li>
-    <li><b>Обработка ошибок:</b> Удостоверяется, что вызов с неверным типом аргумента или для уничтоженного скрипта обрабатывается корректно.</li>
-</ul>
+<p>Проверяет, что возвращаемое значение является валидным хэшем SHA-384. Тестирует, что для скрипта без байт-кода возвращается `nil`.</p>
 </section>
 
 <section id="getfunctionhash">
 <h2>getfunctionhash</h2>
-<p>Возвращает хэш (SHA-384) байт-кода Luau-функции. В отличие от `getscripthash`, работает напрямую с функциями в памяти.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">getfunctionhash</span>(func: <span class="ty">function</span>): <span class="ty">string</span></div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Сравнение двух функций</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local function a() return 1 end
-local function b() return 1 end -- Другая функция, но с тем же кодом
-
-print(getfunctionhash(a) == getfunctionhash(b)) --> true
-</code></pre>
-</div>
+<p>Возвращает хэш (SHA-384) байт-кода Luau-функции. Работает напрямую с функциями в памяти.</p>
 <h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Валидность хэша:</b> Проверяет, что возвращается корректный хэш SHA-384.</li>
-    <li><b>Сравнение:</b> Убеждается, что разные функции имеют разные хэши, а идентичные функции — одинаковые.</li>
-    <li><b>Зависимость от констант:</b> Проверяет, что изменение константы внутри функции изменяет её хэш.</li>
-    <li><b>Ошибка на C-функциях:</b> Удостоверяется, что попытка получить хэш C-функции вызывает ошибку.</li>
-</ul>
+<p>Проверяет, что возвращается корректный хэш. Убеждается, что разные функции имеют разные хэши, а идентичные — одинаковые. Проверяет ошибку на C-функциях.</p>
 </section>
 
 <section id="getcallingscript">
 <h2>getcallingscript</h2>
-<p>Возвращает `script`, из которого была вызвана текущая функция. Если вызов был инициирован C-кодом (движком), возвращает `nil`.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">getcallingscript</span>(): <span class="ty">BaseScript</span><span class="op">?</span></div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Логирование вызовов из __newindex</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local old
-old = hookmetamethod(game, "__newindex", function(self, key, value)
-    -- Если вызов не из нашего скрипта (executor), значит идёт обращение из движка или другого скрипта
-    if not checkcaller() then
-        -- Получаем скрипт, который сделал вызов
-        local caller = getcallingscript()
-        warn("__newindex доступ из скрипта:", caller and caller:GetFullName() or "Unknown") -- Скорее всего выдаст результат об RbxCharacterSounds
-
-        -- Восстанавливаем оригинальный метод, чтобы избежать рекурсии
-        hookmetamethod(game, "__newindex", old)
-        return old(self, key, value)
-    end
-
-    -- Передаём управление оригинальному метаметоду
-    return old(self, key, value)
-end)
-
--- Проверка: при вызове из executor вернёт nil
-print(getcallingscript()) -- nil, так как вызов из потока executor'а
-</code></pre>
-</div>
+<p>Возвращает `script`, из которого была вызвана текущая функция. Если вызов был инициирован C-кодом, возвращает `nil`.</p>
 <h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Вызов из C-потока:</b> Проверяет, что прямой вызов `getcallingscript()` возвращает `nil`.</li>
-    <li><b>Вызов из Luau:</b> Вызывает функцию `from_lua`, которая внутри себя вызывает `getcallingscript()`, и проверяет, что результат равен `script` (текущему скрипту).</li>
-</ul>
+<p>Проверяет, что прямой вызов из C-потока возвращает `nil`, а вызов из Luau-функции возвращает текущий скрипт.</p>
 </section>
 
 <section id="queue_on_teleport">
 <h2>queue_on_teleport</h2>
-<p>Регистрирует строку с Lua-кодом, которая будет выполнена после того, как игрок телепортируется в другое место (place) внутри той же игры (universe).</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">queue_on_teleport</span>(code: <span class="ty">string</span>)</div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Телепорт и print() после телепорта</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local TeleportService = game:GetService("TeleportService")
-local Players = game:GetService("Players")
-local lp = Players.LocalPlayer
-
--- Код, который выполнится после телепорта
-queue_on_teleport([[
-    print("→ Код из очереди выполнился после телепорта в ту же игру!") -- Мы перезайдём и в консоли напишет print() с этим сообщением
-]])
-
--- Телепортируем в тот же Place
-TeleportService:Teleport(game.PlaceId, lp)
-</code></pre>
-</div>
+<p>Регистрирует строку с Lua-кодом, которая будет выполнена после того, как игрок телепортируется в другое место.</p>
 <h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Успешное выполнение:</b> Тест просто проверяет, что вызов `queue_on_teleport` с валидной строкой кода не вызывает ошибок. Он не может проверить фактическое выполнение после телепорта.</li>
-</ul>
+<p>Проверяет, что вызов с валидной строкой кода не вызывает ошибок.</p>
 </section>
 
 <section id="getgc">
 <h2>getgc</h2>
-<p>Возвращает таблицу со всеми объектами (функции, таблицы, userdata и т.д.), которые в данный момент находятся в памяти и отслеживаются сборщиком мусора (Garbage Collector). Может включать или не включать функции в зависимости от аргумента.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">getgc</span>(includeFunctions: <span class="ty">boolean</span><span class="op">?</span>): <span class="ty">table</span></div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Поиск всех объектов Part и проверка на эмуляцию</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local marker = Instance.new("Folder")
-marker.Name = "Иван Золо"
-
-local gcObjects = {}
-local foundMarker = false
-local markerIndex
-
-for i, v in ipairs(getgc(true)) do
-    if v == marker then
-        foundMarker = true
-        markerIndex = i
-    end
-    if typeof(v) == "Instance" and v.ClassName == "Part" then
-        table.insert(gcObjects, v)
-    end
-end
-
-marker:Destroy()
-
-if not foundMarker then
-    print("Эмуляция getgc")
-else
-    print("Маркер найден в getgc под индексом", markerIndex)
-    print("Нашёл", #gcObjects, "объектов Part в памяти")
-end
-</code></pre>
-</div>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>2. Поиск скрытых функций</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local function SecretAdminFunction()
-    print("→ Запущена функция 1")
-end
-
-local function HiddenDebugTool()
-    print("→ Запущена фунция 2")
-end
-
-local function UltraSecureRoutine()
-    print("→ Запущена функция 3")
-end
-
-local markerFunc = function() end
-
-local foundMarker = false
-local foundTargets = {}
-
-for _, v in ipairs(getgc(false)) do
-    if v == markerFunc then
-        foundMarker = true
-    end
-    if type(v) == "function" then
-        local info = debug.getinfo(v)
-        if info and info.name == "SecretAdminFunction" then
-            table.insert(foundTargets, "SecretAdminFunction")
-            v()
-        elseif info and info.name == "HiddenDebugTool" then
-            table.insert(foundTargets, "HiddenDebugTool")
-            v()
-        elseif info and info.name == "UltraSecureRoutine" then
-            table.insert(foundTargets, "UltraSecureRoutine")
-            v()
-        end
-    end
-end
-
-if not foundMarker then
-    print("Эмуляция getgc")
-else
-    if #foundTargets > 0 then
-        print("Найдены и вызваны функции:", table.concat(foundTargets, ", "))
-    else
-        print("Маркер найден, но целевые функции отсутствуют")
-    end
-end
-</code></pre>
-</div>
+<p>Возвращает таблицу со всеми объектами, которые отслеживаются сборщиком мусора.</p>
 <h3>Как проверяется в rUNC</h3>
-<p>Тест создает "маркерные" объекты (функцию, таблицу, Part) и затем ищет их:</p>
 <ul>
-    <li><b>getgc(false):</b> Проверяет, что возвращается таблица, которая содержит созданную тестовую функцию, но <i>не содержит</i> тестовую таблицу.</li>
-    <li><b>getgc(true):</b> Проверяет, что возвращается таблица, которая содержит <i>все</i> тестовые объекты: функцию, таблицу и userdata (Part).</li>
+    <li><b>getgc(false):</b> Проверяет, что находит функции, но не таблицы.</li>
+    <li><b>getgc(true):</b> Проверяет, что находит все тестовые объекты: функцию, таблицу и userdata.</li>
 </ul>
 </section>
 
 <section id="getnilinstances">
 <h2>getnilinstances</h2>
-<p>Возвращает таблицу всех объектов `Instance`, у которых нет родителя (`Parent == nil`). Это подмножество того, что вернет `getinstances`.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">getnilinstances</span>(): <span class="ty">table</span></div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Очистка "мусорных" объектов c проверкой на эмуляцию</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local marker = Instance.new("Folder")
-marker.Name = "Коржик"
-marker.Parent = nil
-
-local cleaned_count = 0
-local foundMarker = false
-local markerIndex
-
-for i, inst in ipairs(getnilinstances()) do
-    if inst == marker then
-        foundMarker = true
-        markerIndex = i
-    end
-    if not inst:IsDescendantOf(game) and inst.ClassName ~= "GameSettings" then
-        local ok = pcall(function()
-            inst:Destroy()
-        end)
-        if ok then
-            cleaned_count += 1
-        end
-    end
-end
-
-marker:Destroy()
-
-if not foundMarker then
-    print("Эмуляция getnilinstances")
-else
-    print("Маркер найден в getnilinstances под индексом", markerIndex)
-    print("Очищено nil-объектов:", cleaned_count)
-end
-</code></pre>
-</div>
+<p>Возвращает таблицу всех объектов `Instance`, у которых нет родителя (`Parent == nil`).</p>
 <h3>Как проверяется в rUNC</h3>
-<p>Тест создает два объекта: один без родителя, другой с родителем (`workspace`).</p>
-<ul>
-    <li><b>Находит nil-parented:</b> Убеждается, что объект без родителя присутствует в списке.</li>
-    <li><b>Игнорирует parented:</b> Проверяет, что объект с родителем в `workspace` <i>не</i> включен в список.</li>
-</ul>
+<p>Убеждается, что объект без родителя присутствует в списке, а объект с родителем — нет.</p>
 </section>
 
 <section id="getinstances">
 <h2>getinstances</h2>
-<p>Возвращает таблицу всех `Instance`, существующих в памяти, независимо от того, есть у них родитель или нет.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">getinstances</span>(): <span class="ty">table</span></div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Глобальный поиск экземпляров ProximityPrompt с проверкой на эмуляцию</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local part = Instance.new("Part")
-part.Size = Vector3.new(4, 1, 4)
-part.Position = Vector3.new(0, 5, 0)
-part.Anchored = true
-part.Parent = workspace
-
-local prompt = Instance.new("ProximityPrompt")
-prompt.ActionText = "Нажми меня"
-prompt.ObjectText = "Тестовый объект"
-prompt.Enabled = true
-prompt.Parent = part
-
-local marker = Instance.new("Folder")
-marker.Name = "Печенье"
-marker.Parent = workspace
-
-local foundMarker = false
-local markerIndex
-
-for i, inst in ipairs(getinstances()) do
-    if inst == marker then
-        foundMarker = true
-        markerIndex = i
-    end
-    if inst:IsA("ProximityPrompt") and inst.Enabled then
-        print("Найден активный prompt:", inst:GetFullName())
-    end
-end
-
-marker:Destroy()
-
-if not foundMarker then
-    print("Эмуляция getinstances")
-else
-    print("Маркер найден в getinstances под индексом", markerIndex)
-end
-</code></pre>
-</div>
+<p>Возвращает таблицу всех `Instance`, существующих в памяти.</p>
 <h3>Как проверяется в rUNC</h3>
-<p>Тест создает новый `Part` без родителя, а затем проверяет:</p>
-<ul>
-    <li><b>Находит экземпляр:</b> Убеждается, что созданный `Part` (который `Parent == nil`) находится в списке, возвращаемом `getinstances`.</li>
-</ul>
+<p>Убеждается, что свежесозданный `Instance` без родителя находится в списке.</p>
 </section>
 
 <section id="getreg">
 <h2>getreg</h2>
-<p>Возвращает таблицу реестра Lua. Это низкоуровневая структура, в которой хранятся все "живые" объекты, включая потоки (`thread`), функции, таблицы и userdata.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">getreg</span>(): <span class="ty">table</span></div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Поиск и закрытие потока</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">-- Три разных потока
-local my_thread1 = task.spawn(function()
-    while true do
-        task.wait(1)
-    end
-end)
-
-local my_thread2 = coroutine.create(function()
-    while true do
-        task.wait(2)
-    end
-end)
-coroutine.resume(my_thread2)
-
-local my_thread3 = task.spawn(function()
-    for i = 1, 5 do
-        task.wait(0.5)
-    end
-end)
-
-local function isRealGetReg()
-    local ok, reg = pcall(getreg)
-    if not ok or type(reg) ~= "table" then
-        return false, "getreg вернул не таблицу"
-    end
-    local hasThreadType, hasFunctionType = false, false
-    for _, v in pairs(reg) do
-        local t = type(v)
-        if t == "thread" then hasThreadType = true end
-        if t == "function" then hasFunctionType = true end
-        if hasThreadType and hasFunctionType then
-            return true
-        end
-    end
-    return false, "В реестре нет ожидаемых типов"
-end
-
--- Проверка и поиск зависших потоков
-local okReg, reason = isRealGetReg()
-if not okReg then
-    print("Эмуляция getreg:", reason)
-else
-    for _, value in pairs(getreg()) do
-        if type(value) == "thread" and coroutine.status(value) == "suspended" then
-            print("Найден зависший поток:", tostring(value), "статус:", coroutine.status(value))
-            -- Определяем, какой именно поток это из наших, он может быть неизвестным, а также могут быть (лишние) потоки
-            if value == my_thread1 then
-                print("→ Это my_thread1 (бесконечный цикл с ожиданием 1 сек)")
-            elseif value == my_thread2 then
-                print("→ Это my_thread2 (корутина с ожиданием 2 сек)")
-            elseif value == my_thread3 then
-                print("→ Это my_thread3 (короткий цикл на 5 итераций)")
-            else
-                print("→ Это неизвестный поток")
-            end
-            coroutine.close(value)
-            print("Поток закрыт")
-        end
-    end
-end
-</code></pre>
-</div>
+<p>Возвращает таблицу реестра Lua, содержащую все "живые" объекты.</p>
 <h3>Как проверяется в rUNC</h3>
-<p>Тест создает поток, который зацикливается, и `Part`, чтобы проверить наличие разных типов.</p>
-<ul>
-    <li><b>Находит объекты:</b> Проверяет, что созданный поток, `Part` и хотя бы одна функция присутствуют в таблице реестра.</li>
-    <li><b>Взаимодействие:</b> Пытается закрыть найденный поток через `coroutine.close` и проверяет, что его статус изменился на `dead`.</li>
-</ul>
+<p>Проверяет, что находит созданный поток, и что его можно закрыть через `coroutine.close`.</p>
 </section>
 
 <section id="cache">
 <h2>cache.* (invalidate, iscached, replace)</h2>
 <p>Набор функций для управления внутренним кэшем ссылок на `Instance` Roblox.</p>
-<ul>
-    <li><code>cache.iscached(inst)</code>: Проверяет, находится ли объект в кэше.</li>
-    <li><code>cache.invalidate(inst)</code>: Удаляет объект из кэша. Следующее обращение к нему (например, <code>workspace.Part</code>) создаст новую ссылку.</li>
-    <li><code>cache.replace(old_inst, new_inst)</code>: Заменяет один объект в кэше другим.</li>
-</ul>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Инвалидация кэша</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local part1 = workspace.Part
-cache.invalidate(workspace.Part)
-local part2 = workspace.Part
-
-print(part1 == part2) --> false (ссылки теперь разные)
-</code></pre>
-</div>
 <h3>Как проверяется в rUNC</h3>
 <ul>
-    <li><b>invalidate:</b> Создает `Part` и получает на него ссылку. После вызова `cache.invalidate` снова получает ссылку и проверяет, что новая ссылка не равна старой.</li>
-    <li><b>iscached:</b> Проверяет, что свежесозданный `Part` кэширован. Затем инвалидирует его и проверяет, что он больше не в кэше.</li>
-    <li><b>replace:</b> Заменяет `Part` на `Fire` и проверяет, что ссылки на объекты стали разными.</li>
+    <li><b>invalidate:</b> Проверяет, что ссылка на объект была сброшена.</li>
+    <li><b>iscached:</b> Проверяет, что объект кэширован, а после инвалидации — нет.</li>
+    <li><b>replace:</b> Проверяет, что объект успешно заменён.</li>
 </ul>
 </section>
 
 <section id="getconnections">
 <h2>getconnections</h2>
 <p>Возвращает таблицу всех объектов соединений (`RBXScriptConnection`), подключенных к данному сигналу.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">getconnections</span>(signal: <span class="ty">RBXScriptSignal</span>): <span class="ty">table</span></div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Вызов функции подключения и получения типа потока</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local event = Instance.new("BindableEvent")
-
--- Подключаем обработчик, который вернёт строку
-event.Event:Connect(function(arg)
-    return "Сработало с аргументом: " .. tostring(arg)
-end)
-
--- Берём первое подключение из списка
-local connection = getconnections(event.Event)[1]
-
--- Вызываем саму функцию подключения напрямую
-print(connection.Function("тест")) -- Выведет: Сработало с аргументом: тест
-
--- Вызываем через Fire (аналогично вызову события)
-connection:Fire("ещё тест") -- Скорее всего не выведет ничего, но по идее должно вывести, но если выведет это огромный плюс!
-
--- Проверяем тип потока, связанного с подключением
-print("Тип потока подключения:", typeof(connection.Thread)) -- Выведет: thread
-</code></pre>
-</div>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>2. Ручной вызов обработчика</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">-- Создаём RemoteEvent в workspace
-local remote = Instance.new("RemoteEvent")
-remote.Name = "RemoteEvent"
-remote.Parent = workspace
-
--- Подключаем обработчик к OnClientEvent
-remote.OnClientEvent:Connect(function(arg1, arg2)
-    print("Событие получено! Аргументы:", arg1, arg2) -- выведет arg1 123
-end)
-
--- Получаем все подключения к OnClientEvent
-local signal = remote.OnClientEvent
-for _, conn in ipairs(getconnections(signal)) do
-    if conn.Function then -- Для C-соединений .Function будет nil
-        print("Вызываем функцию подключения напрямую...")
-        conn.Function("arg1", 123)
-    end
-end
-</code></pre>
-</div>
 <h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Возврат таблицы:</b> Убеждается, что функция возвращает непустую таблицу для сигнала, к которому подключена функция.</li>
-    <li><b>Валидность соединений:</b> Проверяет, что элементы в таблице являются `RBXScriptConnection` и имеют свойство `Connected`.</li>
-    <li><b>Свойство Function:</b> Для Luau-соединений проверяет, что `connection.Function` содержит правильную функцию-обработчик и что её можно вызвать.</li>
-    <li><b>Вызов Fire:</b> Тестирует, что метод `connection:Fire()` работает и вызывает обработчик.</li>
-    <li><b>C-соединения:</b> Пытается получить соединения для встроенного сигнала (например, `Player.Idled`) и проверяет, что для них `connection.Function` равно `nil`.</li>
-</ul>
+<p>Проверяет возврат таблицы, валидность соединений, доступ к `.Function`, вызов `.Fire()`, и обработку C-соединений.</p>
 </section>
 
 <section id="getcallbackvalue">
 <h2>getcallbackvalue</h2>
-<p>Получает функцию обратного вызова (callback), назначенную свойству объекта, например, `BindableFunction.OnInvoke` или `RemoteFunction.OnClientInvoke`.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">getcallbackvalue</span>(target: <span class="ty">Instance</span>, property: <span class="ty">string</span>): <span class="ty">function</span><span class="op">?</span></div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Чтение `OnInvoke` с доп. проверкой</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local getcallbackvalue = getcallbackvalue
-
-local bf = Instance.new("BindableFunction")
-bf.OnInvoke = function(a, b) return a + b end
-
-local function safeGetCallback(obj, prop)
-    if typeof(obj) ~= "Instance" or type(prop) ~= "string" then
-        return nil
-    end
-    local cb = getcallbackvalue(obj, prop)
-    if type(cb) ~= "function" then
-        return nil
-    end
-    local ok, upv = pcall(debug.getupvalue, cb, 1)
-    if ok and upv ~= nil and upv ~= obj then
-        return nil
-    end
-    return cb
-end
-
-local callback = safeGetCallback(bf, "OnInvoke")
-if callback then
-    local result = callback(534, -4) 
-    print(result) --> 530
-else
-    print("Callback вероятно спуфнут или просто отсутствует")
-end
-</code></pre>
-</div>
+<p>Получает функцию обратного вызова (callback), назначенную свойству объекта.</p>
 <h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Получение установленного callback:</b> Назначает функцию свойству `OnInvoke` и проверяет, что `getcallbackvalue` возвращает именно эту функцию.</li>
-    <li><b>Работоспособность:</b> Убеждается, что возвращенная функция является рабочей и её можно вызвать.</li>
-    <li><b>Неустановленный callback:</b> Проверяет, что для свойства без назначенного callback (например, `RemoteFunction.OnClientInvoke`) функция возвращает `nil` или текущее значение без ошибок.</li>
-    <li><b>Несуществующее свойство:</b> Проверяет, что для несуществующего свойства возвращается `nil`.</li>
-</ul>
+<p>Проверяет успешное извлечение callback, его работоспособность, и корректную обработку `nil` для неустановленных или несуществующих свойств.</p>
 </section>
 
 <section id="readonly-checks">
 <h2>setreadonly / isreadonly</h2>
 <p>Функции для управления состоянием "только для чтения" у таблиц.</p>
-<ul>
-    <li><code>setreadonly(tbl, state)</code>: Устанавливает или снимает с таблицы `tbl` флаг "только для чтения".</li>
-    <li><code>isreadonly(tbl)</code>: Проверяет, является ли таблица `tbl` "только для чтения".</li>
-</ul>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Защита конфигурационной таблицы</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local config = {
-    version = "1.0",
-    enabled = true
-}
-setreadonly(config, true)
-print(isreadonly(config)) --> true
-
-local success, err = pcall(function()
-    config.version = "1.1" -- Это вызовет ошибку
-end)
-
-print(success) --> false
-print(config.version) --> 1.0
-</code></pre>
-</div>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>2. Временное снятие защиты</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">-- Создаём тестовую таблицу, если её нет
-local config = config or {
-    enabled = true
-}
-
--- Снимаем защиту
-setreadonly(config, false)
-
--- Меняем значение
-config.enabled = false
-
--- Снова защищаем
-setreadonly(config, true)
-
-print("config.enabled =", config.enabled) -- выведет false
-</code></pre>
-</div>
 <h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Установка и проверка:</b> Устанавливает `setreadonly(t, true)` и проверяет, что `isreadonly(t)` возвращает `true`.</li>
-    <li><b>Блокировка записи:</b> Пытается добавить новый ключ, изменить существующий и использовать `rawset` на защищенной таблице, проверяя, что все эти операции вызывают ошибку.</li>
-    <li><b>Снятие защиты:</b> Вызывает `setreadonly(t, false)`, проверяет, что `isreadonly` возвращает `false`, и убеждается, что таблица снова доступна для записи.</li>
-</ul>
+<p>Устанавливает флаг и проверяет блокировку записи. Затем снимает флаг и проверяет, что запись снова возможна.</p>
 </section>
 
 <section id="scriptable-checks">
-<h2>setscriptable / isscriptable</h2>
-<p>Функции для управления "скриптуемостью" (доступностью из скриптов) скрытых или защищенных свойств `Instance`.</p>
-<ul>
-    <li><code>setscriptable(inst, prop, state)</code>: Делает свойство `prop` объекта `inst` доступным или недоступным для скриптов.</li>
-    <li><code>isscriptable(inst, prop)</code>: Проверяет, является ли свойство `prop` доступным.</li>
-</ul>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Чтение скрытого свойства `InternalHeadScale`</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local humanoid = game.Players.LocalPlayer.Character:WaitForChild("Humanoid")
-
-print("До снятия защиты — scriptable?:", isscriptable(humanoid, "InternalHeadScale"))
-
-setscriptable(humanoid, "InternalHeadScale", true)
-print("После снятия защиты — scriptable?:", isscriptable(humanoid, "InternalHeadScale"))
-
-print("InternalHeadScale до:", humanoid.InternalHeadScale)
-humanoid.InternalHeadScale = humanoid.InternalHeadScale + 0.1
-print("InternalHeadScale после:", humanoid.InternalHeadScale)
-
-setscriptable(humanoid, "InternalHeadScale", false)
-print("После возврата защиты — scriptable?:", isscriptable(humanoid, "InternalHeadScale"))
-</code></pre>
-</div>
+<h2>set/isscriptable</h2>
+<p>Функции для управления "скриптуемостью" защищенных свойств `Instance`.</p>
 <h3>Как проверяется в rUNC</h3>
-<p>Тест итерирует по списку известных скрытых свойств (например, `BottomParamA`, `RootPriority`).</p>
-<ul>
-    <li><b>Исходное состояние:</b> Проверяет, что `isscriptable` возвращает `false` для свойства, и что попытка доступа к нему вызывает ошибку.</li>
-    <li><b>Включение:</b> Вызывает `setscriptable(..., true)`, затем проверяет, что `isscriptable` возвращает `true` и что свойство теперь можно прочитать без ошибок.</li>
-    <li><b>Выключение:</b> Вызывает `setscriptable(..., false)`, затем проверяет, что `isscriptable` снова `false` и доступ опять закрыт.</li>
-</ul>
+<p>Проверяет для `Humanoid.InternalHeadScale`, что оно изначально нескриптуемо, становится скриптуемым после `setscriptable(true)` (и его можно изменить), и снова становится нескриптуемым после `setscriptable(false)`.</p>
 </section>
 
 <section id="hidden-properties">
-<h2>gethiddenproperty / sethiddenproperty</h2>
-<p>Функции для прямого чтения и записи скрытых свойств `Instance`, обходя стандартные проверки доступа. В отличие от `setscriptable`, они не меняют флаг доступности, а работают напрямую. [На данный момент в rUNC отключена эта проверка, так как bunni.lol крашится при взаимодействии]</p>
-<ul>
-    <li><code>gethiddenproperty(inst, prop)</code>: Возвращает значение свойства и `boolean`, указывающий, является ли оно скрытым.</li>
-    <li><code>sethiddenproperty(inst, prop, value)</code>: Устанавливает значение скрытого свойства.</li>
-</ul>
+<h2>get/sethiddenproperty</h2>
+<p>Функции для прямого чтения и записи скрытых свойств `Instance`, обходя стандартные проверки доступа.</p>
+<div class="note"><p>В текущей версии rUNC этот тест отключен, так как в некоторых средах он может приводить к сбою.</p></div>
+<h3>Как проверяется в rUNC</h3>
+<p>Проверяет чтение обычных и скрытых свойств, а также запись в скрытое свойство 'DataCost' и убеждается, что обычная запись по-прежнему вызывает ошибку.</p>
+</section>
+
+<section id="simulation-radius">
+<h2>get/setsimulationradius</h2>
+<p>Функции для чтения и изменения радиуса симуляции физики для игрока.</p>
 <h3>Примеры</h3>
 <div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Чтение и изменение `DataCost`</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">-- Создаём тестовый Part
-local part = Instance.new("Part")
-part.Parent = workspace
+<div class="code-block-header"><span>1. Увеличение радиуса симуляции</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
+<pre><code class="language-lua">local originalRadius = getsimulationradius()
+print("Original radius:", originalRadius)
 
--- Пробуем прочитать скрытое свойство DataCost
-local ok, value = pcall(function()
-    return gethiddenproperty(part, "DataCost")
-end)
-
-print("DataCost доступен для чтения:", ok, "значение:", value) -- Для чтения будет доступен, значение: 20
-
--- Проверяем, можно ли записать (но не меняем, если read-only)
-local ok2 = pcall(function()
-    -- Попробуем изменить только если свойство не nil и не read-only
-    if value ~= nil then
-        sethiddenproperty(part, "DataCost", value + 50)
-    end
-end)
-
-print("DataCost доступен для записи:", ok2 and "да" or "нет") -- Для записи будет нет
+setsimulationradius(1024)
+print("New radius:", getsimulationradius()) --> 1024
 </code></pre>
 </div>
 <h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Чтение обычного свойства:</b> Проверяет, что `gethiddenproperty` может читать и обычные свойства (например, "Name") и корректно сообщает, что они не скрыты.</li>
-    <li><b>Чтение скрытого свойства:</b> Пытается прочитать известное скрытое свойство (например, "DataCost") и проверяет, что это удается.</li>
-    <li><b>Запись скрытого свойства:</b> Использует `sethiddenproperty`, чтобы изменить значение, а затем снова читает его через `gethiddenproperty`, чтобы убедиться, что оно изменилось.</li>
-    <li><b>Ошибка на несуществующем:</b> Проверяет, что попытка получить несуществующее свойство вызывает ошибку.</li>
-</ul>
+<p>Читает исходный радиус, устанавливает новое значение, а затем снова читает его, чтобы убедиться, что оно изменилось.</p>
 </section>
 
 <section id="firetouchinterest">
 <h2>firetouchinterest</h2>
-<p>Искусственно вызывает событие касания (`.Touched` или `.TouchEnded`) между двумя объектами. Позволяет симулировать физический контакт без реального перемещения объектов.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">firetouchinterest</span>(part1: <span class="ty">BasePart</span>, part2: <span class="ty">BasePart</span>, toggle: <span class="ty">number</span><span class="op">|</span><span class="ty">boolean</span>)</div>
-<p><code>toggle</code>: <code>0</code> или <code>true</code> для `Touched`, <code>1</code> или <code>false</code> для `TouchEnded`.</p>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Активация ловушки</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">-- Создаём персонажа (берём уже существующего у LocalPlayer)
-local player = game.Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
--- По последней информации разные Executors не хоят работать с этим тестом и отдают что - то по типу: Primitives belong to different or invalid worlds
--- Создаём триггер
-local trap_trigger = Instance.new("Part")
-trap_trigger.Name = "TrapTrigger"
-trap_trigger.Size = Vector3.new(5, 1, 5)
-trap_trigger.Position = Vector3.new(0, 5, 0)
-trap_trigger.Anchored = true
-trap_trigger.Transparency = 0.5
-trap_trigger.BrickColor = BrickColor.new("Bright red")
-trap_trigger.Parent = workspace
-
--- Подключаем обработчик касания
-trap_trigger.Touched:Connect(function(hit)
-    if hit and hit.Parent == character then
-        print("Trap activated!")
-    end
-end)
-
--- Имитируем, что персонаж коснулся триггера
-firetouchinterest(trap_trigger, character:WaitForChild("HumanoidRootPart"), 0) 
-</code></pre>
-</div>
+<p>Искусственно вызывает событие касания (`.Touched` или `.TouchEnded`) между двумя объектами.</p>
 <h3>Как проверяется в rUNC</h3>
-<p>Тест создает две части и подписывается на события `Touched` и `TouchEnded` у одной из них.</p>
-<ul>
-    <li><b>Учет `CanTouch`:</b> Устанавливает `CanTouch = false` и проверяет, что `firetouchinterest` <i>не</i> вызывает событие.</li>
-    <li><b>Вызов `Touched`:</b> Устанавливает `CanTouch = true` и проверяет, что вызов с `toggle=0` или `toggle=true` инкрементирует счетчик `Touched`.</li>
-    <li><b>Вызов `TouchEnded`:</b> Проверяет, что вызов с `toggle=1` или `toggle=false` инкрементирует счетчик `TouchEnded`.</li>
-    <li><b>Обработка ошибок:</b> Убеждается, что вызов с неверными типами аргументов (например, `nil` или `{}`) вызывает ошибку.</li>
-</ul>
+<p>Проверяет, что `firetouchinterest` учитывает `CanTouch=false`, вызывает `Touched` с toggle=0, вызывает `TouchEnded` с toggle=1, и выбрасывает ошибки при неверных аргументах.</p>
 </section>
 
 <section id="fireclickdetector">
 <h2>fireclickdetector</h2>
 <p>Программно симулирует клик мыши или наведение на объект с `ClickDetector`.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">fireclickdetector</span>(cd: <span class="ty">ClickDetector</span>, distance: <span class="ty">number</span><span class="op">?</span>, event: <span class="ty">string</span><span class="op">?</span>)</div>
-<p><code>event</code>: Может быть "MouseClick" (по умолчанию), "RightMouseClick", "MouseHoverEnter", "MouseHoverLeave".</p>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Проверки на обработчик</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">-- Создаём новый ClickDetector (детектор кликов)
-local click_detector = Instance.new("ClickDetector")
-
--- Обработчик клика левой кнопкой мыши
-click_detector.MouseClick:Connect(function(player)
-    print(`{player.Name} Fired M1`) -- Выводим имя игрока и сообщение о клике ЛКМ
-end)
-
--- Обработчик клика правой кнопкой мыши
-click_detector.RightMouseClick:Connect(function(player)
-    print(`{player.Name} Fired M2`) -- Выводим имя игрока и сообщение о клике ПКМ
-end)
-
--- Обработчик наведения курсора на объект
-click_detector.MouseHoverEnter:Connect(function(player)
-    print(`{player.Name} Fired HoverEnter`) -- Выводим имя игрока и сообщение о наведении
-end)
-
--- Обработчик ухода курсора с объекта
-click_detector.MouseHoverLeave:Connect(function(player)
-    print(`{player} Fired HoverLeave`) -- Выводим объект игрока (или nil) и сообщение об уходе курсора
-end)
-
--- Симулируем клик ЛКМ по ClickDetector
-fireclickdetector(click_detector, 0, "MouseClick") -- Ожидаемый вывод: Player Fired M1
-
--- Симулируем клик ПКМ по ClickDetector
-fireclickdetector(click_detector, 0, "RightMouseClick") -- Ожидаемый вывод: Player Fired M2
-
--- Симулируем наведение курсора на объект
-fireclickdetector(click_detector, 0, "MouseHoverEnter") -- Ожидаемый вывод: Player Fired HoverEnter
-
--- Симулируем уход курсора с объекта
-fireclickdetector(click_detector, 0, "MouseHoverLeave") -- Ожидаемый вывод: Player Fired HoverLeave
-</code></pre>
-</div>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>2. Симуляция наведения мыши</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local info_object = workspace:FindFirstChild("InfoObject")
-if not info_object then
-    info_object = Instance.new("Part")
-    info_object.Name = "InfoObject"
-    info_object.Size = Vector3.new(2, 1, 2)
-    info_object.Position = Vector3.new(0, 3, 0)
-    info_object.Anchored = true
-    info_object.Parent = workspace
-end
-
-local info_detector = info_object:FindFirstChildOfClass("ClickDetector")
-if not info_detector then
-    info_detector = Instance.new("ClickDetector")
-    info_detector.Parent = info_object
-end
-
-print("Наводим курсор на объект, чтобы показать подсказку")
-fireclickdetector(info_detector, 0, "MouseHoverEnter")
-
-task.wait(2)
-
-print("Убираем курсор с объекта")
-fireclickdetector(info_detector, 0, "MouseHoverLeave")
-</code></pre>
-</div>
 <h3>Как проверяется в rUNC</h3>
-<p>Тест создает `Part` с `ClickDetector` и подписывается на все его события.</p>
-<ul>
-    <li><b>Клик по умолчанию:</b> Проверяет, что вызов без указания события вызывает `MouseClick`.</li>
-    <li><b>Явные события:</b> Последовательно вызывает `fireclickdetector` для `RightMouseClick`, `MouseHoverEnter` и `MouseHoverLeave` и проверяет, что соответствующие флаги срабатывания устанавливаются в `true`.</li>
-</ul>
+<p>Последовательно вызывает `fireclickdetector` для `MouseClick`, `RightMouseClick`, `MouseHoverEnter`, `MouseHoverLeave` и проверяет, что соответствующие события сработали.</p>
 </section>
 
 <section id="fireproximityprompt">
 <h2>fireproximityprompt</h2>
 <p>Симулирует срабатывание `ProximityPrompt` от лица `LocalPlayer`.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">fireproximityprompt</span>(prompt: <span class="ty">ProximityPrompt</span>)</div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Автоматическая проверка на работоспособность</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local part = Instance.new("Part")
-part.Size = Vector3.new(2, 1, 2)
-part.Position = Vector3.new(0, 3, 0)
-part.Anchored = true
-part.Name = "CollectableItem"
-part.Parent = workspace
-
-local item_prompt = Instance.new("ProximityPrompt")
-item_prompt.ActionText = "Collect"
-item_prompt.ObjectText = "Item"
-item_prompt.HoldDuration = 0
-item_prompt.Parent = part
-
-print("Активируем ProximityPrompt для объекта:", part.Name)
-fireproximityprompt(item_prompt)
-print("ProximityPrompt был успешно вызван")
-</code></pre>
-</div>
 <h3>Как проверяется в rUNC</h3>
-<p>Создает `ProximityPrompt`, подписывается на его событие `Triggered`.</p>
-<ul>
-    <li><b>Вызов:</b> Проверяет, что вызов функции не вызывает ошибок.</li>
-    <li><b>Срабатывание:</b> Убеждается, что событие `Triggered` было вызвано и что в качестве аргумента был передан `LocalPlayer`.</li>
-</ul>
+<p>Проверяет, что вызов не вызывает ошибок и что событие `Triggered` срабатывает с `LocalPlayer` в качестве аргумента.</p>
+</section>
+
+<section id="replicatesignal">
+<h2>replicatesignal</h2>
+<p>Используется для удаленной репликации событий ввода, таких как `MouseWheelForward`/`Backward`.</p>
+<h3>Как проверяется в rUNC</h3>
+<p>Проверяет, что вызов с корректными аргументами не вызывает ошибок, а с неполными — вызывает.</p>
 </section>
 
 <section id="fpscap">
-<h2>getfpscap / setfpscap</h2>
-<p>Функции для чтения и установки ограничения кадров в секунду (FPS) в клиенте.</p>
-<ul>
-    <li><code>getfpscap()</code>: Возвращает текущее ограничение FPS.</li>
-    <li><code>setfpscap(value)</code>: Устанавливает новое ограничение FPS.</li>
-</ul>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Установка и сброс FPS</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local original_fps = getfpscap()
-print("Current FPS cap:", original_fps)
-
--- Разблокировать FPS
-setfpscap(999) 
-task.wait(5)
--- Вернуть исходное значение
-setfpscap(original_fps)
-print("FPS cap restored.")
-</code></pre>
-</div>
+<h2>get/setfpscap</h2>
+<p>Функции для чтения и установки ограничения кадров в секунду (FPS).</p>
 <h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Чтение:</b> Проверяет, что `getfpscap` возвращает число.</li>
-    <li><b>Запись:</b> Вызывает `setfpscap` с новым значением (например, 144).</li>
-    <li><b>Проверка записи:</b> Снова вызывает `getfpscap` и проверяет, что возвращенное значение равно установленному.</li>
-    <li><b>Восстановление:</b> Устанавливает исходное значение обратно и проверяет, что оно восстановилось.</li>
-</ul>
+<p>Читает cap, сверяет его с реальным FPS, устанавливает новый cap, проверяет что реальный FPS изменился, затем восстанавливает исходное значение.</p>
 </section>
 
 <section id="messagebox">
 <h2>messagebox</h2>
-<p>Отображает системное диалоговое окно (message box) с заданным текстом и заголовком.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">messagebox</span>(text: <span class="ty">string</span>, caption: <span class="ty">string</span>, buttons: <span class="ty">number</span>)</div>
-<p>`buttons` (тип окна): <code>0</code>=OK, <code>1</code>=OK/Cancel, <code>2</code>=Abort/Retry/Ignore, и т.д. (стандартные коды Windows).</p>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Простое уведомление</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">messagebox("Your script has loaded successfully.", "Notification", 1)</code></pre>
-</div>
+<p>Отображает системное диалоговое окно (message box).</p>
 <h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Успешный вызов:</b> Тест просто проверяет, что вызов функции с корректными аргументами не приводит к ошибке. Он не может проверить, было ли окно действительно показано.</li>
-</ul>
+<p>Проверяет, что вызов не вызывает ошибок, и определяет, является ли вызов синхронным (блокирующим) или асинхронным.</p>
 </section>
 
-<section id="setclipboard">
-<h2>setclipboard</h2>
-<p>Копирует указанную строку в буфер обмена пользователя.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">setclipboard</span>(text: <span class="ty">string</span>)</div>
+<section id="clipboard">
+<h2>get/setclipboard</h2>
+<p>Функции для работы с буфером обмена пользователя.</p>
 <h3>Примеры</h3>
 <div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Копирование ссылки</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">setclipboard("https://www.roblox.com")
-print("Link copied to clipboard!")
+<div class="code-block-header"><span>1. Копирование и чтение</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
+<pre><code class="language-lua">local text_to_copy = "Hello from rUNC! " .. math.random()
+setclipboard(text_to_copy)
+
+local read_text = getclipboard()
+print("Copied:", text_to_copy)
+print("Read:", read_text)
+print("Match:", text_to_copy == read_text) --> true
 </code></pre>
 </div>
 <h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Успешный вызов:</b> Проверяет, что вызов `setclipboard` с текстовым аргументом выполняется без ошибок.</li>
-</ul>
+<p>Записывает случайное число в буфер обмена через `setclipboard`, а затем читает его с помощью `getclipboard` и сравнивает значения.</p>
 </section>
 
 <section id="mouse-emulation">
 <h2>Эмуляция мыши</h2>
 <p>Набор функций для программной симуляции движений и кликов мыши.</p>
 <ul>
-    <li><code>mouse1/2press()</code>: Симулирует нажатие левой/правой кнопки мыши.</li>
-    <li><code>mouse1/2release()</code>: Симулирует отпускание левой/правой кнопки мыши.</li>
-    <li><code>mouse1/2click()</code>: Комбинация press и release.</li>
-    <li><code>mousemoveabs(x, y)</code>: Перемещает курсор в абсолютные координаты `(x, y)`.</li>
-    <li><code>mousemoverel(dx, dy)</code>: Перемещает курсор на `(dx, dy)` относительно текущей позиции.</li>
-    <li><code>mousescroll(dx, dy)</code>: Симулирует прокрутку колесика (<code>dy</code> - вертикальная).</li>
+    <li><code>mouse1/2press/release/click()</code></li>
+    <li><code>mousemoveabs(x, y)</code>, <code>mousemoverel(dx, dy)</code></li>
+    <li><code>mousescroll(dx, dy)</code></li>
 </ul>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Клик в центре экрана</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local viewport_size = workspace.CurrentCamera.ViewportSize
-mousemoveabs(viewport_size.X / 2, viewport_size.Y / 2)
-task.wait(0.1)
-mouse1click()
-</code></pre>
-</div>
 <h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Успешный вызов:</b> Для каждой функции тест просто проверяет, что её вызов с корректным числом аргументов (или без них) выполняется без ошибок.</li>
-</ul>
+<p>Создает UI-кнопку под курсором и проверяет, что вызовы `mouse1click`, `mouse1press`/`release`, `mouse2click` и `mouse2press`/`release` действительно вызывают соответствующие события `MouseButton1Click`, `MouseButton1Down`/`Up` и т.д. Остальные функции проверяются на отсутствие ошибок при вызове.</p>
 </section>
 
-<section id="debug-upvalues">
-<h2>debug.(get/set)upvalue(s)</h2>
-<p>Функции для интроспекции и модификации "upvalues" (внешних локальных переменных) Luau-функции.</p>
+<section id="actors-library">
+<h2>Actors API</h2>
+<p>Набор функций для работы с параллельными вычислениями в Roblox с использованием `Actor`.</p>
 <ul>
-    <li><code>debug.getupvalues(func)</code>: Возвращает таблицу всех upvalue'ов функции.</li>
-    <li><code>debug.getupvalue(func, index)</code>: Возвращает upvalue по его индексу.</li>
-    <li><code>debug.setupvalue(func, index, value)</code>: Устанавливает новое значение для upvalue.</li>
+<li><code>getactors()</code>: Возвращает все `Actor` в игре.</li>
+<li><code>isparallel()</code>: Проверяет, выполняется ли код в параллельном режиме.</li>
+<li><code>run_on_actor(actor, code)</code>: Выполняет код в контексте актора. Параллельные акторы обладают своими условиями, данные функции принадлежны для обхода систем безопасности (Свойственно для обхода анти читов)</li>
+<li>Ого, ты дочитал до сюда, ты реально заинтересован?</li>
 </ul>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Чтение и изменение upvalue</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local function makeDummy()
-    local UpFunction = function()
-        print("Мурзик 555")
-    end
-
-    local function DummyFunction()
-        UpFunction()
-    end
-
-    return DummyFunction
-end
-
-local DummyFunction = makeDummy()
-
-print("До подмены:")
-DummyFunction() -- Мурзик 555
-
--- Читаем первый upvalue
-local Retrieved = debug.getupvalue(DummyFunction, 1)
-if type(Retrieved) == "function" then
-    print("Upvalue найден, подменяем...")
-    debug.setupvalue(DummyFunction, 1, function()
-        print("Барсик 52")
-    end)
-else
-    print("Upvalue не найден или это не функция")
-end
-
-print("После подмены:")
-DummyFunction() -- Барсик 52
-</code></pre>
-</div>
 <h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Чтение:</b> <code>getupvalues</code> и <code>getupvalue</code> вызываются для тестовой функции, и проверяется, что они возвращают правильные значения.</li>
-    <li><b>Запись:</b> <code>setupvalue</code> используется для изменения upvalue. Затем тестовая функция вызывается снова, чтобы убедиться, что изменение вступило в силу. Также проверяется смена типа upvalue.</li>
-    <li><b>Граничные случаи:</b> Тестируется поведение с функциями без upvalue'ов и с некорректными индексами.</li>
-    <li><b>C-функции:</b> Проверяется, что все три функции вызывают ошибку при попытке использовать их на C-функциях.</li>
-</ul>
-</section>
-
-<section id="debug-constants">
-<h2>debug.(get/set)constant(s)</h2>
-<p>Функции для интроспекции и модификации таблицы констант Luau-функции. Константы - это литералы (числа, строки и т.д.), которые "зашиты" в байт-код функции.</p>
-<ul>
-    <li><code>debug.getconstants(func)</code>: Возвращает таблицу всех констант.</li>
-    <li><code>debug.getconstant(func, index)</code>: Возвращает константу по индексу.</li>
-    <li><code>debug.setconstant(func, index, value)</code>: Заменяет константу новым значением.</li>
-</ul>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Изменение строки в функции</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local function getFuncType(func)
-    if islclosure(func) then
-        return "Lua"
-    else
-        return "C"
-    end
-end
-
--- Функция с константами
-local function demo()
-    local a = "Hello"
-    local b = "force_const"
-    local c = (true or false)
-    local d = ("nil_marker")
-    return a, b, c, d
-end
-
-print("Тип функции demo:", getFuncType(demo))
-
-print("\n=== До подмены ===")
-print(demo())
-
--- Получаем константы
-local constants = debug.getconstants(demo)
-print("\nКонстанты в функции:")
-for i, v in ipairs(constants) do
-    -- Если константа сама является функцией, тоже проверим её тип (Обязательно дял корректного примера и работы!!!)
-    if type(v) == "function" then
-        print("["..i.."]", v, "(function, "..getFuncType(v)..")")
-    else
-        print("["..i.."]", v, "("..type(v)..")")
-    end
-end
-
--- Подменяем: все строки → "Павел Дуров"
-for i, v in ipairs(constants) do
-    if type(v) == "string" then
-        debug.setconstant(demo, i, "Павел Дуров")
-    end
-end
-
-print("\n=== После подмены ===")
-print(demo())
-
--- Проверка на [C] или [Lua]
-print("\nТип функции print:", getFuncType(print))
-print("Тип функции math.sin:", getFuncType(math.sin))
-</code></pre>
-</div>
-<h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Чтение:</b> <code>getconstants</code> вызывается для тестовой функции, и проверяется, что она содержит все ожидаемые константы (строку, число, boolean).</li>
-    <li><b>Запись:</b> <code>setconstant</code> используется для замены константы, после чего функция вызывается снова, и проверяется, что она использует уже новое значение.</li>
-    <li><b>Граничные случаи:</b> Проверяется `getconstant` с индексом за пределами диапазона.</li>
-    <li><b>C-функции:</b> Удостоверяется, что функции вызывают ошибку на C-замыканиях.</li>
-</ul>
-</section>
-
-<section id="debug-stack">
-<h2>debug.(get/set)stack</h2>
-<p>Функции для низкоуровневой работы со стеком вызовов.</p>
-<ul>
-    <li><code>debug.getstack(level, index)</code>: Получает локальную переменную со стека. `level` — уровень вложенности вызова (1 - текущая функция, 2 - та, что ее вызвала, и т.д.), `index` — номер переменной.</li>
-    <li><code>debug.setstack(level, index, value)</code>: Устанавливает новое значение для локальной переменной на стеке. Тип нового значения должен совпадать с типом старого.</li>
-</ul>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Изменение переменной в родительской функции</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local function parent(a, b)
-    print("[parent] До подмены:", a, b)
-
-    local function child()
-        -- level = 2 → стек родителя
-        -- index = 1 → первый аргумент (a)
-        debug.setstack(2, 1, 666)
-
-        -- index = 2 → второй аргумент (b)
-        debug.setstack(2, 2, "кошка")
-    end
-
-    child()
-
-    print("[parent] После подмены:", a, b)
-end
-
--- Вызов до подмены, после подмены выведет: 666, кошка
-parent(10, "собака")
-</code></pre>
-</div>
-<h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Запись в родительский стек:</b> Проверяет, что вызов `debug.setstack` с `level=2` успешно изменяет локальную переменную в вызывающей функции.</li>
-    <li><b>Запись в текущий стек:</b> Проверяет, что `level=1` корректно изменяет переменную в текущей функции.</li>
-    <li><b>Несовпадение типов:</b> Удостоверяется, что попытка установить значение другого типа вызывает ошибку.</li>
-    <li><b>C-функции:</b> Проверяет, что вызов на C-фрейме стека вызывает ошибку.</li>
-</ul>
-</section>
-
-<section id="debug-protos">
-<h2>debug.(get/set)proto(s)</h2>
-<p>Функции для работы с "прототипами" функций. Прототип - это шаблон функции, вложенной в другую функцию.</p>
-<ul>
-    <li><code>debug.getprotos(func)</code>: Возвращает таблицу всех прототипов (шаблонов) внутренних функций.</li>
-    <li><code>debug.getproto(func, index, active)</code>: Получает конкретный прототип. Если `active`=false, возвращается неактивный прототип, который нельзя вызвать. Если `active`=true, возвращается таблица активных экземпляров этого прототипа.</li>
-</ul>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Получение вложенной функции</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local function container()
-    local function innerOne()
-        return "Привет из innerOne"
-    end
-    local function innerTwo()
-        return "Привет из innerTwo"
-    end
-    return innerOne
-end
-
--- Получаем все прототипы функции container
-local protos = debug.getprotos(container)
-print("Всего прототипов:", #protos)
-
-for i, proto in ipairs(protos) do
-    print(string.format("[%d] Прототип: %s", i, tostring(proto)))
-    local consts = debug.getconstants(proto)
-    if #consts > 0 then
-        print("   Константы:", table.concat(consts, ", "))
-    else
-        print("   Констант нет")
-    end
-end
-
--- Получаем конкретный прототип по индексу (неактивный!!!)
-local proto1 = debug.getproto(container, 1)
-print("\nПрототип #1 (неактивный):", proto1)
-
--- Получаем активную функцию из прототипа
-local activeFuncs = debug.getproto(container, 1, true)
-print("Активные функции из прототипа #1:", #activeFuncs)
-
-for i, f in ipairs(activeFuncs) do
-    print("  Активная функция #" .. i .. " вызов ->", f())
-end
-</code></pre>
-</div>
-<h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>getproto (неактивный):</b> Получает неактивный прототип и проверяет, что его невозможно вызвать.</li>
-    <li><b>getproto (активный):</b> Сначала вызывает родительскую функцию (чтобы создать активный экземпляр вложенной функции), а затем через `getproto(..., true)` получает этот активный экземпляр и проверяет, что он совпадает с оригиналом и его можно вызвать.</li>
-    <li><b>getprotos:</b> Получает все прототипы и через `debug.getinfo` проверяет, что их имена корректны.</li>
-    <li><b>C-функции:</b> Проверяет, что вызовы на C-функциях приводят к ошибке.</li>
-</ul>
-</section>
-
-<section id="debug-metatable">
-<h2>debug.setmetatable</h2>
-<p>Версия `setmetatable` из библиотеки `debug`, которая игнорирует защиту `__metatable`. Функционально идентична `setrawmetatable`.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">debug.setmetatable</span>(obj: <span class="ty">table</span>, mt: <span class="ty">table</span><span class="op">|</span><span class="ty">nil</span>)</div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Замена защищенной метатаблицы с подробным примером</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">-- Создаём таблицу с заблокированной метатаблицей
-local cat = {}
-local dog = {}
-
-setmetatable(cat, { __metatable = "LOCKED", __tostring = function() return "Котик" end })
-setmetatable(dog, { __metatable = "LOCKED", __tostring = function() return "Пёсик" end })
-
-print("До обхода защиты:")
-print("cat:", cat) -- Котик
-print("dog:", dog) -- Пёсик
-
--- Попытка обычной замены метатаблицы — не сработает, выдаст false, cannot change a protected metatable
-local ok, err = pcall(setmetatable, cat, { __tostring = function() return "Хакнутый кот" end })
-print("Обычная замена метатаблицы:", ok, err)
-
--- Обход защиты через debug.setmetatable
-debug.setmetatable(cat, {
-    __tostring = function() return "😼 Кота взломали" end,
-    speak = function() return "Мяу!" end
-})
-
-debug.setmetatable(dog, {
-    __tostring = function() return "🐶 Собаку взломали" end,
-    speak = function() return "Гав!" end
-})
-
-print("\nПосле обхода защиты:")
-print("cat:", cat)
-print("dog:", dog)
-
--- Вызываем «методы» из новых метатаблиц
-print("cat говорит:", getmetatable(cat).speak())
-print("dog говорит:", getmetatable(dog).speak())
-
--- Проверим и увидим, что __metatable больше не LOCKED
-print("\nТекущая метатаблица cat:", getmetatable(cat))
-print("Текущая метатаблица dog:", getmetatable(dog))
-</code></pre>
-</div>
-<h3>Как проверяется в rUNC</h3>
-<p>Тест аналогичен `test_setrawmetatable`:</p>
-<ul>
-    <li><b>Подтверждение защиты:</b> Убеждается, что обычная `setmetatable` не работает.</li>
-    <li><b>Обход защиты:</b> Проверяет, что `debug.setmetatable` успешно устанавливает новую метатаблицу.</li>
-    <li><b>Проверка эффекта:</b> Убеждается, что новая метатаблица активна и работает.</li>
-</ul>
-</section>
-
-<section id="debug-getinfo">
-<h2>debug.getinfo</h2>
-<p>Возвращает таблицу с информацией о функции или уровне стека вызовов (имя, количество upvalue'ов, строка определения и т.д.).</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">debug.getinfo</span>(target: <span class="ty">function</span> <span class="op">|</span> <span class="ty">number</span>, flags: <span class="ty">string</span><span class="op">?</span>): <span class="ty">table</span></div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Информация о функции</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local function my_func(a, b, ...)
-    local x = 123
-    return a + b + x
-end
-
-local ok, info = pcall(debug.getinfo, my_func, "nSluaf")
-
-if ok and info then
-    print("Имя:", info.name) --> myfunc
-    print("Источник:", info.source) --> "", то есть пусто
-    print("Строка определения:", info.linedefined) --> nil
-    print("Последняя строка:", info.lastlinedefined) --> nil
-    print("Upvalues:", info.nups) --> 0
-    print("Параметров:", info.nparams) --> nil
-    print("Vararg:", info.isvararg) -- true/false или nil
-    print("Функция:", info.func) --> function: 0x...
-else
-    print("Ошибка при получении информации:", info) -- Будет крайне подозрительно, т. к. функции должны ответить корректно как и описано комментариями.
-end
-</code></pre>
-</div>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>2. Информация о вызывающей функции</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local function get_caller_info()
-    -- "nf" → n = имя, f = сама функция
-    local info = debug.getinfo(2, "nf") -- 2 = вызывающая функция
-    return info.name, info.func
-end
-
-local function LadaGranta()
-    local caller_name, caller_func = get_caller_info()
-    print("Я вызвана функцией:", caller_name) --> LadaGranta
-    print("Userdata функции:", caller_func) --> function: 0x...
-end
-
-LadaGranta()
-</code></pre>
-</div>
-<h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Информация о функции:</b> Вызывает `getinfo` для тестовой функции с разными флагами и проверяет, что поля (`what`, `source`, `linedefined`, `nups`, `name`) содержат корректные значения.</li>
-    <li><b>Информация по уровню стека:</b> Вызывает `getinfo` с числовым аргументом (уровнем стека) и проверяет, что получает корректную информацию о текущей (`level=1`) и вызывающей (`level=2`) функциях.</li>
-    <li><b>C-функции:</b> Убеждается, что вызов `getinfo` для C-функции вызывает ошибку.</li>
-</ul>
-</section>
-
-<section id="crypto-base64">
-<h2>crypt.base64encode / crypt.base64decode</h2>
-<p>Функции для кодирования и декодирования строк в формат Base64.</p>
-<ul>
-    <li><code>crypt.base64encode(data)</code>: Кодирует строку.</li>
-    <li><code>crypt.base64decode(encoded_data)</code>: Декодирует строку.</li>
-</ul>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Простое кодирование и декодирование</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local original = "Hello, Roblox!"
-local encoded = crypt.base64encode(original)
-print("Encoded:", encoded) --> SGVsbG8sIFJvYmxveCE=
-
-local decoded = crypt.base64decode(encoded)
-print("Decoded:", decoded) --> Hello, Roblox!
-</code></pre>
-</div>
-<h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Round-trip:</b> Кодирует строку, затем декодирует результат и проверяет, что он совпадает с оригиналом.</li>
-    <li><b>Известные значения:</b> Кодирует и декодирует заранее известные строки и сверяет результат с ожидаемым, чтобы проверить корректность самого алгоритма.</li>
-</ul>
-</section>
-
-<section id="crypto-encrypt">
-<h2>crypt.encrypt / crypt.decrypt</h2>
-<p>Функции для симметричного шифрования и дешифрования данных.</p>
-<ul>
-    <li><code>crypt.encrypt(plaintext, key, additional_data)</code>: Шифрует данные.</li>
-    <li><code>crypt.decrypt(ciphertext, key, additional_data)</code>: Расшифровывает данные.</li>
-</ul>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Шифрование и дешифрование сообщения</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">-- Генерируем ключ и IV нужной длины
-local key = crypt.generatekey(32)  -- 32 байта для AES-256
-local iv = crypt.generatekey(12)   -- 12 байт для GCM
-
-local plaintext = "This is a secret message."
-
--- Шифруем
-local ciphertext = crypt.encrypt(plaintext, key, iv, "aes-gcm")
-print("Encrypted (base64):", crypt.base64encode(ciphertext))
-
--- Расшифровываем
-local decrypted = crypt.decrypt(ciphertext, key, iv, "aes-gcm")
-print("Decrypted:", decrypted)
-</code></pre>
-</div>
-<h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Round-trip:</b> Генерирует ключ, шифрует строку, расшифровывает её тем же ключом и проверяет, что результат совпадает с оригиналом.</li>
-    <li><b>Проверка с неверным ключом:</b> Пытается расшифровать данные с другим, неверным ключом и убеждается, что результат <i>не совпадает</i> с оригиналом.</li>
-</ul>
-</section>
-
-<section id="crypto-generate">
-<h2>crypt.generatekey / crypt.generatebytes</h2>
-<p>Функции для генерации криптографически стойких случайных данных.</p>
-<ul>
-    <li><code>crypt.generatekey()</code>: Генерирует ключ для использования в `crypt.encrypt/decrypt`.</li>
-    <li><code>crypt.generatebytes(length)</code>: Генерирует случайную строку байт указанной длины.</li>
-</ul>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Генерация ключа и случайных данных</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local new_key = crypt.generatekey()
-print("Generated key (base64):", crypt.base64encode(new_key))
-
-local random_iv = crypt.generatebytes(32) -- Генерируем 32-байтный вектор инициализации
-print("Generated IV length:", #random_iv) --> 44
-</code></pre>
-</div>
-<h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>generatekey:</b> Проверяет, что функция возвращает непустую строку.</li>
-    <li><b>generatebytes:</b> Проверяет, что функция возвращает строку, и что её длина в точности равна запрошенной.</li>
-</ul>
-</section>
-
-<section id="crypto-hash">
-<h2>crypt.hash</h2>
-<p>Вычисляет хэш строки, используя указанный алгоритм.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">crypt.hash</span>(data: <span class="ty">string</span>, algorithm: <span class="ty">string</span>): <span class="ty">string</span></div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Хэширование пароля</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local password = "password123"
-local hashed_password = crypt.hash(password, "sha512")
-print("Hashed:", crypt.base64encode(hashed_password))
-</code></pre>
-</div>
-<h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Успешное выполнение:</b> Проверяет, что функция возвращает строку.</li>
-    <li><b>Детерминированность:</b> Хэширует одну и ту же строку дважды и убеждается, что результаты полностью совпадают.</li>
-</ul>
-</section>
-
-<section id="compression">
-<h2>lz4compress / lz4decompress</h2>
-<p>Функции для быстрого сжатия и распаковки данных с использованием алгоритма LZ4.</p>
-<ul>
-    <li><code>lz4compress(data)</code>: Сжимает строку.</li>
-    <li><code>lz4decompress(compressed_data, original_size)</code>: Распаковывает строку. Требует знания исходного размера данных.</li>
-</ul>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Сжатие и распаковка текста</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local original_text = table.concat({string.rep("roblox ", 100)}, "")
-local original_size = #original_text
-
-local compressed = lz4compress(original_text)
-print(`Original: {original_size} bytes, Compressed: {#compressed} bytes`) --> 700, 19 bytes
-
-local decompressed = lz4decompress(compressed, original_size)
-print("Round-trip successful:", original_text == decompressed) --> true
-</code></pre>
-</div>
-<h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Round-trip:</b> Сжимает строку, затем распаковывает ее, и проверяет, что результат в точности совпадает с исходной строкой.</li>
-</ul>
-</section>
-
-<section id="request">
-<h2>request / http_request</h2>
-<p>Отправляет HTTP(S) запрос и возвращает ответ. Эта функция является оберткой для `HttpService:RequestAsync`.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">request</span>(options: <span class="ty">table</span>): <span class="ty">table</span></div>
-<p>Таблица `options` может содержать поля `Url`, `Method`, `Headers`, `Body`.</p>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Простой GET-запрос</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local response = request({ Url = "https://httpbin.org/get" })
-if response.Success then
-    print("Status Code:", response.StatusCode)
-    print("Body:", response.Body)
-end
-</code></pre>
-</div>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>2. POST-запрос с JSON телом</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local HttpService = game:GetService("HttpService")
-local data = { user = "Player1", score = 150 }
-
-local response = request({
-    Url = "https://httpbin.org/post",
-    Method = "POST",
-    Headers = { ["Content-Type"] = "application/json" },
-    Body = HttpService:JSONEncode(data)
-})
-print(response.Body)
-</code></pre>
-</div>
-<h3>Как проверяется в rUNC</h3>
-<p>Тест использует сервис `httpbin.org` для проверки.</p>
-<ul>
-    <li><b>POST-запрос:</b> Отправляет POST-запрос и проверяет, что ответ успешный и тело ответа содержит отправленные данные.</li>
-    <li><b>GET-запрос:</b> Отправляет GET-запрос, проверяет статус ответа (200) и валидность JSON-тела. Также проверяет наличие стандартных заголовков (`User-Agent`, `Fingerprint`), которые добавляет эксплойт.</li>
-    <li><b>Обработка ошибок:</b> Пытается отправить запрос на невалидный URL и убеждается, что это приводит к ошибке.</li>
-</ul>
-</section>
-
-<section id="replicatesignal">
-<h2>replicatesignal</h2>
-<p>Используется для удаленной репликации событий ввода, таких как `MouseWheelForward`/`Backward`. Это низкоуровневая функция для взаимодействия с сетевым кодом Roblox.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">replicatesignal</span>(signal: <span class="ty">RBXScriptSignal</span>, ...<span class="op">:</span> <span class="ty">any</span>)</div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Симуляция прокрутки колеса мыши</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local frame = Instance.new("Frame", game.Players.LocalPlayer.PlayerGui)
--- Симулируем прокрутку колесика вперед над этим фреймом в координатах (100, 100)
-replicatesignal(frame.MouseWheelForward, 100, 100)
-</code></pre>
-</div>
-<h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Успешное выполнение:</b> Проверяет, что вызов с корректными аргументами (сигнал и две координаты) выполняется без ошибок.</li>
-    <li><b>Обработка ошибок:</b> Убеждается, что вызовы с недостаточным количеством аргументов приводят к ошибке.</li>
-</ul>
-</section>
-
-<section id="file-ops">
-<h2>Файловые операции</h2>
-<p>Набор функций для работы с файлами в локальной директории рабочего пространства.</p>
-<ul>
-    <li><code>writefile(path, content)</code>: Создает/перезаписывает файл.</li>
-    <li><code>readfile(path)</code>: Читает содержимое файла.</li>
-    <li><code>appendfile(path, content)</code>: Добавляет содержимое в конец файла.</li>
-    <li><code>delfile(path)</code>: Удаляет файл.</li>
-    <li><code>isfile(path)</code>: Проверяет, существует ли файл.</li>
-</ul>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Сохранение и чтение настроек</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local settings = { theme = "dark", volume = 0.5 }
-local settings_json = game:GetService("HttpService"):JSONEncode(settings)
-writefile("settings.json", settings_json)
-
-task.wait(1)
-
-if isfile("settings.json") then
-    local loaded_json = readfile("settings.json")
-    print("Loaded settings:", loaded_json)
-    -- delfile("settings.json")
-end
-</code></pre>
-</div>
-<h3>Как проверяется в rUNC</h3>
-<p>Тест последовательно выполняет все операции:</p>
-<ol>
-    <li>Создает файл через `writefile` и проверяет `readfile` на совпадение содержимого.</li>
-    <li>Добавляет строку через `appendfile` и снова проверяет содержимое.</li>
-    <li>Перезаписывает файл через `writefile` и проверяет результат.</li>
-    <li>Удаляет файл через `delfile`.</li>
-</ol>
-</section>
-
-<section id="folder-ops">
-<h2>Операции с папками</h2>
-<p>Набор функций для управления папками.</p>
-<ul>
-    <li><code>makefolder(path)</code>: Создает папку.</li>
-    <li><code>isfolder(path)</code>: Проверяет, существует ли папка.</li>
-    <li><code>listfiles(path)</code>: Возвращает таблицу файлов и папок внутри указанной папки.</li>
-    <li><code>delfolder(path)</code>: Удаляет папку.</li>
-</ul>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Организация файлов по папкам</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">makefolder("logs")
-writefile("logs/today.txt", "Log entry 1\n")
-makefolder("scripts")
-writefile("scripts/myscript.lua", "print('hello')")
-
-if isfolder("logs") then
-    local files = listfiles("logs")
-    print("Files in logs:", table.concat(files, ", ")) --> Files in logs: logs/today.txt
-end
-</code></pre>
-</div>
-<h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Создание и проверка:</b> Создает папку `makefolder` и проверяет `isfolder`.</li>
-    <li><b>Листинг:</b> Создает файлы внутри и снаружи папки, затем использует `listfiles` и проверяет, что она находит нужные файлы/папки.</li>
-    <li><b>Удаление:</b> Удаляет папку `delfolder` и проверяет `isfolder`, чтобы убедиться, что она удалена.</li>
-</ul>
-</section>
-
-<section id="loadfile">
-<h2>loadfile</h2>
-<p>Читает файл, содержащий Lua-код, и компилирует его в функцию (аналогично `loadstring`).</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">loadfile</span>(path: <span class="ty">string</span>): (<span class="ty">function</span><span class="op">?</span>, <span class="ty">string</span><span class="op">?</span>)</div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Загрузка модуля из файла</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">writefile("utils.lua", [[
-    local module = {}
-    function module.add(a, b) return a + b end
-    return module
-]])
-
-local utils_module, err = loadfile("utils.lua")
-if utils_module then
-    local utils = utils_module()
-    print(utils.add(5, 3)) --> 8
-else
-    warn(err)
-end
-</code></pre>
-</div>
-<h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Загрузка и исполнение:</b> Создает файл с кодом, загружает его через `loadfile` и проверяет, что он возвращает рабочую функцию, которая выполняется корректно.</li>
-    <li><b>Обработка ошибок:</b> Перезаписывает файл синтаксически неверным кодом и проверяет, что `loadfile` корректно обрабатывает ошибку (возвращает `nil` и сообщение).</li>
-</ul>
-</section>
-
-<section id="getcustomasset">
-<h2>getcustomasset</h2>
-<p>Преобразует локальный путь к файлу в формат `rbxasset://` (или аналогичный), который можно использовать в свойствах Roblox, таких как `ImageLabel.Image`.</p>
-<h3>Синтаксис</h3>
-<div class="syntax-block"><span class="kw">function</span> <span class="fn">getcustomasset</span>(path: <span class="ty">string</span>): <span class="ty">string</span></div>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Загрузка локального изображения</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">-- Предположим, у нас есть файл 'my_image.png'
--- writefile("my_image.png", binary_data_of_image)
-
-local image_label = Instance.new("ImageLabel")
-image_label.Image = getcustomasset("my_image.png")
-image_label.Parent = gethui() -- ... file does not exist???
-</code></pre>
-</div>
-<h3>Как проверяется в rUNC</h3>
-<ul>
-    <li><b>Вызов и валидация:</b> Создает временный файл, вызывает для него `getcustomasset` и проверяет, что возвращаемая строка начинается с одного из допустимых префиксов (`rbxasset://`, `rbxassetid://` и т.д.).</li>
-</ul>
+<p>Тест проверяет базовую работоспособность: `getactors` возвращает таблицу, `isparallel` возвращает boolean, а `create_comm_channel` возвращает ID и `BindableEvent`. Проверка выполнения кода на акторах (`run_on_actor`) тестируется на отсутствие ошибок.</p>
 </section>
 
 <section id="drawing">
 <h2>Drawing</h2>
-<p>Библиотека для рендеринга 2D-примитивов (линий, кругов, текста и т.д.) прямо на экране. Объекты `Drawing` не являются `Instance` и управляются отдельно.</p>
-<ul>
-    <li><code>Drawing.new(className)</code>: Создает новый объект для рисования. `className` может быть "Line", "Circle", "Text", "Square", "Quad", "Image".</li>
-    <li><code>isrenderobj(obj)</code>: Проверяет, является ли `obj` объектом `Drawing`.</li>
-</ul>
-<h3>Примеры</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>1. Рисование круга в центре экрана</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local circle = Drawing.new("Circle")
-circle.Visible = true
-circle.Radius = 50
-circle.Filled = true
-circle.Color = Color3.fromRGB(255, 0, 0)
-
-local viewport_size = workspace.CurrentCamera.ViewportSize
-circle.Position = Vector2.new(viewport_size.X / 2, viewport_size.Y / 2)
-
-task.wait(5)
-circle:Remove() -- или circle:Destroy()
-</code></pre>
-</div>
+<p>Библиотека для рендеринга 2D-примитивов (линий, кругов, текста и т.д.) прямо на экране.</p>
 <h3>Как проверяется в rUNC</h3>
 <ul>
     <li><b>Создание объекта:</b> Проверяет, что `Drawing.new("Circle")` успешно выполняется и что результат проходит проверку `isrenderobj`.</li>
 </ul>
 </section>
 
+<section id="debug-upvalues">
+<h2>debug.(get/set)upvalue(s)</h2>
+<p>Функции для интроспекции и модификации "upvalues" (внешних локальных переменных) Luau-функции.</p>
+<h3>Как проверяется в rUNC</h3>
+<p>Проверяет чтение и запись числовых upvalue'ов и upvalue'ов-функций, обработку невалидных индексов и ошибку на C-функциях.</p>
+</section>
+
+<section id="debug-constants">
+<h2>debug.(get/set)constant(s)</h2>
+<p>Функции для интроспекции и модификации таблицы констант Luau-функции.</p>
+<h3>Как проверяется в rUNC</h3>
+<p>Проверяет, что <code>getconstants</code> находит все типы констант (строки, числа, функции). Проверяет, что <code>setconstant</code> успешно меняет константу и это отражается на поведении функции.</p>
+</section>
+
+<section id="debug-stack">
+<h2>debug.(get/set)stack</h2>
+<p>Функции для низкоуровневой работы со стеком вызовов.</p>
+<h3>Как проверяется в rUNC</h3>
+<p>Проверяет изменение аргументов и локальных переменных в родительском и текущем скоупе, а также паттерн замены функции через `error()`. Проверяет чтение locals из вызывающего скоупа.</p>
+</section>
+
+<section id="debug-protos">
+<h2>debug.getproto(s)</h2>
+<p>Функции для работы с "прототипами" функций (шаблонами вложенных функций).</p>
+<h3>Как проверяется в rUNC</h3>
+<p>Проверяет получение неактивных и активных прототипов, их вызов, а также ошибку на C-функциях.</p>
+</section>
+
+<section id="debug-metatable">
+<h2>debug.setmetatable</h2>
+<p>Версия `setmetatable`, которая игнорирует защиту `__metatable`.</p>
+<h3>Как проверяется в rUNC</h3>
+<p>Аналогично `test_setrawmetatable`: подтверждает, что обычная `setmetatable` не работает, а `debug.setmetatable` успешно обходит защиту.</p>
+</section>
+
+<section id="debug-getinfo">
+<h2>debug.getinfo</h2>
+<p>Возвращает таблицу с информацией о функции или уровне стека вызовов.</p>
+<h3>Как проверяется в rUNC</h3>
+<p>Проверяет получение информации по объекту функции и по уровню стека. Убеждается, что все ожидаемые поля присутствуют.</p>
+</section>
+
+<section id="debug-more">
+<h2>Другие debug-функции</h2>
+<p>Набор дополнительных отладочных функций.</p>
+<ul>
+    <li><code>debug.setname(func, name)</code>: Устанавливает имя для функции, видимое в `debug.getinfo`.</li>
+    <li><code>debug.isvalidlevel(level)</code>: Проверяет, существует ли указанный уровень в стеке вызовов.</li>
+</ul>
+<h3>Как проверяется в rUNC</h3>
+<ul>
+    <li><b>debug.setname:</b> Устанавливает имя и проверяет через `debug.getinfo`, что оно изменилось.</li>
+    <li><b>debug.isvalidlevel:</b> Проверяет, что возвращает `true` для валидного уровня и `false` для невалидного.</li>
+</ul>
+</section>
+
+<section id="crypto-base64">
+<h2>crypt.base64*</h2>
+<p>Функции для кодирования и декодирования строк в формат Base64.</p>
+<h3>Как проверяется в rUNC</h3>
+<p>Кодирует строку, затем декодирует результат и проверяет, что он совпадает с оригиналом (round-trip).</p>
+</section>
+
+<section id="crypto-encrypt">
+<h2>crypt.encrypt/decrypt</h2>
+<p>Функции для симметричного шифрования и дешифрования данных.</p>
+<h3>Как проверяется в rUNC</h3>
+<p>Генерирует ключ, шифрует строку, расшифровывает её тем же ключом и проверяет, что результат совпадает с оригиналом. Также проверяет, что расшифровка с неверным ключом не удается.</p>
+</section>
+
+<section id="crypto-generate">
+<h2>crypt.generate*</h2>
+<p>Функции для генерации криптографически стойких случайных данных.</p>
+<h3>Как проверяется в rUNC</h3>
+<p>Проверяет, что `generatekey` возвращает непустую строку, а `generatebytes` возвращает строку указанной длины.</p>
+</section>
+
+<section id="crypto-hash">
+<h2>crypt.hash</h2>
+<p>Вычисляет хэш строки, используя указанный алгоритм.</p>
+<h3>Как проверяется в rUNC</h3>
+<p>Хэширует одну и ту же строку дважды и убеждается, что результаты совпадают.</p>
+</section>
+
+<section id="compression">
+<h2>lz4compress/decompress</h2>
+<p>Функции для быстрого сжатия и распаковки данных с использованием алгоритма LZ4.</p>
+<h3>Как проверяется в rUNC</h3>
+<p>Сжимает строку, затем распаковывает ее, и проверяет, что результат в точности совпадает с исходной строкой.</p>
+</section>
+
+<section id="request">
+<h2>request / http_request</h2>
+<p>Отправляет HTTP(S) запрос и возвращает ответ.</p>
+<h3>Как проверяется в rUNC</h3>
+<p>Тест использует `httpbin.org` для проверки POST и GET запросов, а также обработки ошибок 404 и невалидных URL.</p>
+</section>
+
+<section id="file-ops">
+<h2>Файловые операции</h2>
+<p>Набор функций для работы с файлами: <code>writefile</code>, <code>readfile</code>, <code>appendfile</code>, <code>delfile</code>, <code>isfile</code>.</p>
+<h3>Как проверяется в rUNC</h3>
+<p>Тест последовательно выполняет все операции, проверяя создание, чтение, добавление, перезапись и удаление файла.</p>
+</section>
+
+<section id="folder-ops">
+<h2>Операции с папками</h2>
+<p>Набор функций для управления папками: <code>makefolder</code>, <code>isfolder</code>, <code>listfiles</code>, <code>delfolder</code>.</p>
+<h3>Как проверяется в rUNC</h3>
+<p>Тест проверяет создание, листинг содержимого и удаление папки.</p>
+</section>
+
+<section id="loadfile">
+<h2>loadfile</h2>
+<p>Читает файл, содержащий Lua-код, и компилирует его в функцию.</p>
+<h3>Как проверяется в rUNC</h3>
+<p>Создает файл с кодом, загружает его, проверяет, что функция работает. Затем перезаписывает файл неверным кодом и проверяет обработку ошибки.</p>
+</section>
+
+<section id="getcustomasset">
+<h2>getcustomasset</h2>
+<p>Преобразует локальный путь к файлу в формат `rbxasset://`.</p>
+<h3>Как проверяется в rUNC</h3>
+<p>Создает временный файл, вызывает для него `getcustomasset` и проверяет, что возвращаемая строка имеет валидный префикс.</p>
+</section>
+
 <section id="websocket">
 <h2>WebSocket</h2>
-<p>Клиентский класс для работы с WebSocket-соединениями. Поддерживает протоколы <b>wss</b> (безопасный) и <b>ws</b> (небезопасный).</p>
-<h3>Конструктор</h3>
-<div class="syntax-block">WebSocket.<span class="fn">connect</span>(url: <span class="ty">string</span>): <span class="ty">WebSocket</span></div>
-<h3>События и Методы</h3>
+<p>Клиентский класс для работы с WebSocket-соединениями.</p>
+<h3>Конструктор, События и Методы</h3>
 <ul>
-<li><code>OnMessage(message: string)</code>: Событие при получении сообщения.</li>
-<li><code>OnClose()</code>: Событие при закрытии соединения.</li>
-<li><code>Send(message: string)</code>: Метод для отправки сообщения.</li>
-<li><code>Close()</code>: Метод для закрытия соединения.</li>
+    <li><code>WebSocket.connect(url)</code>: Создает соединение.</li>
+    <li><code>OnMessage(message)</code>: Событие при получении сообщения.</li>
+    <li><code>OnClose()</code>: Событие при закрытии соединения.</li>
+    <li><code>Send(message)</code>: Отправка сообщения.</li>
+    <li><code>Close()</code>: Закрытие соединения.</li>
 </ul>
-<h3>Пример</h3>
-<div class="code-block-wrapper">
-<div class="code-block-header"><span>Подключение к эхо-серверу</span><button class="copy-button" onclick="copyCode(this)"><span>Копировать</span></button></div>
-<pre><code class="language-lua">local success, ws = pcall(WebSocket.connect, "wss://echo.websocket.events")
-
-if not success then
-    warn("WebSocket соединение прервано:", ws)
-    return
-end
-
-ws.OnMessage:Connect(function(message)
-    print("Получил: " .. message)
-end)
-
-ws:Send("Привет WebSocket!")</code></pre>
-</div>
 <h3>Как проверяется в rUNC</h3>
-<p>Тесты для `WebSocket` намеренно исключены из `rUNC` из-за частых проблем со стабильностью и вылетами в различных средах исполнения. Данный раздел носит исключительно информационный характер.</p>
+<p>Тесты для `WebSocket` исключены из `rUNC` из-за проблем со стабильностью. Раздел носит информационный характер.</p>
 </section>
+
 </div>
 </main>
 </div>
@@ -2997,82 +1455,121 @@ ws:Send("Привет WebSocket!")</code></pre>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    hljs.highlightAll();
+    const preloader = document.getElementById('preloader');
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+           preloader.classList.add('loaded');
+        }, 300); 
+    });
 
+
+    document.addEventListener('click', (e) => {
+        const ripple = document.createElement('span');
+        ripple.className = 'ripple';
+        document.body.appendChild(ripple);
+
+        ripple.style.left = `${e.clientX}px`;
+        ripple.style.top = `${e.clientY}px`;
+        
+        setTimeout(() => {
+            ripple.remove();
+        }, 750);
+    });
+
+
+    const themeToggle = document.getElementById('themeToggle');
+    const lightHljsTheme = document.getElementById('hljs-theme-light');
+    const darkHljsTheme = document.getElementById('hljs-theme-dark');
+
+    const applyTheme = (theme) => {
+        if (theme === 'light') {
+            document.documentElement.classList.add('light-theme');
+            lightHljsTheme.removeAttribute('disabled');
+            darkHljsTheme.setAttribute('disabled', 'disabled');
+        } else {
+            document.documentElement.classList.remove('light-theme');
+            darkHljsTheme.removeAttribute('disabled');
+            lightHljsTheme.setAttribute('disabled', 'disabled');
+        }
+    };
+
+    const savedTheme = localStorage.getItem('runc_theme') || 'dark';
+    applyTheme(savedTheme);
+
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = document.documentElement.classList.contains('light-theme') ? 'light' : 'dark';
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        localStorage.setItem('runc_theme', newTheme);
+        applyTheme(newTheme);
+    });
+
+
+    hljs.highlightAll();
     const searchBar = document.getElementById('searchBar');
     const navLinks = document.querySelectorAll('#sidebar-nav ul li a');
     const navGroups = document.querySelectorAll('#sidebar-nav .sidebar-group-title');
 
     searchBar.addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
+        const searchTerm = e.target.value.toLowerCase().trim();
         
         navLinks.forEach(link => {
             const linkText = link.textContent.toLowerCase();
             const parentLi = link.parentElement;
-            if (linkText.includes(searchTerm)) {
-                parentLi.style.display = '';
-            } else {
-                parentLi.style.display = 'none';
-            }
+            parentLi.style.display = linkText.includes(searchTerm) ? '' : 'none';
         });
 
         navGroups.forEach(group => {
             let nextElem = group.nextElementSibling;
             let hasVisibleLinks = false;
-            while (nextElem && (nextElem.tagName === 'LI' || nextElem.tagName === 'UL')) {
-                if (nextElem.tagName === 'LI' && nextElem.style.display !== 'none') {
-                   hasVisibleLinks = true;
-                   break;
+            while (nextElem) {
+                if(nextElem.classList.contains('sidebar-group-title')) break;
+                if(nextElem.tagName === 'LI' && nextElem.style.display !== 'none') {
+                    hasVisibleLinks = true;
+                    break;
                 }
-                let subLinks = nextElem.querySelectorAll('li');
-                 for (let i = 0; i < subLinks.length; i++) {
-                    if (subLinks[i].style.display !== 'none') {
-                        hasVisibleLinks = true;
-                        break;
-                    }
-                }
-                if(hasVisibleLinks) break;
                 nextElem = nextElem.nextElementSibling;
             }
             group.style.display = hasVisibleLinks ? '' : 'none';
         });
     });
-
+    
     const sections = document.querySelectorAll('main section');
     const mainContent = document.querySelector('.main-content');
     
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-            if (entry.isIntersecting) {
+            const id = entry.target.getAttribute('id');
+            const link = document.querySelector(`#sidebar-nav a[href="#${id}"]`);
+            if (entry.isIntersecting && link) {
                  document.querySelectorAll('#sidebar-nav a.active').forEach(a => a.classList.remove('active'));
-                const activeLink = document.querySelector(`#sidebar-nav a[href="#${entry.target.id}"]`);
-                if(activeLink) {
-                    activeLink.classList.add('active');
-                }
+                link.classList.add('active');
             }
         });
     }, {
         root: mainContent,
-        rootMargin: '0px 0px -60% 0px',
+        rootMargin: '0px 0px -75% 0px',
         threshold: 0
     });
 
-    sections.forEach(section => {
-        observer.observe(section);
-    });
+    sections.forEach(section => observer.observe(section));
 });
+
 
 function copyCode(button) {
     const wrapper = button.closest('.code-block-wrapper');
     const code = wrapper.querySelector('pre code');
     navigator.clipboard.writeText(code.innerText).then(() => {
+        const checkIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>`;
         const originalText = button.innerHTML;
-        button.innerHTML = '<span>Скопировано!</span>';
+        if(button.innerHTML.includes('Скопировано')) return;
+
+        button.innerHTML = checkIcon + '<span>Скопировано!</span>';
         setTimeout(() => {
             button.innerHTML = originalText;
         }, 2000);
     }).catch(err => {
         console.error('Ошибка копирования', err);
+        button.innerHTML = '<span>Ошибка!</span>';
     });
 }
 </script>
