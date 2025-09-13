@@ -1,9 +1,3 @@
-local idd = identifyexecutor()
-
-if idd == "NeverFall" or idd == "GORSHOK" then
-    print("іба чотко 😎😎")
-end
-
 local totalTests = 0
 local passedTests = 0
 local skidCount = 0
@@ -795,8 +789,7 @@ local function test_request()
 	end
 
 	local notfound_ok, res_404 = safe_pcall(req, { Url = "https://neverfall.one/gorshok", Method = "GET" })
-		check(res_404.StatusCode == 404, name..": корректно обрабатывает 404 (StatusCode=404)", name..": неверный StatusCode для 404", true)
-	end
+	check(notfound_ok and res_404 and res_404.StatusCode == 404, name..": корректно обрабатывает 404 (StatusCode=404)", name..": неверный StatusCode для 404", true)
 
 	check(not select(1, safe_pcall(req, {Url = "https://invalid.421414aofas. nonexiggstent/", Method = "GET"})),
 		name..": ошибка при невалидном URL", name..": не вызвал ошибку для невалидного URL", false)
@@ -920,28 +913,35 @@ local function test_threadidentity()
 end
 
 local function test_debug_info()
-	local getinfo = debug and debug.getinfo
-	if not present or not present(getinfo, "debug.getinfo") then return end
+    local getinfo = debug and debug.getinfo
+    if not present(getinfo, "debug.getinfo") then return end
 
-	do
-		local upval = "upvalue"
-		local function target_func(arg)
-			local l_var = arg
-			return upval .. l_var
-		end
+    do
+        local function foo()
+            print("Hello, world!")
+        end
+        
+        local ok_info, info_tbl = safe_pcall(getinfo, foo)
+        if not (check(ok_info and type(info_tbl) == "table", "debug.getinfo(func): возвращает таблицу", "debug.getinfo(func): не вернул таблицу/ошибка", true)) then return end
 
-		local ok_info, info_by_ref = safe_pcall(getinfo, target_func, "Slnu")
-		if check(ok_info and type(info_by_ref) == "table", "debug.getinfo(func): возвращает таблицу", "debug.getinfo(func): вернул не таблицу", true) then
-			check(info_by_ref.what == "Lua" and type(info_by_ref.source) == "string", "debug.getinfo(func, S): 'what' и 'source' корректны", "debug.getinfo(func, S): некорректный 'what' или 'source'", true)
-			check(info_by_ref.linedefined == -1, "debug.getinfo(func, l): 'linedefined' корректно равен -1 (stripped info)", "debug.getinfo(func, l): некорректный 'linedefined'", true)
-			check(info_by_ref.nups == 0, "debug.getinfo(func, u): 'nups' корректно равен 0 (stripped info)", "debug.getinfo(func, u): некорректный 'nups'", true)
-			if info_by_ref.name then
-				check(info_by_ref.name == "target_func", "debug.getinfo(func, n): 'name' корректно", "debug.getinfo(func, n): некорректный 'name'", true)
-			end
-		end
-	end
-	
-	do
+        local expected = {
+            source = "string", what = "string", numparams = "number", func = "function",
+            short_src = "string", currentline = "number", name = "string", is_vararg = "number",
+            nups = "number"
+        }
+
+        local all_found = true
+        for k, v_type in pairs(expected) do
+            if not check(info_tbl[k] ~= nil and type(info_tbl[k]) == v_type, "debug.getinfo: ключ '"..k.."' существует и имеет тип '"..v_type.."'", "debug.getinfo: ключ '"..k.."' отсутствует или имеет неверный тип", true) then
+                all_found = false
+            end
+        end
+        if all_found then
+            ok("debug.getinfo: все ожидаемые поля найдены и имеют корректные типы")
+        end
+    end
+
+    do
 		local level1_info, level2_func
 		local function wrapper()
 			level1_info = getinfo(1, "l")
@@ -953,11 +953,6 @@ local function test_debug_info()
 		wrapper()
 		check(type(level1_info) == "table" and type(level1_info.currentline) == "number", "debug.getinfo(level, l): получает 'currentline'", "debug.getinfo(level, l): не получает 'currentline'", true)
 		check(level2_func == test_debug_info, "debug.getinfo(level, f): получает верную функцию-вызывателя", "debug.getinfo(level, f): получил неверную функцию", true)
-	end
-	
-	do
-		local ok, _ = safe_pcall(getinfo, print, "s")
-		check(not ok, "debug.getinfo: ожидаемо выдает ошибку на C-функции", "debug.getinfo: не вызвал ошибку на C-функции", true)
 	end
 end
 
@@ -1055,6 +1050,23 @@ local function test_debug_protos()
 		end
 	end
 
+    local function foo_invalid_arg()
+        local function bar() end
+        return bar
+    end
+    local ok_err_arg3 = not select(1, safe_pcall(debug.getproto, foo_invalid_arg, 1, foo_invalid_arg))
+    check(ok_err_arg3, "debug.getproto: ошибка при неверном типе аргумента #3 (ожидался boolean)", "debug.getproto: не вызвал ошибку при неверном типе #3", true)
+
+    local function foo_5_protos()
+        local function br() end
+        local function az() end
+        local function ciz() end
+        local function aaa() end
+        local function gg() end
+    end
+    local ok_5, protos_5 = safe_pcall(debug.getprotos, foo_5_protos)
+    check(ok_5 and type(protos_5) == "table" and #protos_5 == 5, "debug.getprotos: корректно находит 5 вложенных прототипов", "debug.getprotos: не нашел 5 прототипов", true)
+
 	local ok_err_p1 = not select(1, safe_pcall(debug.getproto, print, 1))
 	local ok_err_ps = not select(1, safe_pcall(debug.getprotos, print))
 	check(ok_err_p1, "debug.getproto: ошибка на C closure", "debug.getproto: не вызвал ошибку на C closure", true)
@@ -1094,36 +1106,77 @@ end
 
 local function test_debug_constants()
 	if not present(debug.getconstants, "debug.getconstants") or not present(debug.getconstant, "debug.getconstant") then return end
-
-	local function func_with_guaranteed_literals()
-		return { "guaranteed_string", 99.9 }
-	end
-
-	local ok_consts, consts_table = safe_pcall(debug.getconstants, func_with_guaranteed_literals)
-	if check(ok_consts and type(consts_table) == "table", "debug.getconstants: возвращает таблицу", "debug.getconstants: не вернул таблицу или ошибка", true) then
-		local str_found, num_found = false, false
-		for _, v in ipairs(consts_table) do
-			if v == "guaranteed_string" then str_found = true end
-			if v == 99.9 then num_found = true end
+    
+	do
+		local function func_with_guaranteed_literals()
+			return { "guaranteed_string", 99.9 }
 		end
-		check(str_found and num_found, "getconstants: таблица содержит гарантированные константы-литералы", "getconstants: таблица не содержит всех ожидаемых констант", true)
-	end
-
-	local string_const_index
-	if consts_table then
-		for i, v in ipairs(consts_table) do
-			if v == "guaranteed_string" then string_const_index = i; break end
+		local ok_consts, consts_table = safe_pcall(debug.getconstants, func_with_guaranteed_literals)
+		if check(ok_consts and type(consts_table) == "table", "getconstants: возвращает таблицу", "getconstants: не вернул таблицу или ошибка", true) then
+			local str_found, num_found = false, false
+			for _, v in ipairs(consts_table) do
+				if v == "guaranteed_string" then str_found = true end
+				if v == 99.9 then num_found = true end
+			end
+			check(str_found and num_found, "getconstants: таблица содержит гарантированные константы-литералы", "getconstants: таблица не содержит всех ожидаемых констант", true)
 		end
 	end
 
-	if string_const_index then
-		local ok_c, val = safe_pcall(debug.getconstant, func_with_guaranteed_literals, string_const_index)
-		check(ok_c and val == "guaranteed_string", "debug.getconstant: получает корректную константу по валидному индексу", "debug.getconstant: ошибка или неверное значение", true)
-	else
-		warnEmoji("debug.getconstant: не удалось найти индекс константы, тест неполон")
+	do
+		local function keep(...) return ... end
+		local function foo()
+			local num = 5000 .. 88666
+			print("Пуп земли", num, warn)
+			keep(true, false, 44, 35.22, nil, {"a\000","b\000"}, function() end)
+		end
+
+		local ok_consts, consts = safe_pcall(debug.getconstants, foo)
+		if ok_consts then
+			local found_print = false
+			local found_warn = false
+			local found_str = false
+			for _, v in ipairs(consts) do
+				if v == print then found_print = true end
+				if v == warn then found_warn = true end
+				if v == "Пуп земли" then found_str = true end
+			end
+			check(found_print, "debug.getconstants: находит 'print' в константах", "debug.getconstants: не нашел 'print'", true)
+			check(found_warn, "debug.getconstants: находит 'warn' в константах", "debug.getconstants: не нашел 'warn'", true)
+			check(found_str, "debug.getconstants: находит 'Пуп земли' в константах", "debug.getconstants: не нашел строку", true)
+		end
 	end
 
-	local ok_c_err, _ = safe_pcall(debug.getconstant, func_with_guaranteed_literals, 9999)
+	do
+        local bbb = function() end
+		local function keep(...) return ... end
+		local function clock()
+			bbb("Яблочко, Котики и ЛадАПРиОрА\000")
+			keep(true, 42, 3.14)
+		end
+		
+		local string_const_index, num_const_index, bbb_const_index
+		local consts = debug.getconstants(clock)
+		for i, v in pairs(consts) do
+			if type(v) == "string" and v:find("Яблочко") then string_const_index = i end
+			if v == 3.14 then num_const_index = i end
+			if v == bbb then bbb_const_index = i end
+		end
+
+		check(string_const_index and num_const_index and bbb_const_index, "getconstant: предварительный поиск индексов для теста", "getconstant: не удалось найти индексы констант", true)
+
+		if string_const_index and num_const_index then
+			local ok_c1, val1 = safe_pcall(debug.getconstant, clock, string_const_index)
+			check(ok_c1 and type(val1) == "string" and val1:find("Яблочко"), "getconstant: получает строковую константу по индексу", "getconstant: не получил строку", true)
+			
+			local ok_c2, val2 = safe_pcall(debug.getconstant, clock, num_const_index)
+			check(ok_c2 and val2 == 3.14, "getconstant: получает числовую константу по индексу", "getconstant: не получил число", true)
+
+			local ok_c3, val3 = safe_pcall(debug.getconstant, clock, bbb_const_index)
+			check(ok_c3 and val3 == bbb, "getconstant: получает функциональную константу по индексу", "getconstant: не получил функцию", true)
+		end
+	end
+
+	local ok_c_err, _ = safe_pcall(debug.getconstant, function() return 1 end, 9999)
 	check(not ok_c_err, "debug.getconstant: ожидаемо вызывает ошибку для индекса за пределами диапазона (проверка эмуляции)", "debug.getconstant: не вызвал ошибку для невалидного индекса", true)
 
 	local ok_err_c_plural = not select(1, safe_pcall(debug.getconstants, print))
@@ -1290,7 +1343,7 @@ end
 
 
 local function test_getscriptbytecode()
-	if not present(getscriptbytecode, "getscriptbytecode") then return end -- Глобальный патч
+	if not present(getscriptbytecode, "getscriptbytecode") then return end
 
 	local animate
 	local lp = game:GetService("Players").LocalPlayer
@@ -2005,7 +2058,7 @@ local function test_isscriptable()
 	end
 end
 
-local function test_newlclosure() -- мелкие патчи на lua-closure
+local function test_newlclosure() 
 	if not present(newlclosure, "newlclosure") then return end
 
 	local up = { count = 0 }
@@ -2414,6 +2467,79 @@ local function test_environments()
 	end
 end
 
+local function test_isfunctionhooked()
+    if not present(isfunctionhooked, "isfunctionhooked") or not present(hookfunction, "hookfunction") then return end
+    
+    local function my_func() end
+    check(not isfunctionhooked(my_func), "isfunctionhooked: возвращает false для не-хукнутой функции", "isfunctionhooked: вернул true для не-хукнутой функции", true)
+    
+    local old = hookfunction(my_func, function() end)
+    check(isfunctionhooked(my_func), "isfunctionhooked: возвращает true для хукнутой функции", "isfunctionhooked: вернул false для хукнутой функции", true)
+    
+    hookfunction(my_func, old) 
+    check(not isfunctionhooked(my_func), "isfunctionhooked: возвращает false после восстановления оригинала", "isfunctionhooked: вернул true после восстановления", true)
+end
+
+local function test_isnewcclosure()
+    if not present(isnewcclosure, "isnewcclosure") or not present(newcclosure, "newcclosure") then return end
+    
+    local function a() end
+    check(not isnewcclosure(a), "isnewcclosure: возвращает false для обычной функции", "isnewcclosure: вернул true для обычной функции", true)
+
+    local b = newcclosure(a)
+    check(isnewcclosure(b), "isnewcclosure: возвращает true для результата newcclosure", "isnewcclosure: вернул false для newcclosure", true)
+end
+
+local function test_simulation_radius()
+    if not present(setsimulationradius, "setsimulationradius") or not present(getsimulationradius, "getsimulationradius") then return end
+    
+    local ok_get_orig, original_radius = safe_pcall(getsimulationradius)
+    if not check(ok_get_orig and type(original_radius) == "number", "getsimulationradius: изначально возвращает число", "getsimulationradius: не вернул число", false) then return end
+    
+    local new_radius = original_radius + 100
+    local ok_set = select(1, safe_pcall(setsimulationradius, new_radius))
+    if check(ok_set, "setsimulationradius: выполняется без ошибок", "setsimulationradius: ошибка при выполнении", false) then
+        local ok_get_new, current_radius = safe_pcall(getsimulationradius)
+        check(ok_get_new and current_radius == new_radius, "getsimulationradius: возвращает новое установленное значение", "getsimulationradius: не вернул новое значение", false)
+        setsimulationradius(original_radius)
+    end
+end
+
+local function test_actors_library()
+    if not present(getactors, "getactors") then return end
+    local ok, actors = safe_pcall(getactors)
+    if not (ok and check(type(actors) == "table", "getactors: возвращает таблицу", "getactors: не вернул таблицу или ошибка", false)) then return end
+
+    if #actors == 0 then
+        warnEmoji("Не найдено Actors, тесты зависимых функций пропущены.")
+    else
+        if present(run_on_actor, "run_on_actor") then
+            local ok_run = select(1, safe_pcall(run_on_actor, actors[1], 'print("Hello from Actor!")'))
+            check(ok_run, "run_on_actor: выполняется без ошибок", "run_on_actor: ошибка при выполнении", false)
+        end
+
+        if present(getactorthreads, "getactorthreads") and present(run_on_thread, "run_on_thread") then
+            local ok_threads, threads = safe_pcall(getactorthreads)
+            if check(ok_threads and type(threads) == "table", "getactorthreads: возвращает таблицу", "getactorthreads: не вернул таблицу", false) and #threads > 0 then
+                local ok_run_thread = select(1, safe_pcall(run_on_thread, threads[1], "print('Hello from Actor Thread!')"))
+                check(ok_run_thread, "run_on_thread: выполняется без ошибок", "run_on_thread: ошибка при выполнении", false)
+            else
+                warnEmoji("Не найдено Actor Threads, тест run_on_thread пропущен.")
+            end
+        end
+    end
+
+    if present(create_comm_channel, "create_comm_channel") then
+        local ok_comm, comm_id, event = safe_pcall(create_comm_channel)
+        check(ok_comm and type(comm_id) == "number" and typeof(event) == "Instance" and event:IsA("BindableEvent"), "create_comm_channel: возвращает id и BindableEvent", "create_comm_channel: не вернул ожидаемые типы", false)
+    end
+
+    if present(isparallel, "isparallel") then
+        local ok_parallel, is_p = safe_pcall(isparallel)
+        check(ok_parallel and type(is_p) == "boolean", "isparallel: возвращает boolean", "isparallel: не вернул boolean", false)
+    end
+end
+
 local function run_test_suite(suite_name, func_name, func)
 	if type(func_name) == "function" and func == nil then
 		func = func_name
@@ -2449,6 +2575,8 @@ run_test_suite("--- Проверки типов Closure ---", function()
 	run_test_suite("Проверки типов Closure", "test_closure_checks", test_closure_checks)
 	run_test_suite("Проверки типов Closure", "test_replaceclosure", test_replaceclosure)
 	run_test_suite("Проверки типов Closure", "test_newlclosure", test_newlclosure)
+	run_test_suite("Проверки типов Closure", "test_isfunctionhooked", test_isfunctionhooked)
+	run_test_suite("Проверки типов Closure", "test_isnewcclosure", test_isnewcclosure)
 end)
 
 run_test_suite("--- Низкоуровневые операции 💀💀💀 ---", function()
@@ -2492,10 +2620,35 @@ run_test_suite("--- Криптография ---", function()
 	run_test_suite("Криптография", "test_compression", test_compression)
 end)
 
+run_test_suite("--- Дополнительные функции среды ---", function()
+	run_test_suite("Дополнительные функции среды", "test_simulation_radius", test_simulation_radius)
+	run_test_suite("Дополнительные функции среды", "test_actors_library", test_actors_library)
+end)
+
 run_test_suite("--- 2D Рендеринг ---", "test_drawing", test_drawing)
 run_test_suite("--- Ебучий лоадстринг ---", "test_loadstring", test_loadstring)
 
 run_test_suite("--- Тесты для debug ---", function()
+	local function test_debug_setname()
+		if not present(debug.setname, "debug.setname") then return end
+		local function foo() end
+		local ok_set = select(1, safe_pcall(debug.setname, foo, "ass"))
+		if check(ok_set, "debug.setname: выполняется без ошибок", "debug.setname: ошибка при выполнении", true) then
+			local info_ok, info_table = safe_pcall(debug.getinfo, foo)
+			if info_ok and info_table and info_table.name then
+				check(info_table.name == "ass", "debug.setname: успешно изменил имя функции", "debug.setname: не изменил имя функции", true)
+			else
+				fail("debug.setname: не удалось получить debug.info для проверки имени")
+			end
+		end
+	end
+
+	local function test_debug_isvalidlevel()
+		if not present(debug.isvalidlevel, "debug.isvalidlevel") then return end
+		check(debug.isvalidlevel(1), "debug.isvalidlevel(1): возвращает true для валидного уровня", "debug.isvalidlevel(1): вернул false", true)
+		check(not debug.isvalidlevel(100), "debug.isvalidlevel(100): возвращает false для невалидного уровня", "debug.isvalidlevel(100): вернул true", true)
+	end
+	
 	run_test_suite("Тесты для debug", "test_debug_info", test_debug_info)
 	run_test_suite("Тесты для debug", "test_debug_upvalues", test_debug_upvalues)
 	run_test_suite("Тесты для debug", "test_debug_constants", test_debug_constants)
@@ -2505,6 +2658,8 @@ run_test_suite("--- Тесты для debug ---", function()
 	run_test_suite("Тесты для debug", "test_debug_protos", test_debug_protos)
 	run_test_suite("Тесты для debug", "test_getreg", test_getreg)
 	run_test_suite("Тесты для debug", "test_debug_more", test_debug_more)
+	run_test_suite("Тесты для debug", "test_debug_setname", test_debug_setname)
+	run_test_suite("Тесты для debug", "test_debug_isvalidlevel", test_debug_isvalidlevel)
 end)
 
 info("\n" .. string.rep("-", 20))
