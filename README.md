@@ -83,9 +83,9 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
     <tr>
       <td><b>bunni.lol</b></td>
       <td>🖥 ПК</td>
-      <td><img src="https://img.shields.io/badge/295%2F317-93%25-00ff99"></td>
-      <td><img src="https://img.shields.io/badge/16%2F317-5%25-00ff99"></td>
-      <td><img src="https://img.shields.io/badge/Обновлено-09.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/320%2F345-92%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/20%2F345-5%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-17.09.2025-1e90ff"></td>
       <td><img src="https://img.shields.io/badge/Отличный%20executor-00ff99"></td>
     </tr>
     <tr>
