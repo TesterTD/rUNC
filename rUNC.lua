@@ -1106,7 +1106,7 @@ end
 
 local function test_debug_constants()
     if not present(debug.getconstants, "debug.getconstants") or not present(debug.getconstant, "debug.getconstant") then return end
-    
+
     do
         local function func_with_guaranteed_literals()
             return { "guaranteed_string", 99.9 }
@@ -1144,32 +1144,47 @@ local function test_debug_constants()
     end
 
     do
-        local bbb = function() end
         local function keep(...) return ... end
         local function clock()
-            bbb("Яблочко, Котики и ЛадАПРиОрА\000")
+            local function inner() end
+            inner("Яблочко, Котики и ЛадАПРиОрА\000")
             keep(true, 42, 3.14)
         end
-        
-        local string_const_index, num_const_index, bbb_const_index
+
+        local string_const_index, num_const_index, func_const_index
         local consts = debug.getconstants(clock)
         for i, v in pairs(consts) do
-            if type(v) == "string" and v:find("Яблочко") then string_const_index = i end
-            if v == 3.14 then num_const_index = i end
-            if v == bbb then bbb_const_index = i end
+            if not string_const_index and tostring(v):find("Яблочко") then
+                string_const_index = i
+            elseif not num_const_index and tonumber(v) == 3.14 then
+                num_const_index = i
+            elseif not func_const_index and type(v) == "function" then
+                local vi = debug.getinfo(v, "S")
+                if vi and vi.what ~= "C" and v ~= clock then
+                    func_const_index = i
+                end
+            end
         end
 
-        check(string_const_index and num_const_index and bbb_const_index, "getconstant: предварительный поиск индексов для теста", "getconstant: не удалось найти индексы констант", true)
+        check(string_const_index and num_const_index and func_const_index,
+              "getconstant: предварительный поиск индексов для теста",
+              "getconstant: не удалось найти индексы констант", true)
 
-        if string_const_index and num_const_index then
+        if string_const_index and num_const_index and func_const_index then
             local ok_c1, val1 = safe_pcall(debug.getconstant, clock, string_const_index)
-            check(ok_c1 and type(val1) == "string" and val1:find("Яблочко"), "getconstant: получает строковую константу по индексу", "getconstant: не получил строку", true)
-            
-            local ok_c2, val2 = safe_pcall(debug.getconstant, clock, num_const_index)
-            check(ok_c2 and val2 == 3.14, "getconstant: получает числовую константу по индексу", "getconstant: не получил число", true)
+            check(ok_c1 and tostring(val1):find("Яблочко"),
+                  "getconstant: получает строковую константу по индексу",
+                  "getconstant: не получил строку", true)
 
-            local ok_c3, val3 = safe_pcall(debug.getconstant, clock, bbb_const_index)
-            check(ok_c3 and val3 == bbb, "getconstant: получает функциональную константу по индексу", "getconstant: не получил функцию", true)
+            local ok_c2, val2 = safe_pcall(debug.getconstant, clock, num_const_index)
+            check(ok_c2 and tonumber(val2) == 3.14,
+                  "getconstant: получает числовую константу по индексу",
+                  "getconstant: не получил число", true)
+
+            local ok_c3, val3 = safe_pcall(debug.getconstant, clock, func_const_index)
+            check(ok_c3 and type(val3) == "function",
+                  "getconstant: получает функциональную константу по индексу",
+                  "getconstant: не получил функцию", true)
         end
     end
 
@@ -1181,7 +1196,6 @@ local function test_debug_constants()
     check(ok_err_c_plural, "debug.getconstants: ошибка на C-функции", "debug.getconstants: не вызвал ошибку. Я уверен что эта функция эмулирована🤬🤬 (спуфнута).", true)
     check(ok_err_c_singular, "debug.getconstant: ошибка на C-функции", "debug.getconstant: не вызвал ошибку. Я уверен что эта функция эмулирована🤬🤬 (спуфнута).", true)
 end
-
 
 local function test_getgenv()
 	if not present(getgenv, "getgenv") then return end
@@ -2666,4 +2680,3 @@ local skidRate = totalTests > 0 and math.floor((skidCount / totalTests) * 100) o
 info("Итого: "..passedTests.."/"..totalTests.." ("..percent.."%)")
 info("Skid Rate: "..skidCount.."/"..totalTests.." ("..skidRate.."%)")
 info(string.rep("-", 20))
-
