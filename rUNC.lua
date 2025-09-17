@@ -1105,85 +1105,83 @@ local function test_getreg()
 end
 
 local function test_debug_constants()
-	if not present(debug.getconstants, "debug.getconstants") or not present(debug.getconstant, "debug.getconstant") then return end
+    if not present(debug.getconstants, "debug.getconstants") or not present(debug.getconstant, "debug.getconstant") then return end
     
-	do
-		local function func_with_guaranteed_literals()
-			return { "guaranteed_string", 99.9 }
-		end
-		local ok_consts, consts_table = safe_pcall(debug.getconstants, func_with_guaranteed_literals)
-		if check(ok_consts and type(consts_table) == "table", "getconstants: возвращает таблицу", "getconstants: не вернул таблицу или ошибка", true) then
-			local str_found, num_found = false, false
-			for _, v in ipairs(consts_table) do
-				if v == "guaranteed_string" then str_found = true end
-				if v == 99.9 then num_found = true end
-			end
-			check(str_found and num_found, "getconstants: таблица содержит гарантированные константы-литералы", "getconstants: таблица не содержит всех ожидаемых констант", true)
-		end
-	end
+    do
+        local function func_with_guaranteed_literals()
+            return { "guaranteed_string", 99.9 }
+        end
+        local ok_consts, consts_table = safe_pcall(debug.getconstants, func_with_guaranteed_literals)
+        if check(ok_consts and type(consts_table) == "table", "getconstants: возвращает таблицу", "getconstants: не вернул таблицу или ошибка", true) then
+            local str_found, num_found = false, false
+            for _, v in ipairs(consts_table) do
+                if v == "guaranteed_string" then str_found = true end
+                if v == 99.9 then num_found = true end
+            end
+            check(str_found and num_found, "getconstants: таблица содержит гарантированные константы-литералы", "getconstants: таблица не содержит всех ожидаемых констант", true)
+        end
+    end
 
-	do
-		local function keep(...) return ... end
-		local function foo()
-			local num = 5000 .. 88666
-			print("Пуп земли", num, warn)
-			keep(true, false, 44, 35.22, nil, {"a\000","b\000"}, function() end)
-		end
+    do
+        local function keep(...) return ... end
+        local function foo()
+            local num = 5000 .. 88666
+            print("Пуп земли", num, warn)
+            keep(true, false, 44, 35.22, nil, {"a\000","b\000"}, function() end)
+        end
 
-		local ok_consts, consts = safe_pcall(debug.getconstants, foo)
-		if ok_consts then
-			local found_print = false
-			local found_warn = false
-			local found_str = false
-			for _, v in ipairs(consts) do
-				if v == print then found_print = true end
-				if v == warn then found_warn = true end
-				if v == "Пуп земли" then found_str = true end
-			end
-			check(found_print, "debug.getconstants: находит 'print' в константах", "debug.getconstants: не нашел 'print'", true)
-			check(found_warn, "debug.getconstants: находит 'warn' в константах", "debug.getconstants: не нашел 'warn'", true)
-			check(found_str, "debug.getconstants: находит 'Пуп земли' в константах", "debug.getconstants: не нашел строку", true)
-		end
-	end
+        local ok_consts, consts = safe_pcall(debug.getconstants, foo)
+        if ok_consts then
+            local found_print = false
+            local found_warn = false
+            local found_str = false
+            for _, v in ipairs(consts) do
+                if v == print then found_print = true end
+                if v == warn then found_warn = true end
+                if v == "Пуп земли" then found_str = true end
+            end
+        end
+    end
 
-	do
+    do
         local bbb = function() end
-		local function keep(...) return ... end
-		local function clock()
-			bbb("Яблочко, Котики и ЛадАПРиОрА\000")
-			keep(true, 42, 3.14)
-		end
-		
-		local string_const_index, num_const_index, bbb_const_index
-		local consts = debug.getconstants(clock)
-		for i, v in pairs(consts) do
-			if type(v) == "string" and v:find("Яблочко") then string_const_index = i end
-			if v == 3.14 then num_const_index = i end
-			if v == bbb then bbb_const_index = i end
-		end
+        local function keep(...) return ... end
+        local function clock()
+            bbb("Яблочко, Котики и ЛадАПРиОрА\000")
+            keep(true, 42, 3.14)
+        end
+        
+        local string_const_index, num_const_index, bbb_const_index
+        local consts = debug.getconstants(clock)
+        for i, v in pairs(consts) do
+            if type(v) == "string" and v:find("Яблочко") then string_const_index = i end
+            if v == 3.14 then num_const_index = i end
+            if v == bbb then bbb_const_index = i end
+        end
 
-		check(string_const_index and num_const_index and bbb_const_index, "getconstant: предварительный поиск индексов для теста", "getconstant: не удалось найти индексы констант", true)
+        check(string_const_index and num_const_index and bbb_const_index, "getconstant: предварительный поиск индексов для теста", "getconstant: не удалось найти индексы констант", true)
 
-		if string_const_index and num_const_index then
-			local ok_c1, val1 = safe_pcall(debug.getconstant, clock, string_const_index)
-			check(ok_c1 and type(val1) == "string" and val1:find("Яблочко"), "getconstant: получает строковую константу по индексу", "getconstant: не получил строку", true)
-			
-			local ok_c2, val2 = safe_pcall(debug.getconstant, clock, num_const_index)
-			check(ok_c2 and val2 == 3.14, "getconstant: получает числовую константу по индексу", "getconstant: не получил число", true)
+        if string_const_index and num_const_index then
+            local ok_c1, val1 = safe_pcall(debug.getconstant, clock, string_const_index)
+            check(ok_c1 and type(val1) == "string" and val1:find("Яблочко"), "getconstant: получает строковую константу по индексу", "getconstant: не получил строку", true)
+            
+            local ok_c2, val2 = safe_pcall(debug.getconstant, clock, num_const_index)
+            check(ok_c2 and val2 == 3.14, "getconstant: получает числовую константу по индексу", "getconstant: не получил число", true)
 
-			local ok_c3, val3 = safe_pcall(debug.getconstant, clock, bbb_const_index)
-			check(ok_c3 and val3 == bbb, "getconstant: получает функциональную константу по индексу", "getconstant: не получил функцию", true)
-		end
-	end
+            local ok_c3, val3 = safe_pcall(debug.getconstant, clock, bbb_const_index)
+            check(ok_c3 and val3 == bbb, "getconstant: получает функциональную константу по индексу", "getconstant: не получил функцию", true)
+        end
+    end
 
-	local ok_c_err, _ = safe_pcall(debug.getconstant, function() return 1 end, 9999)
-	check(not ok_c_err, "debug.getconstant: ожидаемо вызывает ошибку для индекса за пределами диапазона (проверка эмуляции)", "debug.getconstant: не вызвал ошибку для невалидного индекса", true)
+    local ok_c_err, _ = safe_pcall(debug.getconstant, function() return 1 end, 9999)
+    check(not ok_c_err, "debug.getconstant: ожидаемо вызывает ошибку для индекса за пределами диапазона (проверка эмуляции)", "debug.getconstant: не вызвал ошибку для невалидного индекса", true)
 
-	local ok_err_c_plural = not select(1, safe_pcall(debug.getconstants, print))
-	local ok_err_c_singular = not select(1, safe_pcall(debug.getconstant, print, 1))
-	check(ok_err_c_plural, "debug.getconstants: ошибка на C-функции", "debug.getconstants: не вызвал ошибку. Я уверен что эта функция эмулирована🤬🤬 (спуфнута).", true)
-	check(ok_err_c_singular, "debug.getconstant: ошибка на C-функции", "debug.getconstant: не вызвал ошибку. Я уверен что эта функция эмулирована🤬🤬 (спуфнута).", true)
+    local ok_err_c_plural = not select(1, safe_pcall(debug.getconstants, print))
+    local ok_err_c_singular = not select(1, safe_pcall(debug.getconstant, print, 1))
+    check(ok_err_c_plural, "debug.getconstants: ошибка на C-функции", "debug.getconstants: не вызвал ошибку. Я уверен что эта функция эмулирована🤬🤬 (спуфнута).", true)
+    check(ok_err_c_singular, "debug.getconstant: ошибка на C-функции", "debug.getconstant: не вызвал ошибку. Я уверен что эта функция эмулирована🤬🤬 (спуфнута).", true)
 end
+
 
 local function test_getgenv()
 	if not present(getgenv, "getgenv") then return end
@@ -2668,3 +2666,4 @@ local skidRate = totalTests > 0 and math.floor((skidCount / totalTests) * 100) o
 info("Итого: "..passedTests.."/"..totalTests.." ("..percent.."%)")
 info("Skid Rate: "..skidCount.."/"..totalTests.." ("..skidRate.."%)")
 info(string.rep("-", 20))
+
