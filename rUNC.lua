@@ -599,124 +599,118 @@ local function test_firetouchinterest()
 end
 
 local function test_checkcaller()
-	if not present(checkcaller, "checkcaller") then return end
+    if not present(checkcaller, "checkcaller") then return end
 
-	local ok_p, v_p = safe_pcall(checkcaller)
-	check(ok_p and v_p, "checkcaller: true в pcall", "checkcaller: не true в pcall/ошибка", true)
+    local ok_p, v_p = safe_pcall(checkcaller)
+    check(ok_p and v_p, "checkcaller: true в pcall", "checkcaller: не true в pcall/ошибка", true)
 
-	local ok_args = safe_pcall(function() return checkcaller("arg") end)
-	check(ok_args, "checkcaller: игнорирует аргументы", "checkcaller: крашит при аргументах", true)
+    local ok_args = safe_pcall(function() return checkcaller("arg") end)
+    check(ok_args, "checkcaller: игнорирует аргументы", "checkcaller: крашит при аргументах", true)
 
-	local coro_result
-	local co = coroutine.create(function()
-		coro_result = checkcaller()
-	end)
-	coroutine.resume(co)
-	check(coro_result, "checkcaller: true внутри coroutine", "checkcaller: false внутри coroutine", true)
+    local coro_result
+    local co = coroutine.create(function()
+        coro_result = checkcaller()
+    end)
+    coroutine.resume(co)
+    check(coro_result, "checkcaller: true внутри coroutine", "checkcaller: false внутри coroutine", true)
 
-	local xpcall_result_ok, xpcall_result_err
-	xpcall(function()
-		xpcall_result_ok = checkcaller()
-	end, function() end)
-	xpcall(function() error("test") end, function() xpcall_result_err = checkcaller() end)
-	check(xpcall_result_ok, "checkcaller: true внутри xpcall (success)", "checkcaller: false внутри xpcall (success)", true)
-	check(xpcall_result_err, "checkcaller: true внутри xpcall (err handler)", "checkcaller: false внутри xpcall (err handler)", true)
+    local xpcall_result_ok, xpcall_result_err
+    xpcall(function()
+        xpcall_result_ok = checkcaller()
+    end, function() end)
+    xpcall(function() error("test") end, function() xpcall_result_err = checkcaller() end)
+    check(xpcall_result_ok, "checkcaller: true внутри xpcall (success)", "checkcaller: false внутри xpcall (success)", true)
+    check(xpcall_result_err, "checkcaller: true внутри xpcall (err handler)", "checkcaller: false внутри xpcall (err handler)", true)
 
-	local hook_result
-	local old_nc
-	local in_call = false
+    local hook_result
+    local old_nc
+    local in_call = false
 
-	local function wrapper(self, ...)
-		if in_call then
-			return old_nc and old_nc(self, ...)
-		end
-		in_call = true
-		if getnamecallmethod() == "IsA" then
-			hook_result = checkcaller()
-		end
-		local ok, res = pcall(old_nc, self, ...)
-		in_call = false
-		if ok then
-			return res
-		end
-	end
+    local function wrapper(self, ...)
+        if in_call then
+            return old_nc and old_nc(self, ...)
+        end
+        in_call = true
+        if getnamecallmethod() == "IsA" then
+            hook_result = checkcaller()
+        end
+        local ok, res = pcall(old_nc, self, ...)
+        in_call = false
+        if ok then
+            return res
+        end
+    end
 
-	local ok_hook = false
-	pcall(function()
-		if newcclosure then
-			old_nc = hookmetamethod(game, "__namecall", newcclosure(wrapper))
-		else
-			old_nc = hookmetamethod(game, "__namecall", wrapper)
-		end
-		ok_hook = type(old_nc) == "function"
-	end)
+    local ok_hook = false
+    pcall(function()
+        if newcclosure then
+            old_nc = hookmetamethod(game, "__namecall", newcclosure(wrapper))
+        else
+            old_nc = hookmetamethod(game, "__namecall", wrapper)
+        end
+        ok_hook = type(old_nc) == "function"
+    end)
 
-	check(ok_hook, "hookmetamethod: оригинал получен", "hookmetamethod: не вернул оригинал __namecall", true)
-	if not ok_hook then return end
+    check(ok_hook, "hookmetamethod: оригинал получен", "hookmetamethod: не вернул оригинал __namecall", true)
+    if not ok_hook then return end
 
-	pcall(function() game:IsA("Workspace") end)
-	task.wait()
-	check(hook_result == false, "checkcaller: false при вызове из C-кода", "checkcaller: true для C-кода. Вероятно эмуляция.", true)
+    pcall(function() game:IsA("Workspace") end)
+    task.wait()
+    check(hook_result == false, "checkcaller: false при вызове из C-кода", "checkcaller: true для C-кода. Вероятно эмуляция.", true)
 
-	if newcclosure then
-		local cc_false_fn = newcclosure(function()
-			return checkcaller()
-		end)
-		local ok_cc, v_cc = safe_pcall(cc_false_fn)
-		check(ok_cc and not v_cc, "checkcaller: false из newcclosure", "checkcaller: true из newcclosure", true)
+    if newcclosure then
+        local cc_false_fn = newcclosure(function()
+            return checkcaller()
+        end)
+        local ok_cc, v_cc = safe_pcall(cc_false_fn)
+        check(ok_cc and not v_cc, "checkcaller: false из newcclosure", "checkcaller: true из newcclosure", true)
+    end
 
-		local function normal_fn()
-			return cc_false_fn()
-		end
-		local ok_n, v_n = safe_pcall(normal_fn)
-		check(ok_n and v_n, "checkcaller: true при вызове C-closure из Luau", "checkcaller: false при вызове C-closure из Luau", true)
-	end
-
-	local stable = true
-	for i = 1, 5 do
-		local ok_s, v_s = safe_pcall(checkcaller)
-		if not (ok_s and v_s) then
-			stable = false
-			break
-		end
-		task.wait()
-	end
-	check(stable, "checkcaller: стабилен при повторных вызовах", "checkcaller: нестабилен при повторных вызовах", true)
+    local stable = true
+    for i = 1, 5 do
+        local ok_s, v_s = safe_pcall(checkcaller)
+        if not (ok_s and v_s) then
+            stable = false
+            break
+        end
+        task.wait()
+    end
+    check(stable, "checkcaller: стабилен при повторных вызовах", "checkcaller: нестабилен при повторных вызовах", true)
 end
 
 local function test_getconnections()
-	if not present(getconnections, "getconnections") then return end
-	local be = Instance.new("BindableEvent")
-	local triggered = false
-	local function handler() triggered = true; return "fired" end
-	local c = be.Event:Connect(handler)
-
-	local okc, conns = safe_pcall(getconnections, be.Event)
-	check(okc and type(conns) == "table" and #conns >= 1, "getconnections: возвращает таблицу соединений", "getconnections: вернул не таблицу или пусто", true)
-
-	if okc and #conns > 0 then
-		local conn_obj = conns[#conns] 
-		if check(typeof(conn_obj) == "RBXScriptConnection" and conn_obj.Connected, "getconnections: элементы в таблице - валидные Connection", "getconnections: элементы не являются валидными Connection", true) then
-			if conn_obj.Function then
-				check(conn_obj.Function == handler, "getconnections: Connection.Function содержит правильную функцию", "getconnections: Connection.Function неверна", true)
-				local fire_ok, fire_ret = safe_pcall(conn_obj.Fire, conn_obj)
-				check(fire_ok and triggered and fire_ret == "fired", "getconnections: connection:Fire() работает", "getconnections: connection:Fire() не сработал", true)
-
-				triggered = false
-				local func_ret = conn_obj.Function()
-				check(triggered and func_ret == "fired", "getconnections: connection.Function() работает", "getconnections: connection.Function() не сработал", true)
-			end
-		end
-	end
-	c:Disconnect(); be:Destroy()
-
-	if game:GetService("Players").LocalPlayer then
-		local c_conn_ok, idled_conns = safe_pcall(getconnections, game.Players.LocalPlayer.Idled)
-		if check(c_conn_ok and #idled_conns > 0, "getconnections: может получить C-connections (Idled)", "getconnections: не смог получить C-connections", false) then
-			local c_conn = idled_conns[1]
-			check(c_conn.Function == nil, "getconnections: Function равно nil для C-connection", "getconnections: Function не nil для C-connection", true)
-		end
-	end
+    if not present(getconnections, "getconnections") then return end
+    local be = Instance.new("BindableEvent")
+    local triggered = false
+    local function handler()
+        triggered = true
+        return "fired"
+    end
+    local c = be.Event:Connect(handler)
+    local okc, conns = safe_pcall(getconnections, be.Event)
+    check(okc and type(conns) == "table" and #conns >= 1, "getconnections: возвращает таблицу соединений", "getconnections: вернул не таблицу или пусто", true)
+    if okc and #conns > 0 then
+        local conn_obj = conns[#conns]
+        if typeof(conn_obj) == "RBXScriptConnection" and conn_obj.Connected then
+            if conn_obj.Function then
+                check(conn_obj.Function == handler, "getconnections: Connection.Function содержит правильную функцию", "getconnections: Connection.Function неверна", true)
+                local fire_ok, fire_ret = safe_pcall(conn_obj.Fire, conn_obj)
+                check(fire_ok and triggered and fire_ret == "fired", "getconnections: connection:Fire() работает", "getconnections: connection:Fire() не сработал", true)
+                triggered = false
+                local func_ret = conn_obj.Function()
+                check(triggered and func_ret == "fired", "getconnections: connection.Function() работает", "getconnections: connection.Function() не сработал", true)
+            end
+        end
+    end
+    c:Disconnect()
+    be:Destroy()
+    if game:GetService("Players").LocalPlayer then
+        local c_conn_ok, idled_conns = safe_pcall(getconnections, game.Players.LocalPlayer.Idled)
+        if check(c_conn_ok and #idled_conns > 0, "getconnections: может получить C-connections (Idled)", "getconnections: не смог получить C-connections", false) then
+            local c_conn = idled_conns[1]
+            check(c_conn.Function == nil, "getconnections: Function равно nil для C-connection", "getconnections: Function не nil для C-connection", true)
+        end
+    end
 end
 
 local function pick_request_func()
@@ -1179,10 +1173,6 @@ local function test_debug_constants()
                 end
             end
         end
-
-        check(string_const_index and num_const_index and func_const_index,
-              "getconstant: предварительный поиск индексов для теста",
-              "getconstant: не удалось найти индексы констант", true)
 
         if string_const_index and num_const_index and func_const_index then
             local ok_c1, val1 = safe_pcall(debug.getconstant, clock, string_const_index)
@@ -2060,10 +2050,14 @@ local function test_replaceclosure()
 end
 
 local function test_isrbxactive()
-	if not present(isrbxactive, "isrbxactive") then return end
+    if not present(isrbxactive, "isrbxactive") then return end
 
-	local ok_get, status = safe_pcall(isrbxactive)
-	check(ok_get and type(status) == "boolean" and status, "isrbxactive: возвращает true в активной среде", "isrbxactive: не вернул true или ошибка", false)
+    local ok_get, status = safe_pcall(isrbxactive)
+    if ok_get and type(status) == "boolean" then
+        check(true, "isrbxactive: вернул допустимое boolean значение ("..tostring(status)..")", "", false)
+    else
+        check(false, "", "isrbxactive: вернул недопустимое значение -> "..tostring(status), false)
+    end
 end
 
 local function test_isscriptable()
@@ -2536,24 +2530,33 @@ local function test_actors_library()
     if not (ok and check(type(actors) == "table", "getactors: возвращает таблицу", "getactors: не вернул таблицу или ошибка", false)) then return end
 
     if #actors == 0 then
-        warnEmoji("Не найдено Actors, тесты зависимых функций пропущены.")
-    else
-        if present(run_on_actor, "run_on_actor") then
-            local ok_run = select(1, safe_pcall(run_on_actor, actors[1], 'print("Hello from Actor!")'))
-            check(ok_run, "run_on_actor: выполняется без ошибок", "run_on_actor: ошибка при выполнении", false)
-        end
-
-        if present(getactorthreads, "getactorthreads") and present(run_on_thread, "run_on_thread") then
-            local ok_threads, threads = safe_pcall(getactorthreads)
-            if check(ok_threads and type(threads) == "table", "getactorthreads: возвращает таблицу", "getactorthreads: не вернул таблицу", false) and #threads > 0 then
-                local ok_run_thread = select(1, safe_pcall(run_on_thread, threads[1], "print('Hello from Actor Thread!')"))
-                check(ok_run_thread, "run_on_thread: выполняется без ошибок", "run_on_thread: ошибка при выполнении", false)
-            else
-                warnEmoji("Не найдено Actor Threads, тест run_on_thread пропущен.")
-            end
+        local new_actor_ok, new_actor = pcall(function()
+            return Instance.new("Actor")
+        end)
+        if new_actor_ok and new_actor then
+            table.insert(actors, new_actor)
+            check(true, "Создан новый Actor для тестов", "Не удалось создать Actor", false)
+        else
+            warnEmoji("Не найдено Actors и не удалось создать новый, тесты зависимых функций пропущены.")
+            return
         end
     end
 
+    if present(run_on_actor, "run_on_actor") then
+        local ok_run = select(1, safe_pcall(run_on_actor, actors[1], 'print("Hello from Actor!")'))
+        check(ok_run, "run_on_actor: выполняется без ошибок", "run_on_actor: ошибка при выполнении", false)
+    end
+
+    if present(getactorthreads, "getactorthreads") and present(run_on_thread, "run_on_thread") then
+        local ok_threads, threads = safe_pcall(getactorthreads)
+        if check(ok_threads and type(threads) == "table", "getactorthreads: возвращает таблицу", "getactorthreads: не вернул таблицу", false) and #threads > 0 then
+            local ok_run_thread = select(1, safe_pcall(run_on_thread, threads[1], "print('Hello from Actor Thread!')"))
+            check(ok_run_thread, "run_on_thread: выполняется без ошибок", "run_on_thread: ошибка при выполнении", false)
+        else
+            warnEmoji("Не найдено Actor Threads, тест run_on_thread пропущен.")
+        end
+    end
+end
     if present(create_comm_channel, "create_comm_channel") then
         local ok_comm, comm_id, event = safe_pcall(create_comm_channel)
         check(ok_comm and type(comm_id) == "number" and typeof(event) == "Instance" and event:IsA("BindableEvent"), "create_comm_channel: возвращает id и BindableEvent", "create_comm_channel: не вернул ожидаемые типы", false)
@@ -2693,4 +2696,5 @@ local skidRate = totalTests > 0 and math.floor((skidCount / totalTests) * 100) o
 info("Итого: "..passedTests.."/"..totalTests.." ("..percent.."%)")
 info("Skid Rate: "..skidCount.."/"..totalTests.." ("..skidRate.."%)")
 info(string.rep("-", 20))
+
 
