@@ -131,10 +131,10 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
     <tr>
       <td><b>Seliware</b></td>
       <td>🖥 ПК</td>
-      <td><img src="https://img.shields.io/badge/286%2F311-91%25-00ff99"></td>
-      <td><img src="https://img.shields.io/badge/21%2F311-6%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/310%2F332-93%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/18%2F332-5%25-00ff99"></td>
       <td><img src="https://img.shields.io/badge/Обновлено-12.09.2025-1e90ff"></td>
-      <td><img src="https://img.shields.io/badge/getscripthash%20возвращает%20некорректные%20синтаксические%20параметры%2C%20что%20приводит%20к%20крашу%2C%20без%20него%20хороший%20итоговый%20результат-32cd32"></td>
+      <td><img src="https://img.shields.io/badge/Ахуенный%20инжектор❤️‍🔥-00ff99"></td>
     </tr>
     <tr>
       <td><b>Sirhurt</b></td>
@@ -159,6 +159,14 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
       <td><img src="https://img.shields.io/badge/21%2F291-7%25-00ff99"></td>
       <td><img src="https://img.shields.io/badge/Обновлено-13.09.2025-1e90ff"></td>
       <td><img src="https://img.shields.io/badge/Отличный%20Executor%2C%20рекомендуется%2C%20но%20обнаружается%20ROBLOX-32cd32"></td>
+    </tr>
+    <tr>
+      <td><b>Zenith</b></td>
+      <td>🖥 ПК</td>
+      <td><img src="https://img.shields.io/badge/315%2F340-92%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/19%2F340-5%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-28.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/Отличный%20инжектор%20с%20кастомными%20функциями%20(НО%2C%20легко%20задетектить%20через%20поведение%20сборщика%20мусора)-32cd32"></td>
     </tr>
   </tbody>
 </table>
