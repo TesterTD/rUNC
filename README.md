@@ -91,8 +91,8 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
     <tr>
       <td><b>Delta</b></td>
       <td>📱 Мобильный</td>
-      <td><img src="https://img.shields.io/badge/266%2F318-83%25-32cd32"></td>
-      <td><img src="https://img.shields.io/badge/40%2F318-12%25-32cd32"></td>
+      <td><img src="https://img.shields.io/badge/303%2F337-89%25-32cd32"></td>
+      <td><img src="https://img.shields.io/badge/25%2F337-7%25-32cd32"></td>
       <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
       <td><img src="https://img.shields.io/badge/Норм%20Executor-32cd32"></td>
     </tr>
@@ -161,7 +161,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
       <td><img src="https://img.shields.io/badge/Отличный%20Executor%2C%20рекомендуется%2C%20но%20обнаружается%20ROBLOX-32cd32"></td>
     </tr>
     <tr>
-      <td><b>Zenith</b></td>
+    <td><b>Zenith</b></td>
       <td>🖥 ПК</td>
       <td><img src="https://img.shields.io/badge/315%2F340-92%25-00ff99"></td>
       <td><img src="https://img.shields.io/badge/19%2F340-5%25-00ff99"></td>
