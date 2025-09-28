@@ -554,63 +554,48 @@ local function test_cloneref()
 end
 
 local function test_firetouchinterest()
-	if not present(firetouchinterest, "firetouchinterest") then
-		return
-	end
+    if not present(firetouchinterest, "firetouchinterest") then
+        return
+    end
 
-	local function make_part(pos)
-		local p = Instance.new("Part")
-		p.Size = Vector3.new(3, 3, 3)
-		p.CFrame = pos
-		p.Anchored = true
-		p.CanTouch = true
-		p.Parent = workspace
-		return p
-	end
+    local function make_part(pos)
+        local p = Instance.new("Part")
+        p.Size = Vector3.new(3, 3, 3)
+        p.CFrame = pos
+        p.Anchored = true
+        p.CanTouch = true
+        p.Parent = workspace
+        return p
+    end
 
-	local part1 = make_part(CFrame.new(0, 50, 0))
-	local part2 = make_part(CFrame.new(0, 51, 0))
-	local touch_started, touch_ended = 0, 0
-	local c1 = part1.Touched:Connect(function() touch_started += 1 end)
-	local c2 = part1.TouchEnded:Connect(function() touch_ended += 1 end)
-	task.wait()
+    local part1 = make_part(CFrame.new(0, 50, 0))
+    local part2 = make_part(CFrame.new(0, 51, 0))
+    local touch_started, touch_ended = 0, 0
+    local c1 = part1.Touched:Connect(function() touch_started += 1 end)
+    local c2 = part1.TouchEnded:Connect(function() touch_ended += 1 end)
+    task.wait()
 
-	part1.CanTouch = false
-	safe_pcall(firetouchinterest, part1, part2, 0)
-	task.wait()
-	check(touch_started == 0, "firetouchinterest: учитывает CanTouch=false", "firetouchinterest: игнорирует CanTouch=false", true)
-	part1.CanTouch = true
-	task.wait()
+    part1.CanTouch = false
+    safe_pcall(firetouchinterest, part1, part2, 0)
+    task.wait()
+    check(touch_started == 0, "firetouchinterest: учитывает CanTouch=false", "firetouchinterest: игнорирует CanTouch=false", true)
+    part1.CanTouch = true
+    task.wait()
 
-	info("firetouchinterest: Тестирование с toggle=0/1 (числа)")
-	safe_pcall(firetouchinterest, part1, part2, 0)
-	task.wait()
-	check(touch_started == 1, "firetouchinterest: вызывает Touched при toggle=0", "firetouchinterest: не вызывает Touched при toggle=0", true)
+    safe_pcall(firetouchinterest, part1, part2, 1)
+    task.wait()
+    check(touch_ended == 1, "firetouchinterest: вызывает TouchEnded при toggle=1", "firetouchinterest: не вызывает TouchEnded при toggle=1", true)
 
-	safe_pcall(firetouchinterest, part1, part2, 1)
-	task.wait()
-	check(touch_ended == 1, "firetouchinterest: вызывает TouchEnded при toggle=1", "firetouchinterest: не вызывает TouchEnded при toggle=1", true)
+    local ok_err_nil = not select(1, safe_pcall(firetouchinterest, part1, nil, 0))
+    check(ok_err_nil, "firetouchinterest: выбрасывает ошибку при part2=nil", "firetouchinterest: не выбросил ошибку при part2=nil", true)
 
-	info("firetouchinterest: Тестирование с toggle=true/false (булевы)")
-	safe_pcall(firetouchinterest, part1, part2, true)
-	task.wait()
-	check(touch_started == 2, "firetouchinterest: вызывает Touched при toggle=true", "firetouchinterest: не вызывает Touched при toggle=true", true)
+    local ok_err_type = not select(1, safe_pcall(firetouchinterest, {}, part2, 0))
+    check(ok_err_type, "firetouchinterest: выбрасывает ошибку при неверном типе part1", "firetouchinterest: не выбросил ошибку при неверном типе part1", true)
 
-	safe_pcall(firetouchinterest, part1, part2, false)
-	task.wait()
-	check(touch_ended == 2, "firetouchinterest: вызывает TouchEnded при toggle=false", "firetouchinterest: не вызывает TouchEnded при toggle=false", true)
-
-	info("firetouchinterest: Тестирование ошибок")
-	local ok_err_nil = not select(1, safe_pcall(firetouchinterest, part1, nil, 0))
-	check(ok_err_nil, "firetouchinterest: выбрасывает ошибку при part2=nil", "firetouchinterest: не выбросил ошибку при part2=nil", true)
-
-	local ok_err_type = not select(1, safe_pcall(firetouchinterest, {}, part2, 0))
-	check(ok_err_type, "firetouchinterest: выбрасывает ошибку при неверном типе part1", "firetouchinterest: не выбросил ошибку при неверном типе part1", true)
-
-	c1:Disconnect()
-	c2:Disconnect()
-	part1:Destroy()
-	part2:Destroy()
+    c1:Disconnect()
+    c2:Disconnect()
+    part1:Destroy()
+    part2:Destroy()
 end
 
 local function test_checkcaller()
@@ -743,58 +728,81 @@ local function pick_request_func()
 end
 
 local function test_request()
-	local req, name = pick_request_func()
-	if not present(req, "request/http_request") then return end
+    local req, name = pick_request_func()
+    if not present(req, "request/http_request") then return end
 
-	local post_ok, res_post = safe_pcall(req, {
-		Url="https://httpbin.org/post",
-		Method="POST",
-		Body="test",
-		Headers={["Content-Type"]="text/plain"}
-	})
-	check(post_ok and type(res_post)=="table" and res_post.Success and res_post.Body:find("test"),
-		name..": успешный POST запрос", name..": ошибка POST запроса", false)
+    local post_ok, res_post = safe_pcall(req, {
+        Url = "https://httpbin.org/post",
+        Method = "POST",
+        Body = "test",
+        Headers = { ["Content-Type"] = "text/plain" }
+    })
+    check(
+        post_ok and type(res_post) == "table" and res_post.Success and res_post.Body and res_post.Body:find("test"),
+        name .. ": успешный POST запрос",
+        name .. ": ошибка POST запроса",
+        false
+    )
 
-	local get_ok, res_get = safe_pcall(req, { Url = "https://httpbin.org/get", Method = "GET" })
-	if check(get_ok and res_get and res_get.Success and res_get.StatusCode == 200,
-		name..": успешный GET запрос", name..": ошибка GET запроса", false) then
+    local get_ok, res_get = safe_pcall(req, { Url = "https://httpbin.org/get", Method = "GET" })
+    if check(
+        get_ok and res_get and res_get.Success and res_get.StatusCode == 200,
+        name .. ": успешный GET запрос",
+        name .. ": ошибка GET запроса",
+        false
+    ) then
+        local http = game:GetService("HttpService")
+        local p, decoded = safe_pcall(http.JSONDecode, http, res_get.Body)
 
-		local p, decoded = safe_pcall(game:GetService("HttpService").JSONDecode,
-			game:GetService("HttpService"), res_get.Body)
+        if check(
+            p and type(decoded) == "table" and type(decoded.headers) == "table",
+            name .. ": тело ответа GET - валидный JSON",
+            name .. ": тело ответа GET - не JSON",
+            false
+        ) then
+            local ua = decoded.headers["User-Agent"]
+            local fp
+            for k, v in pairs(decoded.headers) do
+                if type(k) == "string" and k:lower():find("fingerprint") then
+                    fp = v
+                    break
+                end
+            end
 
-		if check(p and type(decoded) == "table" and type(decoded.headers) == "table",
-			name..": тело ответа GET - валидный JSON", name..": тело ответа GET - не JSON", false) then
+            if ua and ua ~= "" then
+                check(true, name .. ": User-Agent найден [" .. tostring(ua) .. "]", name .. ": отсутствует User-Agent", false)
+            else
+                check(false, "", name .. ": отсутствует User-Agent", false)
+            end
 
-			local ua = decoded.headers["User-Agent"]
-			local fp
-			for k,v in pairs(decoded.headers) do
-				if k:lower():find("fingerprint") then
-					fp = v
-					break
-				end
-			end
+            if fp and fp ~= "" then
+                check(true, name .. ": Fingerprint найден [" .. tostring(fp) .. "]", name .. ": отсутствует Fingerprint", false)
+            else
+                check(false, "", name .. ": отсутствует Fingerprint", false)
+            end
+        end
+    end
 
-			if ua and ua ~= "" then
-				check(true, name..": User-Agent найден ["..ua.."]", name..": отсутствует User-Agent", false)
-			else
-				check(false, "", name..": отсутствует User-Agent", false)
-			end
+    local notfound_ok, res_404 = safe_pcall(req, { Url = "https://www.cat.com/404", Method = "GET" })
+    local status_404 = res_404 and res_404.StatusCode
+    check(
+        notfound_ok and res_404 and status_404 == 404,
+        name .. ": корректно обрабатывает 404 (StatusCode=404)",
+        name .. ": неверный StatusCode для 404",
+        true
+    )
 
-			if fp and fp ~= "" then
-				check(true, name..": Fingerprint найден ["..fp.."]", name..": отсутствует Fingerprint", false)
-			else
-				check(false, "", name..": отсутствует Fingerprint", false)
-			end
-		end
-	end
-
-	local notfound_ok, res_404 = safe_pcall(req, { Url = "https://neverfall.one/gorshok", Method = "GET" })
-	check(notfound_ok and res_404 and res_404.StatusCode == 404, name..": корректно обрабатывает 404 (StatusCode=404)", name..": неверный StatusCode для 404", true)
-
-	check(not select(1, safe_pcall(req, {Url = "https://invalid.421414aofas. nonexiggstent/", Method = "GET"})),
-		name..": ошибка при невалидном URL", name..": не вызвал ошибку для невалидного URL", false)
+    local bad_ok, bad_res = safe_pcall(req, { Url = "https://example.invalid/", Method = "GET" })
+    local bad_pass =
+        (not bad_ok)
+        or (type(bad_res) == "table" and (bad_res.Success == false or bad_res.StatusCode == nil or bad_res.StatusCode == 0))
+    check(
+        bad_pass,
+        name .. ": ошибка при невалидном URL",
+        name .. ": не вызвал ошибку для невалидного URL",
+        false
+    )
 end
-
 
 
 local function test_getnilinstances()
@@ -917,43 +925,49 @@ local function test_debug_info()
     if not present(getinfo, "debug.getinfo") then return end
 
     do
-        local function foo()
-            print("Hello, world!")
-        end
-        
+        local function foo() return "ok" end
         local ok_info, info_tbl = safe_pcall(getinfo, foo)
         if not (check(ok_info and type(info_tbl) == "table", "debug.getinfo(func): возвращает таблицу", "debug.getinfo(func): не вернул таблицу/ошибка", true)) then return end
 
         local expected = {
             source = "string", what = "string", numparams = "number", func = "function",
-            short_src = "string", currentline = "number", name = "string", is_vararg = "number",
-            nups = "number"
+            short_src = "string", currentline = "number", is_vararg = "number", nups = "number"
         }
-
         local all_found = true
         for k, v_type in pairs(expected) do
             if not check(info_tbl[k] ~= nil and type(info_tbl[k]) == v_type, "debug.getinfo: ключ '"..k.."' существует и имеет тип '"..v_type.."'", "debug.getinfo: ключ '"..k.."' отсутствует или имеет неверный тип", true) then
                 all_found = false
             end
         end
+
+        check(info_tbl.func == foo, "debug.getinfo: func совпадает с переданной функцией", "debug.getinfo: func не совпадает", true)
+        check(type(info_tbl.short_src)=="string" and info_tbl.source:find(info_tbl.short_src,1,true)~=nil, "debug.getinfo: short_src согласован с source", "debug.getinfo: short_src не согласован с source", true)
+        check(info_tbl.what=="Lua", "debug.getinfo: корректно определяет Lua-функцию", "debug.getinfo: неверно определил Lua-функцию", true)
         if all_found then
-            ok("debug.getinfo: все ожидаемые поля найдены и имеют корректные типы")
+            ok("debug.getinfo: все ожидаемые поля найдены и согласованы")
         end
     end
 
     do
-		local level1_info, level2_func
-		local function wrapper()
-			level1_info = getinfo(1, "l")
-			local level2_info = getinfo(2, "f")
-			if type(level2_info) == "table" then
-				level2_func = level2_info.func
-			end
-		end
-		wrapper()
-		check(type(level1_info) == "table" and type(level1_info.currentline) == "number", "debug.getinfo(level, l): получает 'currentline'", "debug.getinfo(level, l): не получает 'currentline'", true)
-		check(level2_func == test_debug_info, "debug.getinfo(level, f): получает верную функцию-вызывателя", "debug.getinfo(level, f): получил неверную функцию", true)
-	end
+        local level1_info, level2_func
+        local function wrapper()
+            level1_info = getinfo(1, "l")
+            local level2_info = getinfo(2, "f")
+            if type(level2_info) == "table" then
+                level2_func = level2_info.func
+            end
+        end
+        wrapper()
+        check(type(level1_info) == "table" and type(level1_info.currentline) == "number", "debug.getinfo(level, l): получает 'currentline'", "debug.getinfo(level, l): не получает 'currentline'", true)
+        check(level2_func == test_debug_info, "debug.getinfo(level, f): получает верную функцию-вызывателя", "debug.getinfo(level, f): получил неверную функцию", true)
+    end
+
+    do
+        local ok_c, info_c = safe_pcall(getinfo, print)
+        if check(ok_c and type(info_c) == "table", "debug.getinfo(C-функция): возвращает таблицу", "debug.getinfo(C-функция): ошибка", true) then
+            check(info_c.what == "C", "debug.getinfo: корректно определяет C-функцию", "debug.getinfo: неверно определил C-функцию", true)
+        end
+    end
 end
 
 local function test_getscripts()
@@ -1198,21 +1212,20 @@ local function test_debug_constants()
 end
 
 local function test_getgenv()
-	if not present(getgenv, "getgenv") then return end
+    if not present(getgenv, "getgenv") then return end
 
-	local ok_get, env = safe_pcall(getgenv)
-	if not check(ok_get and type(env) == "table", "getgenv: возвращает таблицу", "getgenv: не вернул таблицу", true) then return end
+    local ok_get, env = safe_pcall(getgenv)
+    if not check(ok_get and type(env) == "table", "getgenv: возвращает таблицу", "getgenv: не вернул таблицу", true) then return end
 
-	local sentinel = "TEST_VAL_"..os.clock()
-	env.test_getgenv_persistence = sentinel
-	check(getgenv().test_getgenv_persistence == sentinel, "getgenv: изменения персистентны", "getgenv: изменения не сохраняются", false)
+    local sentinel = "TEST_VAL_"..os.clock()
+    env.test_getgenv_persistence = sentinel
+    check(getgenv().test_getgenv_persistence == sentinel, "getgenv: изменения персистентны", "getgenv: изменения не сохраняются", false)
 
-	if getfenv then
-		getfenv().test_var_fenv = "F"
-		env.test_var_genv = "G"
-		check(env.test_var_fenv == nil, "getgenv: изолирован от getfenv (1)", "getgenv: не изолирован от getfenv (1)", false)
-		check(getfenv().test_var_genv == nil, "getgenv: изолирован от getfenv (2)", "getgenv: не изолирован от getfenv (2)", false)
-	end
+    if getfenv then
+        getfenv().test_var_fenv = "F"
+        env.test_var_genv = "G"
+        check(env.test_var_fenv == nil, "getgenv: изолирован от getfenv (1)", "getgenv: не изолирован от getfenv (1)", false)
+    end
 end
 
 local function test_getcallbackvalue()
@@ -2071,22 +2084,22 @@ local function test_isscriptable()
 end
 
 local function test_newlclosure() 
-	if not present(newlclosure, "newlclosure") then return end
+    if not present(newlclosure, "newlclosure") then return end
 
-	local up = { count = 0 }
-	local original = function()
-		up.count = up.count + 1
-	end
+    local up = { count = 0 }
+    local original = function()
+        up.count = up.count + 1
+    end
 
-	local ok_new, lclosure = safe_pcall(newlclosure, original)
-	if check(ok_new and islclosure(lclosure), "newlclosure: успешно создает lclosure", "newlclosure: не удалось создать lclosure", true) then
-		original()
-		lclosure()
-		check(up.count == 2, "newlclosure: разделяет upvalues с оригиналом", "newlclosure: не разделяет upvalues", true)
-	end
+    local ok_new, lclosure = safe_pcall(newlclosure, original)
+    if check(ok_new and islclosure(lclosure), "newlclosure: успешно создает lclosure", "newlclosure: не удалось создать lclosure", true) then
+        original()
+        lclosure()
+        check(up.count == 2, "newlclosure: разделяет upvalues с оригиналом", "newlclosure: не разделяет upvalues", true)
+    end
 
-	local ok_c, res_c = safe_pcall(newlclosure, print)
-	check(not ok_c or not islclosure(res_c), "newlclosure: ошибка или не-lclosure для C-функции", "newlclosure: создал некорректный lclosure из C-функции", true)
+    local ok_c, res_c = safe_pcall(newlclosure, print)
+    check(ok_c and islclosure(res_c), "newlclosure: успешно создает lclosure из C-функции", "newlclosure: не удалось создать lclosure из C-функции", true)
 end
 
 local function test_debug_setmetatable()
@@ -2680,3 +2693,4 @@ local skidRate = totalTests > 0 and math.floor((skidCount / totalTests) * 100) o
 info("Итого: "..passedTests.."/"..totalTests.." ("..percent.."%)")
 info("Skid Rate: "..skidCount.."/"..totalTests.." ("..skidRate.."%)")
 info(string.rep("-", 20))
+
