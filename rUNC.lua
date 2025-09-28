@@ -2567,6 +2567,7 @@ end
         check(ok_parallel and type(is_p) == "boolean", "isparallel: возвращает boolean", "isparallel: не вернул boolean", false)
     end
 end
+end
 
 local function run_test_suite(suite_name, func_name, func)
 	if type(func_name) == "function" and func == nil then
@@ -2696,6 +2697,7 @@ local skidRate = totalTests > 0 and math.floor((skidCount / totalTests) * 100) o
 info("Итого: "..passedTests.."/"..totalTests.." ("..percent.."%)")
 info("Skid Rate: "..skidCount.."/"..totalTests.." ("..skidRate.."%)")
 info(string.rep("-", 20))
+
 
 
 
