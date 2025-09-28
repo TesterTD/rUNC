@@ -2556,7 +2556,7 @@ local function test_actors_library()
             warnEmoji("Не найдено Actor Threads, тест run_on_thread пропущен.")
         end
     end
-end
+
     if present(create_comm_channel, "create_comm_channel") then
         local ok_comm, comm_id, event = safe_pcall(create_comm_channel)
         check(ok_comm and type(comm_id) == "number" and typeof(event) == "Instance" and event:IsA("BindableEvent"), "create_comm_channel: возвращает id и BindableEvent", "create_comm_channel: не вернул ожидаемые типы", false)
@@ -2566,7 +2566,6 @@ end
         local ok_parallel, is_p = safe_pcall(isparallel)
         check(ok_parallel and type(is_p) == "boolean", "isparallel: возвращает boolean", "isparallel: не вернул boolean", false)
     end
-end
 end
 
 local function run_test_suite(suite_name, func_name, func)
@@ -2697,6 +2696,7 @@ local skidRate = totalTests > 0 and math.floor((skidCount / totalTests) * 100) o
 info("Итого: "..passedTests.."/"..totalTests.." ("..percent.."%)")
 info("Skid Rate: "..skidCount.."/"..totalTests.." ("..skidRate.."%)")
 info(string.rep("-", 20))
+
 
 
 
