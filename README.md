@@ -83,25 +83,25 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
     <tr>
       <td><b>bunni.lol</b></td>
       <td>🖥 ПК</td>
-      <td><img src="https://img.shields.io/badge/320%2F345-92%25-00ff99"></td>
-      <td><img src="https://img.shields.io/badge/20%2F345-5%25-00ff99"></td>
-      <td><img src="https://img.shields.io/badge/Обновлено-17.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/327%2F342-95%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/13%2F342-3%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-29.09.2025-1e90ff"></td>
       <td><img src="https://img.shields.io/badge/Отличный%20executor-00ff99"></td>
     </tr>
     <tr>
       <td><b>Delta</b></td>
       <td>📱 Мобильный</td>
-      <td><img src="https://img.shields.io/badge/303%2F337-89%25-32cd32"></td>
-      <td><img src="https://img.shields.io/badge/25%2F337-7%25-32cd32"></td>
-      <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/302%2F334-90%25-32cd32"></td>
+      <td><img src="https://img.shields.io/badge/23%2F334-6%25-32cd32"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-29.09.2025-1e90ff"></td>
       <td><img src="https://img.shields.io/badge/Норм%20Executor-32cd32"></td>
     </tr>
     <tr>
       <td><b>Xeno</b></td>
       <td>🖥 ПК</td>
-      <td><img src="https://img.shields.io/badge/162%2F235-68%25-ffd700"></td>
-      <td><img src="https://img.shields.io/badge/52%2F235-22%25-ffa500"></td>
-      <td><img src="https://img.shields.io/badge/Обновлено-14.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/167%2F228-73%25-ffd700"></td>
+      <td><img src="https://img.shields.io/badge/43%2F228-18%25-ffa500"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-29.09.2025-1e90ff"></td>
       <td><img src="https://img.shields.io/badge/Подделывают%20некоторые%20функции%2C%20но%20неплохо%20для%20Level%203-ffd700"></td>
     </tr>
     <tr>
@@ -131,9 +131,9 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
     <tr>
       <td><b>Seliware</b></td>
       <td>🖥 ПК</td>
-      <td><img src="https://img.shields.io/badge/310%2F332-93%25-00ff99"></td>
-      <td><img src="https://img.shields.io/badge/18%2F332-5%25-00ff99"></td>
-      <td><img src="https://img.shields.io/badge/Обновлено-12.09.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/311%2F330-94%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/16%2F330-4%25-00ff99"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-29.09.2025-1e90ff"></td>
       <td><img src="https://img.shields.io/badge/Ахуенный%20инжектор❤️‍🔥-00ff99"></td>
     </tr>
     <tr>
