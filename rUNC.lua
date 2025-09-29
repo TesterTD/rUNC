@@ -615,10 +615,12 @@ local function test_checkcaller()
     check(coro_result, "checkcaller: true внутри coroutine", "checkcaller: false внутри coroutine", true)
 
     local xpcall_result_ok, xpcall_result_err
-    xpcall(function()
-        xpcall_result_ok = checkcaller()
-    end, function() end)
-    xpcall(function() error("test") end, function() xpcall_result_err = checkcaller() end)
+    safe_pcall(function()
+        xpcall(function()
+            xpcall_result_ok = checkcaller()
+        end, function() end)
+        xpcall(function() error("test") end, function() xpcall_result_err = checkcaller() end)
+    end)
     check(xpcall_result_ok, "checkcaller: true внутри xpcall (success)", "checkcaller: false внутри xpcall (success)", true)
     check(xpcall_result_err, "checkcaller: true внутри xpcall (err handler)", "checkcaller: false внутри xpcall (err handler)", true)
 
@@ -634,7 +636,7 @@ local function test_checkcaller()
         if getnamecallmethod() == "IsA" then
             hook_result = checkcaller()
         end
-        local ok, res = pcall(old_nc, self, ...)
+        local ok, res = safe_pcall(function() return old_nc(self, ...) end)
         in_call = false
         if ok then
             return res
@@ -642,7 +644,7 @@ local function test_checkcaller()
     end
 
     local ok_hook = false
-    pcall(function()
+    safe_pcall(function()
         if newcclosure then
             old_nc = hookmetamethod(game, "__namecall", newcclosure(wrapper))
         else
@@ -654,7 +656,7 @@ local function test_checkcaller()
     check(ok_hook, "hookmetamethod: оригинал получен", "hookmetamethod: не вернул оригинал __namecall", true)
     if not ok_hook then return end
 
-    pcall(function() game:IsA("Workspace") end)
+    safe_pcall(function() game:IsA("Workspace") end)
     task.wait()
     check(hook_result == false, "checkcaller: false при вызове из C-кода", "checkcaller: true для C-кода. Вероятно эмуляция.", true)
 
@@ -663,7 +665,15 @@ local function test_checkcaller()
             return checkcaller()
         end)
         local ok_cc, v_cc = safe_pcall(cc_false_fn)
-        check(ok_cc and not v_cc, "checkcaller: false из newcclosure", "checkcaller: true из newcclosure", true)
+        check(ok_cc and v_cc == false, "checkcaller: корректно false из newcclosure", "checkcaller: неверное значение из newcclosure", true)
+
+        local cc_nested_result
+        local cc_nested = newcclosure(function()
+            cc_nested_result = checkcaller()
+            return cc_nested_result
+        end)
+        local ok_nested, v_nested = safe_pcall(cc_nested)
+        check(ok_nested and v_nested == false and cc_nested_result == false, "checkcaller: стабильно false в newcclosure (nested)", "checkcaller: нестабильно в newcclosure (nested)", true)
     end
 
     local stable = true
@@ -676,6 +686,21 @@ local function test_checkcaller()
         task.wait()
     end
     check(stable, "checkcaller: стабилен при повторных вызовах", "checkcaller: нестабилен при повторных вызовах", true)
+
+    local thread_result
+    safe_pcall(function()
+        task.spawn(function()
+            thread_result = checkcaller()
+        end)
+    end)
+    task.wait()
+    check(thread_result, "checkcaller: true внутри task.spawn", "checkcaller: false внутри task.spawn", true)
+
+    local pcall_result
+    local ok_pcall = safe_pcall(function()
+        pcall_result = checkcaller()
+    end)
+    check(ok_pcall and pcall_result, "checkcaller: true внутри вложенного pcall", "checkcaller: false внутри вложенного pcall", true)
 end
 
 local function test_getconnections()
@@ -2708,3 +2733,4 @@ local skidRate = totalTests > 0 and math.floor((skidCount / totalTests) * 100) o
 info("Итого: "..passedTests.."/"..totalTests.." ("..percent.."%)")
 info("Skid Rate: "..skidCount.."/"..totalTests.." ("..skidRate.."%)")
 info(string.rep("-", 20))
+
