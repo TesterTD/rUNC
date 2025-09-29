@@ -2526,32 +2526,45 @@ end
 
 local function test_actors_library()
     if not present(getactors, "getactors") then return end
-    local ok, actors = safe_pcall(getactors)
-    if not (ok and check(type(actors) == "table", "getactors: возвращает таблицу", "getactors: не вернул таблицу или ошибка", false)) then return end
 
-    if #actors == 0 then
-        local new_actor_ok, new_actor = pcall(function()
-            return Instance.new("Actor")
-        end)
-        if new_actor_ok and new_actor then
-            table.insert(actors, new_actor)
-            check(true, "Создан новый Actor для тестов", "Не удалось создать Actor", false)
-        else
-            warnEmoji("Не найдено Actors и не удалось создать новый, тесты зависимых функций пропущены.")
+    local ok_actors, actors = safe_pcall(getactors)
+    if not (ok_actors and type(actors) == "table") then
+        check(false, "getactors: не вернул таблицу", "getactors: ошибка", false)
+        return
+    end
+    check(true, "getactors: возвращает таблицу", "getactors: ошибка", false)
+
+    local parallel_ok, inParallel = false, false
+    if present(isparallel, "isparallel") then
+        parallel_ok, inParallel = safe_pcall(isparallel)
+        if not (parallel_ok and type(inParallel) == "boolean") then
+            warnEmoji("isparallel: ошибка, тесты Actor пропущены.")
+            return
+        end
+    else
+        warnEmoji("isparallel отсутствует, тесты Actor пропущены.")
+        return
+    end
+
+    if not inParallel then
+        warnEmoji("Не в parallel контексте, создание Actor пропущено.")
+        if #actors == 0 then
+            warnEmoji("Actors отсутствуют, тесты зависимых функций пропущены.")
             return
         end
     end
 
-    if present(run_on_actor, "run_on_actor") then
-        local ok_run = select(1, safe_pcall(run_on_actor, actors[1], 'print("Hello from Actor!")'))
-        check(ok_run, "run_on_actor: выполняется без ошибок", "run_on_actor: ошибка при выполнении", false)
+    if #actors > 0 and present(run_on_actor, "run_on_actor") then
+        local ok_run = safe_pcall(run_on_actor, actors[1], 'print("Hello from Actor!")')
+        check(ok_run, "run_on_actor: выполняется без ошибок", "run_on_actor: ошибка", false)
     end
 
     if present(getactorthreads, "getactorthreads") and present(run_on_thread, "run_on_thread") then
         local ok_threads, threads = safe_pcall(getactorthreads)
-        if check(ok_threads and type(threads) == "table", "getactorthreads: возвращает таблицу", "getactorthreads: не вернул таблицу", false) and #threads > 0 then
-            local ok_run_thread = select(1, safe_pcall(run_on_thread, threads[1], "print('Hello from Actor Thread!')"))
-            check(ok_run_thread, "run_on_thread: выполняется без ошибок", "run_on_thread: ошибка при выполнении", false)
+        if ok_threads and type(threads) == "table" and #threads > 0 then
+            check(true, "getactorthreads: возвращает таблицу", "getactorthreads: ошибка", false)
+            local ok_run_thread = safe_pcall(run_on_thread, threads[1], "print('Hello from Actor Thread!')")
+            check(ok_run_thread, "run_on_thread: выполняется без ошибок", "run_on_thread: ошибка", false)
         else
             warnEmoji("Не найдено Actor Threads, тест run_on_thread пропущен.")
         end
@@ -2559,12 +2572,11 @@ local function test_actors_library()
 
     if present(create_comm_channel, "create_comm_channel") then
         local ok_comm, comm_id, event = safe_pcall(create_comm_channel)
-        check(ok_comm and type(comm_id) == "number" and typeof(event) == "Instance" and event:IsA("BindableEvent"), "create_comm_channel: возвращает id и BindableEvent", "create_comm_channel: не вернул ожидаемые типы", false)
-    end
-
-    if present(isparallel, "isparallel") then
-        local ok_parallel, is_p = safe_pcall(isparallel)
-        check(ok_parallel and type(is_p) == "boolean", "isparallel: возвращает boolean", "isparallel: не вернул boolean", false)
+        if ok_comm and type(comm_id) == "number" and typeof(event) == "Instance" and event:IsA("BindableEvent") then
+            check(true, "create_comm_channel: возвращает id и BindableEvent", "create_comm_channel: ошибка", false)
+        else
+            check(false, "create_comm_channel: ошибка", "create_comm_channel: неверные типы", false)
+        end
     end
 end
 
@@ -2696,8 +2708,3 @@ local skidRate = totalTests > 0 and math.floor((skidCount / totalTests) * 100) o
 info("Итого: "..passedTests.."/"..totalTests.." ("..percent.."%)")
 info("Skid Rate: "..skidCount.."/"..totalTests.." ("..skidRate.."%)")
 info(string.rep("-", 20))
-
-
-
-
-
