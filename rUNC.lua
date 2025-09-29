@@ -636,7 +636,10 @@ local function test_checkcaller()
         if getnamecallmethod() == "IsA" then
             hook_result = checkcaller()
         end
-        local ok, res = safe_pcall(function() return old_nc(self, ...) end)
+        local args = table.pack(...)
+        local ok, res = safe_pcall(function()
+            return old_nc(self, table.unpack(args, 1, args.n))
+        end)
         in_call = false
         if ok then
             return res
@@ -652,7 +655,6 @@ local function test_checkcaller()
         end
         ok_hook = type(old_nc) == "function"
     end)
-
     check(ok_hook, "hookmetamethod: оригинал получен", "hookmetamethod: не вернул оригинал __namecall", true)
     if not ok_hook then return end
 
@@ -661,19 +663,26 @@ local function test_checkcaller()
     check(hook_result == false, "checkcaller: false при вызове из C-кода", "checkcaller: true для C-кода. Вероятно эмуляция.", true)
 
     if newcclosure then
-        local cc_false_fn = newcclosure(function()
-            return checkcaller()
+        local nested_result_values = {}
+        local nested = newcclosure(function()
+            table.insert(nested_result_values, checkcaller())
         end)
-        local ok_cc, v_cc = safe_pcall(cc_false_fn)
-        check(ok_cc and v_cc == false, "checkcaller: корректно false из newcclosure", "checkcaller: неверное значение из newcclosure", true)
 
-        local cc_nested_result
-        local cc_nested = newcclosure(function()
-            cc_nested_result = checkcaller()
-            return cc_nested_result
-        end)
-        local ok_nested, v_nested = safe_pcall(cc_nested)
-        check(ok_nested and v_nested == false and cc_nested_result == false, "checkcaller: стабильно false в newcclosure (nested)", "checkcaller: нестабильно в newcclosure (nested)", true)
+        for i = 1, 3 do
+            safe_pcall(nested)
+            task.wait()
+        end
+
+        local consistent = true
+        for _, v in ipairs(nested_result_values) do
+            if v ~= false then
+                consistent = false
+                break
+            end
+        end
+        check(consistent, "checkcaller: стабильно false во вложенном newcclosure", "checkcaller: нестабильно во вложенном newcclosure", true)
+    else
+        check(false, "newcclosure: отсутствует", "newcclosure: не поддерживается", true)
     end
 
     local stable = true
@@ -2733,4 +2742,5 @@ local skidRate = totalTests > 0 and math.floor((skidCount / totalTests) * 100) o
 info("Итого: "..passedTests.."/"..totalTests.." ("..percent.."%)")
 info("Skid Rate: "..skidCount.."/"..totalTests.." ("..skidRate.."%)")
 info(string.rep("-", 20))
+
 
