@@ -2742,5 +2742,3 @@ local skidRate = totalTests > 0 and math.floor((skidCount / totalTests) * 100) o
 info("Итого: "..passedTests.."/"..totalTests.." ("..percent.."%)")
 info("Skid Rate: "..skidCount.."/"..totalTests.." ("..skidRate.."%)")
 info(string.rep("-", 20))
-
-
