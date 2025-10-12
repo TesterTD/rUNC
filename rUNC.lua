@@ -1779,25 +1779,113 @@ local function test_crypto_ops()
 end
 
 local function test_drawing()
-	if not present(Drawing, "Drawing") or not present(Drawing.new, "Drawing.new") or not present(isrenderobj, "isrenderobj") then
-		return
-	end
+    if not present(Drawing, "Drawing") or not present(Drawing.new, "Drawing.new") or not present(isrenderobj, "isrenderobj") then
+        return
+    end
 
-	local function safe_new(t)
-		local ok, obj = safe_pcall(function()
-			return Drawing.new(t)
-		end)
-		return ok, obj
-	end
+    local function safe_new(t)
+        local ok, obj = safe_pcall(function()
+            return Drawing.new(t)
+        end)
+        return ok, obj
+    end
 
-	local ok_circle, circle = safe_new("Circle")
-	if ok_circle and isrenderobj(circle) then
-		check(true, "Drawing.new: объект создаётся", "", true)
-		pcall(function() circle:Destroy() end)
-		circle = nil
-	else
-		check(false, "Drawing.new: объект создаётся", "Drawing.new: не смог создать объект", true)
-	end
+    local ok_circle, circle = safe_new("Circle")
+    if ok_circle and isrenderobj(circle) then
+        circle.Position = Vector2.new(100, 100)
+        circle.Radius = 20
+        circle.Filled = true
+        circle.Color = Color3.new(1, 0, 0)
+        check(circle.Visible ~= nil, "Drawing.Circle: свойства доступны", "Drawing.Circle: свойства недоступны", true)
+        pcall(function() circle:Remove() end)
+    else
+        check(false, "Drawing.new: Circle создаётся", "Drawing.new: Circle не смог создать объект", true)
+    end
+
+    local ok_line, line = safe_new("Line")
+    if ok_line and isrenderobj(line) then
+        line.From = Vector2.new(50, 50)
+        line.To = Vector2.new(150, 150)
+        line.Thickness = 2
+        line.Color = Color3.new(0, 1, 0)
+        line.Visible = true
+        check(getrenderproperty(line, "Color") ~= nil, "Drawing.Line: getrenderproperty работает", "Drawing.Line: getrenderproperty не работает", true)
+        setrenderproperty(line, "Thickness", 3)
+        check(line.Thickness == 3, "Drawing.Line: setrenderproperty работает", "Drawing.Line: setrenderproperty не работает", true)
+        pcall(function() line:Remove() end)
+    else
+        check(false, "Drawing.new: Line создаётся", "Drawing.new: Line не смог создать объект", true)
+    end
+
+    local ok_square, square = safe_new("Square")
+    if ok_square and isrenderobj(square) then
+        square.Position = Vector2.new(200, 200)
+        square.Size = Vector2.new(50, 50)
+        square.Filled = true
+        square.Color = Color3.new(0, 0, 1)
+        check(square.Size ~= nil, "Drawing.Square: свойства доступны", "Drawing.Square: свойства недоступны", true)
+        pcall(function() square:Remove() end)
+    else
+        check(false, "Drawing.new: Square создаётся", "Drawing.new: Square не смог создать объект", true)
+    end
+
+    local ok_triangle, triangle = safe_new("Triangle")
+    if ok_triangle and isrenderobj(triangle) then
+        triangle.PointA = Vector2.new(300, 300)
+        triangle.PointB = Vector2.new(350, 350)
+        triangle.PointC = Vector2.new(250, 350)
+        triangle.Filled = false
+        triangle.Color = Color3.new(1, 1, 0)
+        check(triangle.PointA ~= nil, "Drawing.Triangle: свойства доступны", "Drawing.Triangle: свойства недоступны", true)
+        pcall(function() triangle:Remove() end)
+    else
+        check(false, "Drawing.new: Triangle создаётся", "Drawing.new: Triangle не смог создать объект", true)
+    end
+
+    local ok_quad, quad = safe_new("Quad")
+    if ok_quad and isrenderobj(quad) then
+        quad.PointA = Vector2.new(400, 400)
+        quad.PointB = Vector2.new(450, 400)
+        quad.PointC = Vector2.new(450, 450)
+        quad.PointD = Vector2.new(400, 450)
+        quad.Filled = true
+        quad.Color = Color3.new(0, 1, 1)
+        check(quad.PointD ~= nil, "Drawing.Quad: свойства доступны", "Drawing.Quad: свойства недоступны", true)
+        pcall(function() quad:Remove() end)
+    else
+        check(false, "Drawing.new: Quad создаётся", "Drawing.new: Quad не смог создать объект", true)
+    end
+
+    local ok_text, text = safe_new("Text")
+    if ok_text and isrenderobj(text) then
+        text.Text = "Hello, World!"
+        text.Position = Vector2.new(500, 500)
+        text.Color = Color3.new(1, 1, 1)
+        text.Size = 18
+        text.Font = Drawing.Fonts.UI
+        text.Center = true
+        text.Outline = true
+        text.OutlineColor = Color3.new(0, 0, 0)
+        check(text.TextBounds ~= nil, "Drawing.Text: TextBounds доступен", "Drawing.Text: TextBounds недоступен", true)
+        pcall(function() text:Remove() end)
+    else
+        check(false, "Drawing.new: Text создаётся", "Drawing.new: Text не смог создать объект", true)
+    end
+
+    local ok_image, image = safe_new("Image")
+    if ok_image and isrenderobj(image) then
+        image.Position = Vector2.new(600, 600)
+        image.Size = Vector2.new(64, 64)
+        image.Rounding = 4
+        check(image.Size ~= nil, "Drawing.Image: свойства доступны", "Drawing.Image: свойства недоступны", true)
+        pcall(function() image:Remove() end)
+    else
+        check(false, "Drawing.new: Image создаётся", "Drawing.new: Image не смог создать объект", true)
+    end
+
+    Drawing.clear()
+    cleardrawcache()
+    check(true, "Drawing.clear и cleardrawcache: вызовы выполнены", "", true)
 end
 
 local function test_getcallingscript()
@@ -2056,31 +2144,41 @@ local function test_fpscap()
 end
 
 local function test_replaceclosure()
-	if not present(replaceclosure, "replaceclosure") then return end
+    if not present(replaceclosure, "replaceclosure") then return end
+    if not present(clonefunction, "clonefunction") then return end
 
-	local harmless_func = function()
-		return "safe"
-	end
+    local harmless_func = function()
+        return "safe"
+    end
 
-	local upvalue = 1
-	local original_func = function()
-		upvalue = upvalue + 1
-		return "original"
-	end
+    local upvalue = 1
+    local original_func = function()
+        upvalue = upvalue + 1
+        return "original"
+    end
 
-	local new_func = function()
-		return "replaced", upvalue
-	end
+    local new_func = function()
+        return "replaced", upvalue
+    end
 
-	local ok_replace = select(1, safe_pcall(replaceclosure, harmless_func, new_func))
-	if not check(ok_replace, "replaceclosure: выполнился без ошибок", "replaceclosure: ошибка при выполнении", true) then return end
+    local ok_replace = select(1, safe_pcall(replaceclosure, harmless_func, new_func))
+    if not check(ok_replace, "replaceclosure: выполнился без ошибок", "replaceclosure: ошибка при выполнении", true) then return end
 
-	local res_after_replace, upvalue_seen = new_func()
-	check(res_after_replace == "replaced", "replaceclosure: вызов оригинала теперь выполняет новую функцию", "replaceclosure: замена не удалась", true)
-	check(upvalue_seen == 1, "replaceclosure: замененная функция видит upvalue оригинала", "replaceclosure: не имеет доступа к upvalue", true)
+    local res_after_replace, upvalue_seen = new_func()
+    check(res_after_replace == "replaced", "replaceclosure: вызов оригинала теперь выполняет новую функцию", "replaceclosure: замена не удалась", true)
+    check(upvalue_seen == 1, "replaceclosure: замененная функция видит upvalue оригинала", "replaceclosure: не имеет доступа к upvalue", true)
 
-	local ok_err_c = not select(1, safe_pcall(replaceclosure, math.sin, function() end))
-	check(ok_err_c, "replaceclosure: ошибка при попытке заменить C-функцию", "replaceclosure: не вызвал ошибку для C-функции", true)
+    local orig_sin = clonefunction(math.sin)
+    local before = orig_sin(1)
+    check(type(before) == "number", "math.sin до замены работает", "math.sin до замены не работает", true)
+
+    local ok_replace_sin = select(1, safe_pcall(replaceclosure, math.sin, function()
+        return "dead"
+    end))
+    check(ok_replace_sin, "replaceclosure: math.sin заменён успешно", "replaceclosure: ошибка при замене math.sin", true)
+
+    local after = math.sin(1)
+    check(after == "dead", "math.sin после замены стал заглушкой", "math.sin после замены не изменился", true)
 end
 
 local function test_isrbxactive()
@@ -2131,24 +2229,26 @@ local function test_newlclosure()
 end
 
 local function test_debug_setmetatable()
-	local d_smt = debug.setmetatable
-	if not present(d_smt, "debug.setmetatable") then return end
+    local d_smt = debug.setmetatable
+    local d_gmt = debug.getmetatable
+    if not present(d_smt, "debug.setmetatable") or not present(d_gmt, "debug.getmetatable") then return end
 
-	local target_table = {}
-	local protected_mt = { __metatable = "LOCKED" }
-	setmetatable(target_table, protected_mt)
+    local target_table = {}
+    local protected_mt = { __metatable = "LOCKED" }
+    setmetatable(target_table, protected_mt)
 
-	local ok_vanilla = not select(1, safe_pcall(setmetatable, target_table, {}))
-	check(ok_vanilla, "debug.setmetatable: __metatable защита работает как ожидалось", "debug.setmetatable: __metatable защита не сработала", true)
+    local ok_vanilla = not select(1, safe_pcall(setmetatable, target_table, {}))
+    check(ok_vanilla, "debug.setmetatable: __metatable защита работает как ожидалось", "debug.setmetatable: __метatable защита не сработала", true)
 
-	local new_mt = { __index = function() return "bypassed_by_debug" end }
-	local ok_set, _ = safe_pcall(d_smt, target_table, new_mt)
+    local new_mt = { __index = function() return "bypassed_by_debug" end }
+    local ok_set, _ = safe_pcall(d_smt, target_table, new_mt)
 
-	if check(ok_set, "debug.setmetatable: выполнился на таблице с защищенной МТ", "debug.setmetatable: выдал ошибку", true) then
-		check(getmetatable(target_table) == new_mt and target_table.xyz == "bypassed_by_debug", "debug.setmetatable: успешно обошел __metatable", "debug.setmetatable: не смог обойти __metatable", true)
-	end
+    if check(ok_set, "debug.setmetatable: выполнился на таблице с защищенной МТ", "debug.setmetatable: выдал ошибку", true) then
+        check(d_gmt(target_table) == new_mt and target_table.xyz == "bypassed_by_debug", "debug.setmetatable/debug.getmetatable: успешно обошел __metatable", "debug.setmetatable/debug.getmetatable: не смог обойти __metatable", true)
+    end
 end
--- Полностью обновил debug
+
+-- Ураааа
 local function test_debug_more()
 	if not present(debug, "debug") then return end
 
@@ -2386,36 +2486,46 @@ local function test_compression()
 	end
 end
 
-
 local function test_crypto_extended()
-	if not present(crypt, "crypt") then return end
-	local funcs = {crypt.encrypt, crypt.decrypt, crypt.generatebytes, crypt.generatekey, crypt.hash}
-	local names = {"crypt.encrypt", "crypt.decrypt", "crypt.generatebytes", "crypt.generatekey", "crypt.hash"}
-	for i=1, #funcs do if not present(funcs[i], names[i]) then return end end
+    if not present(crypt, "crypt") then return end
+    local funcs = {crypt.encrypt, crypt.decrypt, crypt.generatebytes, crypt.generatekey, crypt.hash}
+    local names = {"crypt.encrypt", "crypt.decrypt", "crypt.generatebytes", "crypt.generatekey", "crypt.hash"}
+    for i=1, #funcs do if not present(funcs[i], names[i]) then return end end
 
-	local plaintext = "some plaintext data to be encrypted"
-	local ok_key, key = safe_pcall(crypt.generatekey)
+    local plaintext = "some plaintext data to be encrypted"
+    local ok_key, key = safe_pcall(crypt.generatekey)
 
-	if check(ok_key and type(key) == "string" and #key > 0, "crypt.generatekey: генерирует непустую строку-ключ", "crypt.generatekey: не сгенерировал ключ", true) then
-		local ok_enc, ciphertext = safe_pcall(crypt.encrypt, plaintext, key, "some_additional_data")
-		if check(ok_enc and type(ciphertext) == "string", "crypt.encrypt: выполняется без ошибок", "crypt.encrypt: ошибка при шифровании", true) then
-			local ok_dec, decrypted = safe_pcall(crypt.decrypt, ciphertext, key, "some_additional_data")
-			check(ok_dec and decrypted == plaintext, "crypt.decrypt: round-trip (шифрование-дешифрование) успешен", "crypt.decrypt: round-trip не удался", true)
+    if check(ok_key and type(key) == "string" and #key > 0, "crypt.generatekey: генерирует непустую строку-ключ", "crypt.generatekey: не сгенерировал ключ", true) then
+        local iv = crypt.generatebytes(16)
+        local ok_enc, ciphertext = safe_pcall(crypt.encrypt, plaintext, key, iv, "CBC")
+        if check(ok_enc and type(ciphertext) == "string", "crypt.encrypt: выполняется без ошибок", "crypt.encrypt: ошибка при шифровании", true) then
+            local ok_dec, decrypted = safe_pcall(crypt.decrypt, ciphertext, key, iv, "CBC")
+            check(ok_dec and decrypted == plaintext, "crypt.decrypt: round-trip (шифрование-дешифрование) успешен", "crypt.decrypt: round-trip не удался", true)
 
-			local wrong_key = crypt.generatekey()
-			local ok_dec_wrong, decrypted_wrong = safe_pcall(crypt.decrypt, ciphertext, wrong_key, "some_additional_data")
-			check(ok_dec_wrong and decrypted_wrong ~= plaintext, "crypt.decrypt: не расшифровывает с неверным ключом", "crypt.decrypt: расшифровал с неверным ключом", true)
-		end
-	end
+            local wrong_key = crypt.generatekey()
+            local ok_dec_wrong, decrypted_wrong = safe_pcall(crypt.decrypt, ciphertext, wrong_key, iv, "CBC")
+            check(ok_dec_wrong and decrypted_wrong ~= plaintext, "crypt.decrypt: не расшифровывает с неверным ключом", "crypt.decrypt: расшифровал с неверным ключом", true)
 
-	local ok_bytes, bytes = safe_pcall(crypt.generatebytes, 16)
-	check(ok_bytes and type(bytes) == "string" and #bytes == 16, "crypt.generatebytes: генерирует строку указанной длины", "crypt.generatebytes: не сгенерировал строку", true)
+            local wrong_iv = crypt.generatebytes(16)
+            local ok_dec_wrongiv, decrypted_wrongiv = safe_pcall(crypt.decrypt, ciphertext, key, wrong_iv, "CBC")
+            check(ok_dec_wrongiv and decrypted_wrongiv ~= plaintext, "crypt.decrypt: не расшифровывает с неверным IV", "crypt.decrypt: расшифровал с неверным IV", true)
+        end
+    end
 
-	local data_to_hash = "some_data"
-	local ok_hash, hash1 = safe_pcall(crypt.hash, data_to_hash, "sha384")
-	check(ok_hash and type(hash1) == "string", "crypt.hash: возвращает строку хэша", "crypt.hash: ошибка хэширования", true)
-	local hash2 = crypt.hash(data_to_hash, "sha384")
-	check(hash1 == hash2, "crypt.hash: хэши для одних и тех же данных совпадают", "crypt.hash: хэши не совпадают", true)
+    local ok_bytes_default, bytes_default = safe_pcall(crypt.generatebytes)
+    check(ok_bytes_default and type(bytes_default) == "string" and #bytes_default == 16, "crypt.generatebytes: по умолчанию генерирует 16 байт", "crypt.generatebytes: по умолчанию не сгенерировал 16 байт", true)
+
+    local ok_bytes_24, bytes_24 = safe_pcall(crypt.generatebytes, 24)
+    check(ok_bytes_24 and type(bytes_24) == "string" and #bytes_24 == 24, "crypt.generatebytes: генерирует строку указанной длины (24)", "crypt.generatebytes: не сгенерировал строку длиной 24", true)
+
+    local ok_bytes_0, bytes_0 = safe_pcall(crypt.generatebytes, 0)
+    check(ok_bytes_0 and type(bytes_0) == "string" and #bytes_0 == 0, "crypt.generatebytes: корректно обрабатывает запрос 0 байт", "crypt.generatebytes: не обрабатывает запрос 0 байт", true)
+
+    local data_to_hash = "some_data"
+    local ok_hash, hash1 = safe_pcall(crypt.hash, data_to_hash, "sha384")
+    check(ok_hash and type(hash1) == "string", "crypt.hash: возвращает строку хэша", "crypt.hash: ошибка хэширования", true)
+    local hash2 = crypt.hash(data_to_hash, "sha384")
+    check(hash1 == hash2, "crypt.hash: хэши для одних и тех же данных совпадают", "crypt.hash: хэши не совпадают", true)
 end
 
 local function test_misc_env() 
@@ -2522,15 +2632,23 @@ end
 
 local function test_isfunctionhooked()
     if not present(isfunctionhooked, "isfunctionhooked") or not present(hookfunction, "hookfunction") then return end
-    
-    local function my_func() end
+
+    local marker = "orig"
+    local function my_func()
+        return marker
+    end
+
     check(not isfunctionhooked(my_func), "isfunctionhooked: возвращает false для не-хукнутой функции", "isfunctionhooked: вернул true для не-хукнутой функции", true)
-    
-    local old = hookfunction(my_func, function() end)
+
+    local old = hookfunction(my_func, function()
+        return "hooked"
+    end)
     check(isfunctionhooked(my_func), "isfunctionhooked: возвращает true для хукнутой функции", "isfunctionhooked: вернул false для хукнутой функции", true)
-    
-    hookfunction(my_func, old) 
-    check(not isfunctionhooked(my_func), "isfunctionhooked: возвращает false после восстановления оригинала", "isfunctionhooked: вернул true после восстановления", true)
+    check(my_func() == "hooked", "hookfunction: вызов возвращает заменённое значение", "hookfunction: вызов не изменился", true)
+
+    hookfunction(my_func, old)
+    check(not isfunctionhooked(my_func), "isfunctionhooked: возвращает false после восстановления оригинала", "isfunctionhooked: остался true после восстановления", true)
+    check(my_func() == "orig", "hookfunction: после восстановления вызов возвращает оригинал", "hookfunction: после восстановления вызов не совпадает с оригиналом", true)
 end
 
 local function test_isnewcclosure()
