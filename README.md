@@ -2,7 +2,7 @@
   <img src="logo2.png" alt="rUNC logo" width="320">
 </p>
 
-<h1 align="center">🚀 rUNC — улучшенный Unified Naming Convention для русскоязычных</h1>
+<h1 align="center">🚀 rUNC — улучшенный Unified Naming Convention для русскоязычных [ПЛАНИРУЕТСЯ В ДАЛЬНЕЙШЕМ ЗАКРЫТЬ СУРС И СДЕЛАТЬ ПРОВЕРКИ ЧЕРЕЗ EXPERIENCE]</h1>
 
 <p align="center">
   <a href="https://www.gnu.org/licenses/gpl-3.0">
