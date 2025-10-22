@@ -108,7 +108,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
       <td><b>Velocity</b></td>
       <td>🖥 ПК</td>
       <td><img src="https://img.shields.io/badge/Крашится-ff0000"></td>
-      <td><img src="https://img.shields.io/badge/Нет%20данных-lightgrey"></td>
+      <td><img src="https://img.shields.io/badge/luau__load%20failed%20:D-lightgrey"></td>
       <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
       <td><img src="https://img.shields.io/badge/Парашный%20инжектор%20боже%20%F0%9F%A4%AC%F0%9F%A4%AC%F0%9F%A4%AC%F0%9F%A4%AC-ff0000"></td>
     </tr>
@@ -116,7 +116,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
       <td><b>KRNL</b></td>
       <td>📱 Мобильный</td>
       <td><img src="https://img.shields.io/badge/Крашится-ff0000"></td>
-      <td><img src="https://img.shields.io/badge/Нет%20данных-lightgrey"></td>
+      <td><img src="https://img.shields.io/badge/luau__load%20failed%20:D-lightgrey"></td>
       <td><img src="https://img.shields.io/badge/Обновлено-08.09.2025-1e90ff"></td>
       <td><img src="https://img.shields.io/badge/Крашится-critical"></td>
     </tr>
@@ -140,17 +140,17 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
       <td><b>Sirhurt</b></td>
       <td>🖥 ПК</td>
       <td><img src="https://img.shields.io/badge/Крашится-ff0000"></td>
-      <td><img src="https://img.shields.io/badge/Нет%20данных-lightgrey"></td>
+      <td><img src="https://img.shields.io/badge/luau__load%20failed%20:D-lightgrey"></td>
       <td><img src="https://img.shields.io/badge/Обновлено-11.09.2025-1e90ff"></td>
       <td><img src="https://img.shields.io/badge/Крашится-critical"></td>
     </tr>
     <tr>
       <td><b>Neverfall</b></td>
       <td>🖥 ПК</td>
-      <td><img src="https://img.shields.io/badge/Ожидаются%20результаты-lightgrey"></td>
-      <td><img src="https://img.shields.io/badge/Ожидаются%20данные-lightgrey"></td>
-      <td><img src="https://img.shields.io/badge/Заебали%20когда%20обновление-lightgrey"></td>
-      <td><img src="https://img.shields.io/badge/Нет%20данных-lightgrey"></td>
+      <td><img src="https://img.shields.io/badge/274%2F316-86%25-32cd32"></td>
+      <td><img src="https://img.shields.io/badge/28%2F316-8%25-32cd32"></td>
+      <td><img src="https://img.shields.io/badge/Обновлено-22.10.2025-1e90ff"></td>
+      <td><img src="https://img.shields.io/badge/luau__load%20failed%20:D-ffd700"></td>
     </tr>
     <tr>
       <td><b>Nucleus</b></td>
@@ -161,12 +161,11 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterTD/rUNC/main/rU
       <td><img src="https://img.shields.io/badge/Отличный%20Executor%2C%20рекомендуется%2C%20но%20обнаружается%20ROBLOX-32cd32"></td>
     </tr>
     <tr>
-    <td><b>Zenith</b></td>
+      <td><b>Zenith</b></td>
       <td>🖥 ПК</td>
       <td><img src="https://img.shields.io/badge/315%2F340-92%25-00ff99"></td>
       <td><img src="https://img.shields.io/badge/19%2F340-5%25-00ff99"></td>
       <td><img src="https://img.shields.io/badge/Обновлено-28.09.2025-1e90ff"></td>
       <td><img src="https://img.shields.io/badge/Отличный%20инжектор%20с%20кастомными%20функциями%20(НО%2C%20легко%20задетектить%20через%20поведение%20сборщика%20мусора)-32cd32"></td>
     </tr>
-  </tbody>
-</table>
+  </
