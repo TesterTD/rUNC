@@ -2791,7 +2791,7 @@ run_test_suite("--- Низкоуровневые операции 💀💀💀 -
 	run_test_suite("Низкоуровневые операции", "test_getinstances", test_getinstances)
 	run_test_suite("Низкоуровневые операции", "test_fireproximityprompt", test_fireproximityprompt)
 	run_test_suite("Низкоуровневые операции", "test_fireclickdetector", test_fireclickdetector)
-	--run_test_suite("Низкоуровневые операции", "test_hidden_properties", test_hidden_properties) -- Тупой bunni крашится из - за неё🤬🤬🤬🤬
+	run_test_suite("Низкоуровневые операции", "test_hidden_properties", test_hidden_properties) -- Тупой bunni крашится из - за неё🤬🤬🤬🤬
 	run_test_suite("Низкоуровневые операции", "test_environments", test_environments)
 end)
 
